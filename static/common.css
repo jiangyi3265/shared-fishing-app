@@ -1,0 +1,298 @@
+/* 共享钓场 · 视觉 v3（亮色 + 黄色强调） */
+page {
+	background: #f4f5f7;
+	color: #1a2030;
+	font-family: 'PingFang SC', 'HarmonyOS Sans SC', -apple-system, sans-serif;
+}
+
+.app {
+	min-height: 100vh;
+	padding-bottom: 160rpx;
+	box-sizing: border-box;
+}
+
+.section {
+	padding: 0 28rpx;
+}
+
+.section + .section {
+	margin-top: 24rpx;
+}
+
+/* ---------- 顶部头 ---------- */
+.page-head {
+	background: #ffffff;
+	padding: 24rpx 28rpx 20rpx;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.page-head-title {
+	font-size: 34rpx;
+	font-weight: 700;
+	color: #1a2030;
+	letter-spacing: 1rpx;
+}
+
+.search {
+	margin: 8rpx 28rpx 20rpx;
+	background: #ffffff;
+	border-radius: 999rpx;
+	height: 88rpx;
+	display: flex;
+	align-items: center;
+	padding: 0 10rpx 0 28rpx;
+	box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.05);
+}
+
+.search-icon {
+	color: #9aa3b2;
+	margin-right: 14rpx;
+	font-size: 32rpx;
+}
+
+.search-input {
+	flex: 1;
+	color: #1a2030;
+	font-size: 28rpx;
+}
+
+.search-btn {
+	background: #f5c23b;
+	color: #1a1306;
+	font-size: 28rpx;
+	font-weight: 700;
+	padding: 0 32rpx;
+	height: 68rpx;
+	line-height: 68rpx;
+	border-radius: 999rpx;
+	letter-spacing: 2rpx;
+}
+
+/* ---------- 通用卡片 ---------- */
+.card {
+	background: #ffffff;
+	border-radius: 24rpx;
+	padding: 28rpx;
+	box-shadow: 0 8rpx 24rpx rgba(26, 32, 48, 0.04);
+	margin: 0 28rpx 24rpx;
+}
+
+.card-title {
+	font-size: 30rpx;
+	font-weight: 700;
+	color: #1a2030;
+}
+
+.card-sub {
+	font-size: 24rpx;
+	color: #6b7280;
+	margin-top: 8rpx;
+	display: block;
+}
+
+/* ---------- 键值行 ---------- */
+.kv-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 22rpx 0;
+	border-bottom: 1rpx solid #eef0f5;
+	font-size: 28rpx;
+}
+
+.kv-row:last-child {
+	border-bottom: 0;
+}
+
+.kv-key {
+	color: #6b7280;
+	font-size: 26rpx;
+}
+
+.kv-val {
+	color: #1a2030;
+	font-weight: 600;
+	font-size: 28rpx;
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 状态标签 ---------- */
+.pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 6rpx 18rpx;
+	border-radius: 999rpx;
+	font-size: 22rpx;
+	font-weight: 700;
+	letter-spacing: 2rpx;
+}
+
+.pill-idle {
+	background: #f0f1f4;
+	color: #6b7280;
+}
+
+.pill-running {
+	background: rgba(79, 179, 138, 0.12);
+	color: #2fa273;
+}
+
+.pill-pending {
+	background: rgba(245, 194, 59, 0.18);
+	color: #b8860b;
+}
+
+.pill-paid {
+	background: rgba(79, 179, 138, 0.12);
+	color: #2fa273;
+}
+
+.pill-cancel {
+	background: rgba(232, 106, 75, 0.12);
+	color: #c9482b;
+}
+
+/* ---------- 数字 ---------- */
+.big-number {
+	font-size: 104rpx;
+	font-weight: 700;
+	letter-spacing: 1rpx;
+	line-height: 1.1;
+	font-variant-numeric: tabular-nums;
+}
+
+.money-number {
+	font-size: 64rpx;
+	font-weight: 700;
+	letter-spacing: 1rpx;
+	font-variant-numeric: tabular-nums;
+}
+
+.money-currency {
+	font-size: 32rpx;
+	font-weight: 600;
+	margin-right: 4rpx;
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+	height: 96rpx;
+	line-height: 96rpx;
+	border-radius: 20rpx;
+	font-size: 32rpx;
+	font-weight: 700;
+	letter-spacing: 2rpx;
+	border: 0;
+	padding: 0;
+	margin: 20rpx 28rpx 0;
+}
+
+.btn::after {
+	border: 0;
+}
+
+.btn-primary {
+	background: #f5c23b;
+	color: #1a1306;
+	box-shadow: 0 12rpx 24rpx rgba(245, 194, 59, 0.28);
+}
+
+.btn-primary:active {
+	background: #e6b025;
+}
+
+.btn-danger {
+	background: #e86a4b;
+	color: #ffffff;
+	box-shadow: 0 12rpx 24rpx rgba(232, 106, 75, 0.25);
+}
+
+.btn-ghost {
+	background: #ffffff;
+	color: #3a4355;
+	border: 1rpx solid #e4e7ee;
+}
+
+.btn-block {
+	display: block;
+	width: auto;
+}
+
+/* ---------- 文本色 ---------- */
+.text-warn {
+	color: #b8860b;
+}
+
+.text-danger {
+	color: #c9482b;
+}
+
+.text-ok {
+	color: #2fa273;
+}
+
+/* ---------- 底部导航 ---------- */
+.tabbar {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 120rpx;
+	background: #ffffff;
+	box-shadow: 0 -4rpx 20rpx rgba(26, 32, 48, 0.06);
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	padding-bottom: env(safe-area-inset-bottom);
+	z-index: 50;
+}
+
+.tabbar-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6rpx;
+	color: #9aa3b2;
+	font-size: 22rpx;
+}
+
+.tabbar-item.active {
+	color: #1a2030;
+	font-weight: 700;
+}
+
+.tabbar-icon {
+	font-size: 40rpx;
+	line-height: 1;
+}
+
+.tabbar-mid {
+	flex: 0 0 auto;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8rpx;
+	color: #1a2030;
+	font-size: 22rpx;
+	font-weight: 700;
+	transform: translateY(-28rpx);
+}
+
+.tabbar-mid-btn {
+	width: 112rpx;
+	height: 112rpx;
+	border-radius: 50%;
+	background: #f5c23b;
+	color: #1a1306;
+	font-size: 52rpx;
+	font-weight: 800;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 14rpx 30rpx rgba(245, 194, 59, 0.45);
+	border: 6rpx solid #ffffff;
+}
