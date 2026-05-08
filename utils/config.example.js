@@ -1,5 +1,5 @@
 export const API_BASE_URLS = {
-	develop: 'http://localhost:8080',
+	develop: 'http://localhost:8005',
 	trial: 'https://api.example.com',
 	release: 'https://api.example.com'
 }
