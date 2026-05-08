@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import { getAdById, getUser, submitRegistration, payRegistration, grantCoupon, formatMoney } from '../../utils/fishingStore.js'
+import { fetchAdById, getUser, isLoggedIn, submitRegistration, payRegistration, grantCoupon, formatMoney } from '../../utils/fishingStore.js'
 
 export default {
 	data() {
@@ -64,14 +64,16 @@ export default {
 		}
 	},
 	onLoad(option) {
-		const ad = getAdById(option.id)
-		if (ad && ad.type === 'activity') {
-			this.ad = ad
-			this.activity = ad.activityInfo || {}
-		} else {
-			uni.showToast({ title: '活动不存在', icon: 'none' })
-			setTimeout(() => this.goBack(), 1500)
-		}
+		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/activityRegister/activityRegister?id=' + option.id) }); return }
+		fetchAdById(option.id).then((ad) => {
+			if (ad && ad.type === 'activity') {
+				this.ad = ad
+				this.activity = ad.activityInfo || {}
+			} else {
+				uni.showToast({ title: '活动不存在', icon: 'none' })
+				setTimeout(() => this.goBack(), 1500)
+			}
+		}).catch(() => this.goBack())
 	},
 	methods: {
 		onSubmit() {
@@ -84,32 +86,31 @@ export default {
 				return
 			}
 			const user = getUser()
-			const reg = submitRegistration(this.ad.id, user.id, {
+			if (!user) return
+			submitRegistration(this.ad.adId, user.userId, {
 				name: this.form.name.trim(),
 				phone: this.form.phone,
-				remark: this.form.remark,
-				feeCents: this.activity.feeCents
+				remark: this.form.remark
+			}).then((reg) => {
+				if (reg.paid) {
+					uni.showToast({ title: '您已报名过该活动', icon: 'none' })
+					return
+				}
+				payRegistration(reg.regId).then(() => {
+					const grantPromise = this.ad.couponTemplateId
+						? grantCoupon(user.userId, this.ad.couponTemplateId, 'activity_' + this.ad.adId).catch(() => null)
+						: Promise.resolve(null)
+					grantPromise.then((coupon) => {
+						const extra = coupon ? `\n\n已赠送您一张【${coupon.title}】优惠券！` : ''
+						uni.showModal({
+							title: '报名成功',
+							content: `已成功报名「${this.ad.title}」，报名费 ¥${formatMoney(this.activity.feeCents)} 已支付。${extra}`,
+							showCancel: false,
+							success: () => this.goBack()
+						})
+					})
+				})
 			})
-			if (reg.paid) {
-				uni.showToast({ title: '您已报名过该活动', icon: 'none' })
-				return
-			}
-			const paid = payRegistration(reg.id)
-			if (paid) {
-				grantCoupon(user.id, {
-					type: 'duration',
-					title: '报名赠券·免费30分钟',
-					value: 30,
-					minAmountCents: 0,
-					source: 'activity_' + this.ad.id
-				})
-				uni.showModal({
-					title: '报名成功',
-					content: `已成功报名「${this.ad.title}」，报名费 ¥${formatMoney(this.activity.feeCents)} 已支付。\n\n已赠送您一张【免费30分钟】优惠券！`,
-					showCancel: false,
-					success: () => this.goBack()
-				})
-			}
 		},
 		goBack() {
 			uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/index/index' }) })

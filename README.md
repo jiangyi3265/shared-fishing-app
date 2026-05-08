@@ -9,7 +9,7 @@
 - JavaScript
 - 微信小程序
 - HBuilderX / uni-app CLI
-- 本地模拟数据工具
+- 后端 `/app/**` 接口
 
 ## 关联仓库
 
@@ -24,13 +24,23 @@
 1. 使用 HBuilderX 打开当前目录。
 2. 在 `manifest.json` 中确认微信小程序 AppID。
 3. 运行到微信小程序开发者工具。
-4. 如需接入真实后端，将 `utils/fishingStore.js` 中的模拟数据替换为后端接口调用。
+4. 在 `utils/config.js` 中配置接口地址。开发版默认 `http://localhost:8080`；体验版和正式版必须配置 HTTPS API 域名。
 
 最小开发流程：
 
 ```text
 HBuilderX -> 导入项目 -> 运行 -> 运行到小程序模拟器 -> 微信开发者工具
 ```
+
+## 生产配置
+
+正式发布前必须完成：
+
+- `manifest.json` 中 `mp-weixin.appid` 使用真实小程序 AppID。
+- `utils/config.js` 中 `trial` 和 `release` 填写正式 HTTPS API 域名。
+- 微信公众平台把该 HTTPS API 域名加入 request 合法域名。
+- 后端配置 `WX_SECRET`，并保持 `WX_MOCK_ENABLED=false`。
+- 开通支付时后端配置 `WX_PAY_ENABLED=true`、商户号、APIv3 密钥、证书私钥和支付回调域名。
 
 ## 简历描述示例
 

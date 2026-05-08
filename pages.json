@@ -65,6 +65,48 @@
 			"style": {
 				"navigationBarTitleText": "我的优惠券"
 			}
+		},
+		{
+			"path": "pages/settings/settings",
+			"style": {
+				"navigationBarTitleText": "设置"
+			}
+		},
+		{
+			"path": "pages/guide/guide",
+			"style": {
+				"navigationBarTitleText": "操作指引"
+			}
+		},
+		{
+			"path": "pages/promotions/promotions",
+			"style": {
+				"navigationBarTitleText": "优惠活动"
+			}
+		},
+		{
+			"path": "pages/rateInfo/rateInfo",
+			"style": {
+				"navigationBarTitleText": "费率说明"
+			}
+		},
+		{
+			"path": "pages/contact/contact",
+			"style": {
+				"navigationBarTitleText": "联系客服"
+			}
+		},
+		{
+			"path": "pages/about/about",
+			"style": {
+				"navigationBarTitleText": "关于我们"
+			}
+		},
+		{
+			"path": "pages/venue/venue",
+			"style": {
+				"navigationBarTitleText": "钓场详情"
+			}
 		}
 	],
 	"globalStyle": {

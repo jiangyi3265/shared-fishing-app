@@ -83,11 +83,14 @@
 		formatDuration,
 		formatDatetime,
 		getUser,
-		getRunningOrder,
-		finishOrderByUser,
-		DEFAULT_RULE,
+		fetchRunningOrder,
+		finishOrder,
+		getCachedVenue,
+		loadDefaultVenue,
 		isLoggedIn
 	} from '../../utils/fishingStore.js'
+
+	const DEFAULT_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
 
 	export default {
 		data() {
@@ -100,14 +103,18 @@
 		},
 		computed: {
 			elapsed() {
-				if (!this.order || !this.order.startTime) return 0
-				return Math.floor((this.now - this.order.startTime) / 1000)
+				if (!this.startMillis) return 0
+				return Math.floor((this.now - this.startMillis) / 1000)
 			},
 			estimate() {
-				if (!this.order || !this.order.startTime) {
+				if (!this.startMillis) {
 					return { amountCents: 0, billableDurationSeconds: 0, elapsedSeconds: 0 }
 				}
-				return calcAmount(this.now - this.order.startTime)
+				return calcAmount(this.now - this.startMillis, this.rule)
+			},
+			startMillis() {
+				if (!this.order || !this.order.startTime) return 0
+				return typeof this.order.startTime === 'number' ? this.order.startTime : new Date(this.order.startTime).getTime()
 			},
 			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) },
 			startTimeText() { return this.order.startTime ? formatDatetime(this.order.startTime) : '--' },
@@ -123,18 +130,27 @@
 				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/session/session') })
 				return
 			}
-			this.refresh()
+			this.ensureVenue().then(() => this.refresh())
 			this.startTimer()
 		},
 		onHide() { this.stopTimer() },
 		beforeDestroy() { this.stopTimer() },
 		methods: {
+			ensureVenue() {
+				const cached = getCachedVenue()
+				if (cached && cached.rule) { this.rule = cached.rule; return Promise.resolve() }
+				return loadDefaultVenue().then((data) => { if (data && data.rule) this.rule = data.rule }).catch(() => {})
+			},
 			refresh() {
 				const user = getUser()
-				const running = getRunningOrder(user.id)
-				if (!running) { uni.redirectTo({ url: '/pages/index/index' }); return }
-				this.order = running
-				this.rule = running.ruleSnapshot || DEFAULT_RULE
+				if (!user) { uni.redirectTo({ url: '/pages/index/index' }); return }
+				fetchRunningOrder(user.userId).then((running) => {
+					if (!running) { uni.redirectTo({ url: '/pages/index/index' }); return }
+					this.order = running
+					if (running.ruleSnapshot) {
+						try { this.rule = Object.assign({}, this.rule, JSON.parse(running.ruleSnapshot)) } catch (e) {}
+					}
+				})
 			},
 			finish() {
 				uni.showModal({
@@ -143,13 +159,14 @@
 					success: (res) => {
 						if (!res.confirm) return
 						const user = getUser()
-						const result = finishOrderByUser(user.id)
-						if (!result) {
-							uni.showToast({ title: '未检测到进行中订单', icon: 'none' })
-							this.backHome()
-							return
-						}
-						uni.redirectTo({ url: '/pages/pay/pay' })
+						finishOrder(user.userId).then((result) => {
+							if (!result) {
+								uni.showToast({ title: '未检测到进行中订单', icon: 'none' })
+								this.backHome()
+								return
+							}
+							uni.redirectTo({ url: '/pages/pay/pay' })
+						})
 					}
 				})
 			},
@@ -437,7 +454,6 @@
 		bottom: 0;
 		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
 		background: rgba(244, 245, 247, 0.96);
-		backdrop-filter: blur(12px);
 		display: flex;
 		gap: 16rpx;
 		box-shadow: 0 -8rpx 20rpx rgba(26, 32, 48, 0.06);

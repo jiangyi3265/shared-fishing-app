@@ -14,18 +14,18 @@
 		</view>
 
 		<view v-else class="coupon-list">
-			<view v-for="item in list" :key="item.id" class="coupon-item" :class="{ disabled: item.used || item.expireAt < now }">
+			<view v-for="item in list" :key="item.couponId" class="coupon-item" :class="{ disabled: item.used || expired(item) }">
 				<view class="coupon-left">
-					<text class="coupon-value" v-if="item.type === 'duration'">{{ item.value }}分钟</text>
-					<text class="coupon-value" v-else>¥{{ formatMoney(item.value) }}</text>
-					<text class="coupon-condition" v-if="item.type === 'amount' && item.minAmountCents > 0">满¥{{ formatMoney(item.minAmountCents) }}可用</text>
+					<text class="coupon-value" v-if="item.couponType === 'duration'">{{ item.couponValue }}分钟</text>
+					<text class="coupon-value" v-else>¥{{ formatMoney(item.couponValue) }}</text>
+					<text class="coupon-condition" v-if="item.couponType === 'amount' && item.minAmountCents > 0">满¥{{ formatMoney(item.minAmountCents) }}可用</text>
 					<text class="coupon-condition" v-else>无门槛</text>
 				</view>
 				<view class="coupon-right">
 					<text class="coupon-name">{{ item.title }}</text>
-					<text class="coupon-expire">有效期至 {{ formatDate(item.expireAt) }}</text>
+					<text class="coupon-expire">有效期至 {{ formatDate(item.expireTime) }}</text>
 					<text v-if="item.used" class="coupon-status used">已使用</text>
-					<text v-else-if="item.expireAt < now" class="coupon-status expired">已过期</text>
+					<text v-else-if="expired(item)" class="coupon-status expired">已过期</text>
 				</view>
 			</view>
 		</view>
@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { getUser, getMyCoupons, getAvailableCoupons, formatMoney } from '../../utils/fishingStore.js'
+import { getUser, isLoggedIn, fetchMyCoupons, formatMoney } from '../../utils/fishingStore.js'
 
 export default {
 	data() {
@@ -46,20 +46,28 @@ export default {
 	computed: {
 		list() {
 			if (this.tab === 'available') {
-				return this.allCoupons.filter((c) => !c.used && c.expireAt > this.now)
+				return this.allCoupons.filter((c) => !c.used && !this.expired(c))
 			}
-			return this.allCoupons.filter((c) => c.used || c.expireAt <= this.now)
+			return this.allCoupons.filter((c) => c.used || this.expired(c))
 		}
 	},
 	onShow() {
+		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/coupons/coupons') }); return }
 		const user = getUser()
-		this.allCoupons = getMyCoupons(user.id)
+		if (!user) return
 		this.now = Date.now()
+		fetchMyCoupons(user.userId).then((list) => { this.allCoupons = list }).catch(() => {})
 	},
 	methods: {
 		formatMoney,
+		expired(item) {
+			if (!item.expireTime) return false
+			const t = typeof item.expireTime === 'number' ? item.expireTime : new Date(item.expireTime).getTime()
+			return t < this.now
+		},
 		formatDate(ts) {
-			const d = new Date(ts)
+			if (!ts) return '--'
+			const d = ts instanceof Date ? ts : new Date(ts)
 			const p = (n) => String(n).padStart(2, '0')
 			return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 		}

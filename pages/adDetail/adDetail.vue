@@ -2,16 +2,16 @@
 	<view class="app ad-detail">
 		<view class="ad-header" :style="{ background: ad.bgColor || '#f4f5f7' }">
 			<text class="ad-title">{{ ad.title }}</text>
-			<text class="ad-desc">{{ ad.desc }}</text>
+			<text class="ad-desc">{{ ad.description || ad.desc }}</text>
 		</view>
 		<view class="ad-body">
 			<text class="ad-content">{{ ad.content }}</text>
 		</view>
-		<view v-if="ad.coupon && !claimed" class="coupon-section">
+		<view v-if="couponTemplate && !claimed" class="coupon-section">
 			<view class="coupon-card">
-				<text class="coupon-value" v-if="ad.coupon.type === 'duration'">{{ ad.coupon.value }}分钟</text>
-				<text class="coupon-value" v-else>¥{{ formatMoney(ad.coupon.value) }}</text>
-				<text class="coupon-title">{{ ad.coupon.title }}</text>
+				<text class="coupon-value" v-if="couponTemplate.couponType === 'duration'">{{ couponTemplate.couponValue }}分钟</text>
+				<text class="coupon-value" v-else>¥{{ formatMoney(couponTemplate.couponValue) }}</text>
+				<text class="coupon-title">{{ couponTemplate.title }}</text>
 			</view>
 			<view class="claim-btn" @click="claimCoupon">领取优惠券</view>
 		</view>
@@ -25,44 +25,45 @@
 </template>
 
 <script>
-import { getAdById, getUser, grantCoupon, getMyCoupons, formatMoney } from '../../utils/fishingStore.js'
+import { fetchAdById, getUser, isLoggedIn, grantCoupon, fetchMyCoupons, formatMoney } from '../../utils/fishingStore.js'
 
 export default {
 	data() {
 		return {
 			ad: {},
+			couponTemplate: null,
 			claimed: false
 		}
 	},
 	onLoad(option) {
-		const ad = getAdById(option.id)
-		if (ad) {
+		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/adDetail/adDetail?id=' + option.id) }); return }
+		fetchAdById(option.id).then((ad) => {
+			if (!ad) {
+				uni.showToast({ title: '广告不存在', icon: 'none' })
+				setTimeout(() => this.goBack(), 1500)
+				return
+			}
 			this.ad = ad
-			this.checkClaimed()
-		} else {
-			uni.showToast({ title: '广告不存在', icon: 'none' })
-			setTimeout(() => this.goBack(), 1500)
-		}
+			if (ad.couponTemplateId) this.loadCoupon(ad.couponTemplateId)
+		}).catch(() => this.goBack())
 	},
 	methods: {
-		checkClaimed() {
-			if (!this.ad.coupon) return
+		loadCoupon(templateId) {
 			const user = getUser()
-			const coupons = getMyCoupons(user.id)
-			this.claimed = coupons.some((c) => c.source === 'ad_' + this.ad.id)
+			if (!user) return
+			fetchMyCoupons(user.userId).then((list) => {
+				const existing = list.find((c) => c.templateId === templateId)
+				if (existing) { this.couponTemplate = existing; this.claimed = true; return }
+				this.couponTemplate = { templateId, title: '领取优惠券', couponType: 'amount', couponValue: 0 }
+			})
 		},
 		claimCoupon() {
 			const user = getUser()
-			const coupon = this.ad.coupon
-			grantCoupon(user.id, {
-				type: coupon.type,
-				title: coupon.title,
-				value: coupon.value,
-				minAmountCents: coupon.minAmountCents || 0,
-				source: 'ad_' + this.ad.id
+			if (!user) return
+			grantCoupon(user.userId, this.ad.couponTemplateId, 'ad_' + this.ad.adId).then(() => {
+				this.claimed = true
+				uni.showToast({ title: '领取成功', icon: 'success' })
 			})
-			this.claimed = true
-			uni.showToast({ title: '领取成功', icon: 'success' })
 		},
 		goBack() {
 			uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/index/index' }) })

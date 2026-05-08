@@ -51,7 +51,7 @@
 					<view class="channel-logo">💚</view>
 					<view class="channel-text">
 						<text class="channel-name">微信支付</text>
-						<text class="channel-desc">开发阶段使用模拟支付通道</text>
+						<text class="channel-desc">安全快捷完成订单支付</text>
 					</view>
 					<view class="channel-check">✓</view>
 				</view>
@@ -63,16 +63,16 @@
 					<text class="coupon-none-text">暂无可用优惠券</text>
 				</view>
 				<view v-else class="coupon-options">
-					<view v-for="c in availableCoupons" :key="c.id" class="coupon-option" :class="{ selected: selectedCoupon && selectedCoupon.id === c.id }" @click="toggleCoupon(c)">
+					<view v-for="c in availableCoupons" :key="c.couponId" class="coupon-option" :class="{ selected: selectedCoupon && selectedCoupon.couponId === c.couponId }" @click="toggleCoupon(c)">
 						<view class="coupon-opt-left">
-							<text class="coupon-opt-value" v-if="c.type === 'duration'">{{ c.value }}分钟</text>
-							<text class="coupon-opt-value" v-else>-¥{{ formatMoney(c.value) }}</text>
+							<text class="coupon-opt-value" v-if="c.couponType === 'duration'">{{ c.couponValue }}分钟</text>
+							<text class="coupon-opt-value" v-else>-¥{{ formatMoney(c.couponValue) }}</text>
 						</view>
 						<view class="coupon-opt-right">
 							<text class="coupon-opt-name">{{ c.title }}</text>
-							<text class="coupon-opt-cond" v-if="c.type === 'amount' && c.minAmountCents > 0">满¥{{ formatMoney(c.minAmountCents) }}可用</text>
+							<text class="coupon-opt-cond" v-if="c.couponType === 'amount' && c.minAmountCents > 0">满¥{{ formatMoney(c.minAmountCents) }}可用</text>
 						</view>
-						<view class="coupon-opt-check" v-if="selectedCoupon && selectedCoupon.id === c.id">✓</view>
+						<view class="coupon-opt-check" v-if="selectedCoupon && selectedCoupon.couponId === c.couponId">✓</view>
 					</view>
 				</view>
 			</view>
@@ -97,15 +97,15 @@
 		formatDuration,
 		formatDatetime,
 		getUser,
-		getPendingOrder,
-		payPendingOrder,
+		fetchPendingOrder,
+		payOrder,
 		isLoggedIn,
-		getAvailableCoupons,
+		fetchAvailableCoupons,
 		applyCouponToOrder,
-		useCoupon,
-		COUPON_TYPE,
-		DEFAULT_RULE
+		COUPON_TYPE
 	} from '../../utils/fishingStore.js'
+
+	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300 }
 
 	export default {
 		data() {
@@ -116,23 +116,25 @@
 			}
 		},
 		computed: {
+			orderRule() {
+				if (this.order && this.order.ruleSnapshot) {
+					try { return Object.assign({}, FALLBACK_RULE, JSON.parse(this.order.ruleSnapshot)) } catch (e) {}
+				}
+				return FALLBACK_RULE
+			},
 			ruleText() {
-				const rule = (this.order && this.order.ruleSnapshot) || DEFAULT_RULE
-				return `每 ${rule.stepMinutes} 分钟 ¥${formatMoney(rule.pricePerStepCents)}`
+				return `每 ${this.orderRule.stepMinutes} 分钟 ¥${formatMoney(this.orderRule.pricePerStepCents)}`
 			},
-			orderTag() {
-				if (!this.order) return ''
-				return '待支付'
-			},
+			orderTag() { return this.order ? '待支付' : '' },
 			finalAmount() {
 				if (!this.order) return 0
 				if (!this.selectedCoupon) return this.order.amountCents
-				const result = applyCouponToOrder(this.selectedCoupon, this.order.amountCents, this.order.durationSeconds || 0)
+				const result = applyCouponToOrder(this.selectedCoupon, this.order.amountCents)
 				if (result.discountCents > 0) {
 					return Math.max(0, this.order.amountCents - result.discountCents)
 				}
 				if (result.discountSeconds > 0) {
-					const rule = (this.order && this.order.ruleSnapshot) || DEFAULT_RULE
+					const rule = this.orderRule
 					const discountCents = Math.floor(result.discountSeconds / (rule.stepMinutes * 60)) * rule.pricePerStepCents
 					return Math.max(0, this.order.amountCents - discountCents)
 				}
@@ -155,18 +157,21 @@
 		methods: {
 			refresh() {
 				const user = getUser()
-				this.order = getPendingOrder(user.id)
-				if (this.order) {
-					const coupons = getAvailableCoupons(user.id)
-					this.availableCoupons = coupons.filter((c) => {
-						if (c.type === COUPON_TYPE.AMOUNT && c.minAmountCents > this.order.amountCents) return false
-						return true
+				if (!user) return
+				fetchPendingOrder(user.userId).then((order) => {
+					this.order = order
+					this.selectedCoupon = null
+					if (!order) { this.availableCoupons = []; return }
+					fetchAvailableCoupons(user.userId).then((coupons) => {
+						this.availableCoupons = coupons.filter((c) => {
+							if (c.couponType === COUPON_TYPE.AMOUNT && (c.minAmountCents || 0) > order.amountCents) return false
+							return true
+						})
 					})
-				}
-				this.selectedCoupon = null
+				})
 			},
 			toggleCoupon(coupon) {
-				if (this.selectedCoupon && this.selectedCoupon.id === coupon.id) {
+				if (this.selectedCoupon && this.selectedCoupon.couponId === coupon.couponId) {
 					this.selectedCoupon = null
 				} else {
 					this.selectedCoupon = coupon
@@ -175,19 +180,18 @@
 			payNow() {
 				if (!this.order) return
 				uni.showLoading({ title: '调起支付' })
-				setTimeout(() => {
-					const user = getUser()
-					if (this.selectedCoupon) {
-						useCoupon(this.selectedCoupon.id)
-					}
-					const paid = payPendingOrder(user.id, this.order.id)
-					uni.hideLoading()
-					if (!paid) {
+				const user = getUser()
+				const couponId = this.selectedCoupon ? this.selectedCoupon.couponId : null
+				payOrder(user.userId, this.order.orderId, couponId)
+					.then((paid) => {
+						uni.hideLoading()
+						if (!paid) { uni.redirectTo({ url: '/pages/payResult/payResult?success=0' }); return }
+						uni.redirectTo({ url: `/pages/payResult/payResult?success=1&orderId=${paid.orderId}` })
+					})
+					.catch(() => {
+						uni.hideLoading()
 						uni.redirectTo({ url: '/pages/payResult/payResult?success=0' })
-						return
-					}
-					uni.redirectTo({ url: `/pages/payResult/payResult?success=1&orderId=${paid.id}` })
-				}, 600)
+					})
 			},
 			goHome() { uni.redirectTo({ url: '/pages/index/index' }) },
 			formatMoney,
@@ -434,7 +438,6 @@
 		bottom: 0;
 		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
 		background: rgba(244, 245, 247, 0.96);
-		backdrop-filter: blur(12px);
 		display: flex;
 		align-items: center;
 		gap: 20rpx;

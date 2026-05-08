@@ -58,12 +58,10 @@
 </template>
 
 <script>
-	import { loginMock, isLoggedIn } from '../../utils/fishingStore.js'
+	import { loginWithCode, isLoggedIn } from '../../utils/fishingStore.js'
 
 	export default {
-		data() {
-			return { redirect: '' }
-		},
+		data() { return { redirect: '' } },
 		onLoad(option = {}) {
 			this.redirect = option.redirect || ''
 			if (isLoggedIn()) this.goNext()
@@ -71,12 +69,29 @@
 		methods: {
 			doLogin() {
 				uni.showLoading({ title: '登录中' })
-				setTimeout(() => {
-					loginMock()
+				const finish = () => {
 					uni.hideLoading()
 					uni.showToast({ title: '登录成功', icon: 'success' })
 					this.goNext()
-				}, 500)
+				}
+				const fail = (err) => {
+					uni.hideLoading()
+					const msg = (err && (err.msg || err.message || err.errMsg)) || '登录失败'
+					uni.showToast({ title: msg, icon: 'none' })
+				}
+				// #ifdef MP-WEIXIN
+				uni.login({
+					provider: 'weixin',
+					success: (res) => {
+						if (!res.code) return fail({ msg: '微信登录未返回 code' })
+						loginWithCode(res.code, {}).then(finish).catch(fail)
+					},
+					fail: (err) => fail({ msg: (err && err.errMsg) || '微信登录失败，请重试' })
+				})
+				// #endif
+				// #ifndef MP-WEIXIN
+				fail({ msg: '请在微信小程序环境登录' })
+				// #endif
 			},
 			skip() {
 				uni.reLaunch({ url: '/pages/index/index' })
@@ -106,7 +121,10 @@
 
 	.hero-bg {
 		position: absolute;
-		inset: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
 		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
 	}
 

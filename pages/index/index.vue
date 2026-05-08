@@ -104,15 +104,19 @@
 		formatMoney,
 		formatDuration,
 		getUser,
-		getRunningOrder,
-		getPendingOrder,
-		finishOrderByUser,
+		fetchRunningOrder,
+		fetchPendingOrder,
+		finishOrder,
 		calcAmount,
 		isLoggedIn,
-		getAds,
-		VENUE_INFO,
-		DEFAULT_RULE
+		fetchAds,
+		loadDefaultVenue,
+		getCachedVenue,
+		resolveQrcode
 	} from '../../utils/fishingStore.js'
+
+	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
+	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
 
 	export default {
 		data() {
@@ -122,8 +126,8 @@
 				pendingOrder: null,
 				now: Date.now(),
 				timer: null,
-				venue: VENUE_INFO,
-				rule: DEFAULT_RULE,
+				venue: FALLBACK_VENUE,
+				rule: FALLBACK_RULE,
 				keyword: '',
 				ads: []
 			}
@@ -132,13 +136,19 @@
 			stepPriceYuan() {
 				return formatMoney(this.rule.pricePerStepCents)
 			},
+			runningStartMillis() {
+				if (!this.runningOrder || !this.runningOrder.startTime) return 0
+				return typeof this.runningOrder.startTime === 'number'
+					? this.runningOrder.startTime
+					: new Date(this.runningOrder.startTime).getTime()
+			},
 			liveSeconds() {
-				if (!this.runningOrder) return 0
-				return Math.max(0, Math.floor((this.now - this.runningOrder.startTime) / 1000))
+				if (!this.runningStartMillis) return 0
+				return Math.max(0, Math.floor((this.now - this.runningStartMillis) / 1000))
 			},
 			estimate() {
-				if (!this.runningOrder) return { amountCents: 0 }
-				return calcAmount(this.now - this.runningOrder.startTime)
+				if (!this.runningStartMillis) return { amountCents: 0 }
+				return calcAmount(this.now - this.runningStartMillis, this.rule)
 			}
 		},
 		onLoad(option = {}) {
@@ -163,17 +173,27 @@
 		methods: {
 			bootstrap(option) {
 				this.user = getUser()
-				this.ads = getAds()
+				this.loadVenue()
 				this.refreshData()
 				this.startTimer()
 				if (option.action === 'start') this.scanStart()
 				else if (option.action === 'end') this.scanEnd()
 			},
+			loadVenue() {
+				const cached = getCachedVenue()
+				if (cached && cached.venue) this.applyVenue(cached)
+				loadDefaultVenue().then((data) => { if (data) this.applyVenue(data) }).catch(() => {})
+			},
+			applyVenue(data) {
+				if (data.venue) this.venue = data.venue
+				if (data.rule) this.rule = Object.assign({}, FALLBACK_RULE, data.rule)
+			},
 			refreshData() {
 				this.user = getUser()
-				this.runningOrder = getRunningOrder(this.user.id)
-				this.pendingOrder = getPendingOrder(this.user.id)
-				this.ads = getAds()
+				if (!this.user) return
+				fetchRunningOrder(this.user.userId).then((r) => { this.runningOrder = r }).catch(() => {})
+				fetchPendingOrder(this.user.userId).then((p) => { this.pendingOrder = p }).catch(() => {})
+				fetchAds().then((list) => { this.ads = list }).catch(() => {})
 				this.now = Date.now()
 			},
 			startTimer() {
@@ -185,7 +205,7 @@
 			},
 			onSearch() {
 				if (!this.keyword) return
-				uni.showToast({ title: '暂未开放', icon: 'none' })
+				uni.navigateTo({ url: '/pages/promotions/promotions?keyword=' + encodeURIComponent(this.keyword) })
 			},
 			onAdClick(ad) {
 				if (ad.type === 'activity') {
@@ -201,22 +221,69 @@
 					return
 				}
 				if (this.runningOrder) { this.goSession(); return }
-				uni.redirectTo({ url: '/pages/start/start' })
+				this.launchScan('start')
 			},
 			scanEnd() {
 				if (this.pendingOrder) { this.goPay(); return }
 				if (this.runningOrder) {
-					finishOrderByUser(this.user.id)
-					this.goPay()
+					this.launchScan('end')
 					return
 				}
 				uni.showToast({ title: '未检测到进行中的订单', icon: 'none' })
+			},
+			launchScan(expectedAction) {
+				// #ifdef MP-WEIXIN || APP-PLUS
+				uni.scanCode({
+					onlyFromCamera: false,
+					success: (res) => this.handleScanResult(res.result || '', expectedAction),
+					fail: () => this.fallbackScan(expectedAction)
+				})
+				// #endif
+				// #ifndef MP-WEIXIN || APP-PLUS
+				this.fallbackScan(expectedAction)
+				// #endif
+			},
+			fallbackScan(expectedAction) {
+				if (expectedAction === 'start') { uni.redirectTo({ url: '/pages/start/start' }); return }
+				if (expectedAction === 'end') {
+					if (!this.user) return
+					finishOrder(this.user.userId).then(() => this.goPay())
+				}
+			},
+			handleScanResult(raw, expectedAction) {
+				const params = this.parseScan(raw)
+				if (!params || (params.action !== expectedAction && expectedAction)) {
+					uni.showToast({ title: '二维码与当前操作不匹配', icon: 'none' })
+					return
+				}
+				if (params.qrId) {
+					resolveQrcode({ qrId: params.qrId }).then((data) => {
+						if (!data) return
+						if (data.action === 'start') uni.redirectTo({ url: '/pages/start/start' })
+						else if (data.action === 'end' && this.user) finishOrder(this.user.userId).then(() => this.goPay())
+					}).catch(() => this.fallbackScan(expectedAction))
+				} else {
+					this.fallbackScan(expectedAction)
+				}
+			},
+			parseScan(raw) {
+				if (!raw) return null
+				const idx = raw.indexOf('?')
+				const qs = idx >= 0 ? raw.slice(idx + 1) : raw
+				const out = {}
+				qs.split('&').forEach((pair) => {
+					const [k, v] = pair.split('=')
+					if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '')
+				})
+				if (out.qrId) out.qrId = Number(out.qrId)
+				if (out.venueId) out.venueId = Number(out.venueId)
+				return out
 			},
 			goPay() { uni.redirectTo({ url: '/pages/pay/pay' }) },
 			goSession() { uni.redirectTo({ url: '/pages/session/session' }) },
 			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
 			goMine() { uni.redirectTo({ url: '/pages/mine/mine' }) },
-			goVenue() { uni.showToast({ title: this.venue.address, icon: 'none' }) },
+			goVenue() { uni.navigateTo({ url: '/pages/venue/venue' }) },
 			formatMoney,
 			formatDuration
 		}

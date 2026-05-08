@@ -68,19 +68,22 @@
 
 <script>
 	import {
-		VENUE_INFO,
-		DEFAULT_RULE,
 		formatMoney,
-		createOrder,
+		startOrder,
 		getUser,
-		getRunningOrder,
-		getPendingOrder,
-		isLoggedIn
+		fetchRunningOrder,
+		fetchPendingOrder,
+		isLoggedIn,
+		loadDefaultVenue,
+		getCachedVenue
 	} from '../../utils/fishingStore.js'
+
+	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
+	const FALLBACK_RULE = { name: '标准计费', stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0, summary: '起步 30 分钟起计' }
 
 	export default {
 		data() {
-			return { venue: VENUE_INFO, rule: DEFAULT_RULE }
+			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE }
 		},
 		computed: {
 			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) }
@@ -90,20 +93,35 @@
 				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start') })
 				return
 			}
+			this.loadVenue()
 			const user = getUser()
-			if (getPendingOrder(user.id)) { uni.redirectTo({ url: '/pages/pay/pay' }); return }
-			if (getRunningOrder(user.id)) { uni.redirectTo({ url: '/pages/session/session' }) }
+			if (!user) return
+			fetchPendingOrder(user.userId).then((p) => { if (p) uni.redirectTo({ url: '/pages/pay/pay' }) })
+			fetchRunningOrder(user.userId).then((r) => { if (r) uni.redirectTo({ url: '/pages/session/session' }) })
 		},
 		methods: {
+			loadVenue() {
+				const cached = getCachedVenue()
+				if (cached && cached.venue) { this.applyVenue(cached) }
+				loadDefaultVenue().then((data) => { if (data) this.applyVenue(data) }).catch(() => {})
+			},
+			applyVenue(data) {
+				if (data.venue) this.venue = data.venue
+				if (data.rule) this.rule = Object.assign({}, FALLBACK_RULE, data.rule, { name: data.rule.ruleName || FALLBACK_RULE.name })
+			},
 			startNow() {
 				const user = getUser()
-				if (getPendingOrder(user.id)) {
-					uni.showToast({ title: '请先支付未完成账单', icon: 'none' })
-					uni.redirectTo({ url: '/pages/pay/pay' })
-					return
-				}
-				createOrder(user.id)
-				uni.redirectTo({ url: '/pages/session/session' })
+				if (!user) { uni.redirectTo({ url: '/pages/login/login' }); return }
+				fetchPendingOrder(user.userId).then((pending) => {
+					if (pending) {
+						uni.showToast({ title: '请先支付未完成账单', icon: 'none' })
+						uni.redirectTo({ url: '/pages/pay/pay' })
+						return
+					}
+					startOrder(user.userId, this.venue.venueId).then(() => {
+						uni.redirectTo({ url: '/pages/session/session' })
+					})
+				})
 			},
 			backHome() { uni.redirectTo({ url: '/pages/index/index' }) }
 		}
@@ -129,7 +147,10 @@
 
 	.hero-bg {
 		position: absolute;
-		inset: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
 		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
 	}
 
@@ -360,7 +381,6 @@
 		bottom: 0;
 		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
 		background: rgba(244, 245, 247, 0.96);
-		backdrop-filter: blur(12px);
 		display: flex;
 		gap: 16rpx;
 		box-shadow: 0 -8rpx 20rpx rgba(26, 32, 48, 0.06);

@@ -8,7 +8,7 @@
 						<text class="avatar-text">{{ avatarLetter }}</text>
 					</view>
 					<view class="profile-text">
-						<text class="nickname">{{ user ? user.name : '游客' }}</text>
+						<text class="nickname">{{ user ? (user.nickname || user.name || '钓友') : '游客' }}</text>
 						<view class="meta-row">
 							<view class="vip-chip">
 								<text class="vip-emoji">👑</text>
@@ -60,7 +60,7 @@
 					<view class="tool-icon tool-icon-2">💰</view>
 					<text class="tool-name">待支付</text>
 				</view>
-				<view class="tool" @click="showTip('操作指引')">
+				<view class="tool" @click="goGuide">
 					<view class="tool-icon tool-icon-3">📘</view>
 					<text class="tool-name">操作指引</text>
 				</view>
@@ -68,19 +68,19 @@
 					<view class="tool-icon tool-icon-4">🎫</view>
 					<text class="tool-name">我的优惠券</text>
 				</view>
-				<view class="tool" @click="showTip('优惠活动')">
+				<view class="tool" @click="goPromotions">
 					<view class="tool-icon tool-icon-5">🎁</view>
 					<text class="tool-name">优惠活动</text>
 				</view>
-				<view class="tool" @click="showTip('费率说明')">
+				<view class="tool" @click="goRateInfo">
 					<view class="tool-icon tool-icon-6">📊</view>
 					<text class="tool-name">费率说明</text>
 				</view>
-				<view class="tool" @click="showTip('联系客服')">
+				<view class="tool" @click="goContact">
 					<view class="tool-icon tool-icon-7">📞</view>
 					<text class="tool-name">联系客服</text>
 				</view>
-				<view class="tool" @click="showTip('关于我们')">
+				<view class="tool" @click="goAbout">
 					<view class="tool-icon tool-icon-8">❓</view>
 					<text class="tool-name">关于我们</text>
 				</view>
@@ -116,12 +116,12 @@
 		ORDER_STATUS,
 		formatMoney,
 		getUser,
-		getOrders,
+		fetchOrders,
 		isLoggedIn,
 		logout,
-		finishOrderByUser,
-		getRunningOrder,
-		getPendingOrder
+		finishOrder,
+		fetchRunningOrder,
+		fetchPendingOrder
 	} from '../../utils/fishingStore.js'
 
 	export default {
@@ -134,26 +134,29 @@
 		},
 		computed: {
 			avatarLetter() {
-				if (!this.user || !this.user.name) return 'F'
-				return this.user.name.slice(-2, -1) || this.user.name[0] || 'F'
+				const name = this.user ? (this.user.nickname || this.user.name || '') : ''
+				if (!name) return 'F'
+				return name.slice(-2, -1) || name[0] || 'F'
 			}
 		},
 		onShow() {
 			this.loggedIn = isLoggedIn()
 			this.user = getUser()
-			const orders = getOrders(this.user.id)
-			const paid = orders.filter((o) => o.status === ORDER_STATUS.PAID)
-			this.stats = {
-				pendingCount: orders.filter((o) => o.status === ORDER_STATUS.PENDING).length,
-				paidCount: paid.length,
-				totalAmount: paid.reduce((acc, o) => acc + (o.paidAmountCents || o.amountCents || 0), 0)
-			}
+			if (!this.loggedIn || !this.user) return
+			fetchOrders(this.user.userId).then((orders) => {
+				const paid = orders.filter((o) => o.status === ORDER_STATUS.PAID)
+				this.stats = {
+					pendingCount: orders.filter((o) => o.status === ORDER_STATUS.PENDING).length,
+					paidCount: paid.length,
+					totalAmount: paid.reduce((acc, o) => acc + (o.amountPaid || o.amountCents || 0), 0)
+				}
+			}).catch(() => {})
 		},
 		methods: {
 			goLogin() {
 				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/mine/mine') })
 			},
-			goSettings() { uni.showToast({ title: '设置·开发中', icon: 'none' }) },
+			goSettings() { uni.navigateTo({ url: '/pages/settings/settings' }) },
 			doLogout() {
 				uni.showModal({
 					title: '退出登录',
@@ -169,23 +172,28 @@
 			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
 			goPay() {
 				const user = getUser()
-				if (!getPendingOrder(user.id)) {
-					uni.showToast({ title: '暂无待支付订单', icon: 'none' })
-					return
-				}
-				uni.redirectTo({ url: '/pages/pay/pay' })
+				if (!user) return
+				fetchPendingOrder(user.userId).then((p) => {
+					if (!p) { uni.showToast({ title: '暂无待支付订单', icon: 'none' }); return }
+					uni.redirectTo({ url: '/pages/pay/pay' })
+				})
 			},
 			goCheckout() {
 				const user = getUser()
-				if (getPendingOrder(user.id)) { uni.redirectTo({ url: '/pages/pay/pay' }); return }
-				if (getRunningOrder(user.id)) {
-					finishOrderByUser(user.id)
-					uni.redirectTo({ url: '/pages/pay/pay' })
-					return
-				}
-				uni.showToast({ title: '未检测到进行中的订单', icon: 'none' })
+				if (!user) return
+				fetchPendingOrder(user.userId).then((p) => {
+					if (p) { uni.redirectTo({ url: '/pages/pay/pay' }); return }
+					fetchRunningOrder(user.userId).then((r) => {
+						if (!r) { uni.showToast({ title: '未检测到进行中的订单', icon: 'none' }); return }
+						finishOrder(user.userId).then(() => uni.redirectTo({ url: '/pages/pay/pay' }))
+					})
+				})
 			},
-			showTip(text) { uni.showToast({ title: text + '·开发中', icon: 'none' }) },
+			goGuide() { uni.navigateTo({ url: '/pages/guide/guide' }) },
+			goPromotions() { uni.navigateTo({ url: '/pages/promotions/promotions' }) },
+			goRateInfo() { uni.navigateTo({ url: '/pages/rateInfo/rateInfo' }) },
+			goContact() { uni.navigateTo({ url: '/pages/contact/contact' }) },
+			goAbout() { uni.navigateTo({ url: '/pages/about/about' }) },
 			goCoupons() { uni.navigateTo({ url: '/pages/coupons/coupons' }) },
 			formatMoney
 		}

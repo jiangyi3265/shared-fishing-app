@@ -45,7 +45,7 @@
 			<text class="empty-desc">扫码入场即可开始第一次计时</text>
 		</view>
 
-		<view v-for="item in filteredOrders" :key="item.id" class="order" @click="viewOrder(item)">
+		<view v-for="item in filteredOrders" :key="item.orderId" class="order" @click="viewOrder(item)">
 			<view class="order-head">
 				<text class="order-no">{{ item.orderNo }}</text>
 				<view class="pill" :class="pillClass(item.status)">{{ statusLabel[item.status] || '未知' }}</view>
@@ -75,7 +75,7 @@
 		formatDuration,
 		formatDatetime,
 		getUser,
-		getLatestOrders,
+		fetchOrders,
 		isLoggedIn
 	} from '../../utils/fishingStore.js'
 
@@ -102,12 +102,8 @@
 				}
 			},
 			filteredOrders() {
-				if (this.filter === 'pending') {
-					return this.orders.filter((o) => o.status === ORDER_STATUS.PENDING)
-				}
-				if (this.filter === 'paid') {
-					return this.orders.filter((o) => o.status === ORDER_STATUS.PAID)
-				}
+				if (this.filter === 'pending') return this.orders.filter((o) => o.status === ORDER_STATUS.PENDING)
+				if (this.filter === 'paid') return this.orders.filter((o) => o.status === ORDER_STATUS.PAID)
 				return this.orders
 			},
 			stats() {
@@ -125,7 +121,8 @@
 				return
 			}
 			const user = getUser()
-			this.orders = getLatestOrders(user.id, 20)
+			if (!user) return
+			fetchOrders(user.userId, 20).then((list) => { this.orders = list }).catch(() => {})
 		},
 		methods: {
 			pillClass(status) {
@@ -169,7 +166,10 @@
 
 	.hero-bg {
 		position: absolute;
-		inset: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
 		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
 	}
 

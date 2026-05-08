@@ -57,7 +57,8 @@
 		formatDuration,
 		formatDatetime,
 		getUser,
-		getLatestOrders,
+		fetchOrders,
+		fetchOrderDetail,
 		ORDER_STATUS
 	} from '../../utils/fishingStore.js'
 
@@ -68,12 +69,13 @@
 		onLoad(option = {}) {
 			this.success = option.success !== '0'
 			const user = getUser()
-			const list = getLatestOrders(user.id, 5)
+			if (!user) return
 			if (option.orderId) {
-				this.order = list.find((item) => item.id === option.orderId) || null
-			}
-			if (!this.order && this.success) {
-				this.order = list.find((item) => item.status === ORDER_STATUS.PAID) || null
+				fetchOrderDetail(option.orderId).then((o) => { this.order = o })
+			} else if (this.success) {
+				fetchOrders(user.userId, 5).then((list) => {
+					this.order = list.find((item) => item.status === ORDER_STATUS.PAID) || null
+				})
 			}
 		},
 		methods: {
@@ -104,7 +106,10 @@
 
 	.hero-bg {
 		position: absolute;
-		inset: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
 		z-index: 0;
 	}
 
@@ -116,7 +121,10 @@
 		background: linear-gradient(135deg, #fde2d7 0%, #f8c2a8 100%);
 	}
 
-	.hero > * {
+	.hero-icon,
+	.hero-title,
+	.hero-sub,
+	.hero-amount {
 		position: relative;
 		z-index: 1;
 	}
@@ -253,7 +261,6 @@
 		bottom: 0;
 		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
 		background: rgba(244, 245, 247, 0.96);
-		backdrop-filter: blur(12px);
 		display: flex;
 		gap: 16rpx;
 		box-shadow: 0 -8rpx 20rpx rgba(26, 32, 48, 0.06);
