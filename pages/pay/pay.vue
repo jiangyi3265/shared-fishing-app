@@ -57,6 +57,34 @@
 				</view>
 			</view>
 
+			<view v-if="unpaidMall.length" class="mall-merge">
+				<view class="mall-merge-title">
+					<text>合并支付未取商品</text>
+					<text class="mall-merge-tip">勾选则一起付，省一笔微信操作</text>
+				</view>
+				<view v-for="m in unpaidMall" :key="m.mallOrderId" class="mall-row" @click="toggleMall(m)">
+					<view class="mall-check" :class="{ on: selectedMallIds.includes(m.mallOrderId) }">{{ selectedMallIds.includes(m.mallOrderId) ? '✓' : '' }}</view>
+					<view class="mall-info">
+						<view class="mall-cover-row">
+							<text v-for="(it, i) in m.items" :key="i" class="mall-cover">{{ it.cover }}</text>
+						</view>
+						<text class="mall-no">{{ m.mallOrderNo }}</text>
+					</view>
+					<text class="mall-amount">¥{{ formatMoney(m.totalCents) }}</text>
+				</view>
+			</view>
+
+			<view v-if="walletBalance > 0" class="balance-card" @click="toggleBalance">
+				<view class="balance-left">
+					<view class="balance-icon">💰</view>
+					<view class="balance-text">
+						<text class="balance-title">储值余额抵扣</text>
+						<text class="balance-desc">当前余额 ¥{{ formatMoney(walletBalance) }}{{ useBalance && balanceUsed > 0 ? '，本单抵扣 ¥' + formatMoney(balanceUsed) : '' }}</text>
+					</view>
+				</view>
+				<view class="balance-switch" :class="{ on: useBalance }"><view class="balance-dot"></view></view>
+			</view>
+
 			<view class="coupon-select">
 				<text class="coupon-select-title">优惠券</text>
 				<view v-if="availableCoupons.length === 0" class="coupon-none">
@@ -82,7 +110,7 @@
 			<view class="dock">
 				<view class="dock-amount">
 					<text class="dock-amount-label">应付</text>
-					<text class="dock-amount-value">¥{{ formatMoney(finalAmount) }}</text>
+					<text class="dock-amount-value">¥{{ formatMoney(wxPayAmount) }}</text>
 					<text v-if="discountText" class="dock-discount">{{ discountText }}</text>
 				</view>
 				<button class="dock-btn" @click="payNow">立即支付</button>
@@ -104,6 +132,8 @@
 		applyCouponToOrder,
 		COUPON_TYPE
 	} from '../../utils/fishingStore.js'
+	import { fetchUnpaidMallOrders } from '../../utils/mallStore.js'
+	import { fetchWallet } from '../../utils/walletStore.js'
 
 	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300 }
 
@@ -112,7 +142,11 @@
 			return {
 				order: null,
 				availableCoupons: [],
-				selectedCoupon: null
+				selectedCoupon: null,
+				unpaidMall: [],
+				selectedMallIds: [],
+				walletBalance: 0,
+				useBalance: false
 			}
 		},
 		computed: {
@@ -126,7 +160,7 @@
 				return `每 ${this.orderRule.stepMinutes} 分钟 ¥${formatMoney(this.orderRule.pricePerStepCents)}`
 			},
 			orderTag() { return this.order ? '待支付' : '' },
-			finalAmount() {
+			fishAmount() {
 				if (!this.order) return 0
 				if (!this.selectedCoupon) return this.order.amountCents
 				const result = applyCouponToOrder(this.selectedCoupon, this.order.amountCents)
@@ -140,11 +174,30 @@
 				}
 				return this.order.amountCents
 			},
+			mallAmount() {
+				return this.unpaidMall
+					.filter((m) => this.selectedMallIds.includes(m.mallOrderId))
+					.reduce((acc, m) => acc + (m.totalCents || 0), 0)
+			},
+			finalAmount() {
+				return this.fishAmount + this.mallAmount
+			},
+			balanceUsed() {
+				if (!this.useBalance) return 0
+				return Math.min(this.walletBalance || 0, this.finalAmount)
+			},
+			wxPayAmount() {
+				return Math.max(0, this.finalAmount - this.balanceUsed)
+			},
 			discountText() {
-				if (!this.selectedCoupon || !this.order) return ''
-				const saved = this.order.amountCents - this.finalAmount
-				if (saved > 0) return `已优惠 ¥${formatMoney(saved)}`
-				return ''
+				if (!this.order) return ''
+				const parts = []
+				if (this.selectedCoupon) {
+					const saved = this.order.amountCents - this.fishAmount
+					if (saved > 0) parts.push(`优惠券 -¥${formatMoney(saved)}`)
+				}
+				if (this.balanceUsed > 0) parts.push(`余额抵扣 -¥${formatMoney(this.balanceUsed)}`)
+				return parts.join(' · ')
 			}
 		},
 		onShow() {
@@ -161,14 +214,28 @@
 				fetchPendingOrder(user.userId).then((order) => {
 					this.order = order
 					this.selectedCoupon = null
-					if (!order) { this.availableCoupons = []; return }
+					if (!order) { this.availableCoupons = []; this.unpaidMall = []; this.selectedMallIds = []; return }
 					fetchAvailableCoupons(user.userId).then((coupons) => {
 						this.availableCoupons = coupons.filter((c) => {
 							if (c.couponType === COUPON_TYPE.AMOUNT && (c.minAmountCents || 0) > order.amountCents) return false
 							return true
 						})
 					})
+					fetchUnpaidMallOrders().then((rows) => {
+						this.unpaidMall = rows
+						// 默认全选，鼓励合并支付
+						this.selectedMallIds = rows.map((m) => m.mallOrderId)
+					}).catch(() => { this.unpaidMall = [] })
+					fetchWallet().then((data) => {
+						this.walletBalance = (data && data.balance && data.balance.balanceCents) || 0
+					}).catch(() => { this.walletBalance = 0 })
 				})
+			},
+			toggleBalance() { this.useBalance = !this.useBalance },
+			toggleMall(m) {
+				const idx = this.selectedMallIds.indexOf(m.mallOrderId)
+				if (idx >= 0) this.selectedMallIds.splice(idx, 1)
+				else this.selectedMallIds.push(m.mallOrderId)
 			},
 			toggleCoupon(coupon) {
 				if (this.selectedCoupon && this.selectedCoupon.couponId === coupon.couponId) {
@@ -182,7 +249,7 @@
 				uni.showLoading({ title: '调起支付' })
 				const user = getUser()
 				const couponId = this.selectedCoupon ? this.selectedCoupon.couponId : null
-				payOrder(user.userId, this.order.orderId, couponId)
+				payOrder(user.userId, this.order.orderId, couponId, this.selectedMallIds, this.useBalance)
 					.then((paid) => {
 						uni.hideLoading()
 						if (!paid) { uni.redirectTo({ url: '/pages/payResult/payResult?success=0' }); return }
@@ -430,6 +497,82 @@
 	.spacer {
 		height: 40rpx;
 	}
+
+	.mall-merge {
+		margin: 24rpx 28rpx 0;
+		padding: 24rpx 24rpx 12rpx;
+		border-radius: 22rpx;
+		background: linear-gradient(135deg, #fff8e0 0%, #ffeed1 100%);
+		border: 1rpx solid #f0d47a;
+		box-shadow: 0 6rpx 20rpx rgba(245, 194, 59, 0.12);
+	}
+	.mall-merge-title {
+		display: flex;
+		flex-direction: column;
+		gap: 6rpx;
+		margin-bottom: 16rpx;
+	}
+	.mall-merge-title text:first-child {
+		font-size: 28rpx;
+		font-weight: 800;
+		color: #1a1306;
+	}
+	.mall-merge-tip {
+		font-size: 22rpx;
+		color: #b8860b;
+	}
+	.mall-row {
+		display: flex;
+		align-items: center;
+		gap: 16rpx;
+		padding: 18rpx 0;
+		border-top: 1rpx dashed rgba(184, 134, 11, .2);
+	}
+	.mall-row:first-of-type { border-top: 0; }
+	.mall-check {
+		width: 44rpx;
+		height: 44rpx;
+		border-radius: 50%;
+		border: 2rpx solid #b8860b;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #1a1306;
+		font-size: 28rpx;
+		font-weight: 800;
+		background: #fff;
+	}
+	.mall-check.on { background: #f5c23b; border-color: #f5c23b; }
+	.mall-info { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
+	.mall-cover-row { display: flex; gap: 8rpx; }
+	.mall-cover { font-size: 36rpx; }
+	.mall-no { color: #6b7280; font-size: 22rpx; letter-spacing: 1rpx; }
+	.mall-amount {
+		color: #b8860b;
+		font-size: 30rpx;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.balance-card {
+		margin: 24rpx 28rpx 0;
+		padding: 24rpx 28rpx;
+		border-radius: 22rpx;
+		background: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
+	}
+	.balance-left { display: flex; align-items: center; gap: 18rpx; flex: 1; }
+	.balance-icon { width: 68rpx; height: 68rpx; border-radius: 18rpx; background: #fff8e0; display: flex; align-items: center; justify-content: center; font-size: 36rpx; }
+	.balance-text { display: flex; flex-direction: column; gap: 6rpx; }
+	.balance-title { font-size: 28rpx; font-weight: 700; color: #1a2030; }
+	.balance-desc { font-size: 22rpx; color: #6b7280; }
+	.balance-switch { width: 88rpx; height: 48rpx; border-radius: 999rpx; background: #dcdfe6; position: relative; transition: background .2s; }
+	.balance-switch.on { background: #f5c23b; }
+	.balance-dot { position: absolute; top: 4rpx; left: 4rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: #fff; box-shadow: 0 2rpx 6rpx rgba(0,0,0,.15); transition: left .2s; }
+	.balance-switch.on .balance-dot { left: 44rpx; }
 
 	.dock {
 		position: fixed;

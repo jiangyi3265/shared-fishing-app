@@ -124,8 +124,8 @@ export function finishOrder(userId) {
 	return http.post('/app/order/finish', { userId })
 }
 
-export function payOrder(userId, orderId, couponId) {
-	return http.post('/app/order/pay', { userId, orderId, couponId }).then((data) => {
+export function payOrder(userId, orderId, couponId, mallOrderIds, useBalance) {
+	return http.post('/app/order/pay', { userId, orderId, couponId, mallOrderIds: mallOrderIds || [], useBalance: !!useBalance }).then((data) => {
 		if (!data) return null
 		// data: { order, pay?, needWxPay }
 		if (data.needWxPay && data.pay && !data.pay.mock) {
@@ -154,8 +154,39 @@ export function fetchOrderDetail(orderId) {
 	return http.get('/app/order/' + orderId)
 }
 
+export const REFUND_STATUS = {
+	PENDING: 0,
+	REFUNDING: 1,
+	DONE: 2,
+	REJECTED: 3,
+	FAILED: 4
+}
+
+export function applyRefund({ orderId, applyAmountCents, reason }) {
+	return http.post('/app/refund/apply', { orderId, applyAmountCents, reason })
+}
+
+export function fetchMyRefunds(userId) {
+	return http.get('/app/refund/my', { userId }).then((rows) => rows || [])
+}
+
+// ---------------- 店员工作台 ----------------
+
+export function fetchStaffInfo() {
+	return http.get('/app/staff/info')
+}
+
+export function staffRedeem(code) {
+	return http.post('/app/staff/redeem', { code })
+}
+
 export function fetchAds() {
 	return http.get('/app/ad/list').then((rows) => (rows || []).map(mapAdForView))
+}
+
+export function fetchStockingList(venueId) {
+	const params = venueId ? { venueId } : {}
+	return http.get('/app/stocking/list', params).then(rows => rows || [])
 }
 
 export function fetchAdById(adId) {
@@ -230,4 +261,120 @@ export function applyCouponToOrder(coupon, amountCents) {
 		return { discountCents: 0, discountSeconds: coupon.couponValue * 60 }
 	}
 	return { discountCents: 0, discountSeconds: 0 }
+}
+
+// ===== 钓位预订 =====
+export function fetchSpots(venueId) {
+	return http.get('/app/spot/list', { venueId }).then(rows => rows || [])
+}
+export function submitReservation(data) {
+	return http.post('/app/reservation/submit', data)
+}
+export function fetchMyReservations() {
+	return http.get('/app/reservation/mine').then(rows => rows || [])
+}
+export function cancelReservation(id) {
+	return http.put('/app/reservation/cancel/' + id)
+}
+
+// ===== 天气 =====
+export function fetchWeather(location) {
+	const params = location ? { location } : {}
+	return http.get('/app/weather', params)
+}
+
+// ===== 钓获打卡 =====
+export function fetchCatchList() {
+	return http.get('/app/catch/list').then(rows => rows || [])
+}
+export function fetchMyCatch() {
+	return http.get('/app/catch/mine').then(rows => rows || [])
+}
+export function publishCatch(data) {
+	return http.post('/app/catch/publish', data)
+}
+export function toggleCatchLike(catchId) {
+	return http.post('/app/catch/like/' + catchId)
+}
+export function fetchCatchComments(catchId) {
+	return http.get('/app/catch/comments/' + catchId).then(rows => rows || [])
+}
+export function addCatchComment(data) {
+	return http.post('/app/catch/comment', data)
+}
+
+// ===== 会员等级 =====
+export function fetchMemberLevels() {
+	return http.get('/app/member/levels').then(rows => rows || [])
+}
+export function fetchMyMember() {
+	return http.get('/app/member/my')
+}
+
+// ===== 积分 =====
+export function fetchMyPoints() {
+	return http.get('/app/points/my')
+}
+export function fetchPointsGoods() {
+	return http.get('/app/points/goods').then(rows => rows || [])
+}
+export function doCheckin() {
+	return http.post('/app/points/checkin')
+}
+export function fetchCheckinCalendar(month) {
+	const params = month ? { month } : {}
+	return http.get('/app/points/checkin/calendar', params)
+}
+export function exchangePoints(goodsId) {
+	return http.post('/app/points/exchange/' + goodsId)
+}
+
+// ===== 拼场约钓 =====
+export function fetchGroupList(venueId) {
+	const params = venueId ? { venueId } : {}
+	return http.get('/app/group/list', params).then(rows => rows || [])
+}
+export function fetchGroupDetail(groupId) {
+	return http.get('/app/group/' + groupId)
+}
+export function fetchMyGroups() {
+	return http.get('/app/group/mine').then(rows => rows || [])
+}
+export function createGroup(data) {
+	return http.post('/app/group/create', data)
+}
+export function joinGroup(groupId) {
+	return http.post('/app/group/join/' + groupId)
+}
+export function quitGroup(groupId) {
+	return http.post('/app/group/quit/' + groupId)
+}
+export function cancelGroup(groupId) {
+	return http.post('/app/group/cancel/' + groupId)
+}
+
+// ===== 装备租赁 =====
+export function fetchRentalList() {
+	return http.get('/app/rental/list').then(rows => rows || [])
+}
+export function rentEquipment(goodsId) {
+	return http.post('/app/rental/rent/' + goodsId)
+}
+export function fetchMyRentals() {
+	return http.get('/app/rental/mine').then(rows => rows || [])
+}
+
+// ===== 比赛 =====
+export function fetchCompetitionList(venueId) {
+	const params = venueId ? { venueId } : {}
+	return http.get('/app/competition/list', params).then(rows => rows || [])
+}
+export function fetchCompetitionDetail(compId) {
+	return http.get('/app/competition/' + compId)
+}
+export function fetchCompetitionRanking(compId) {
+	return http.get('/app/competition/ranking/' + compId).then(rows => rows || [])
+}
+export function enterCompetition(compId, data) {
+	return http.post('/app/competition/enter/' + compId, data)
 }

@@ -25,6 +25,60 @@
 			}
 		},
 		{
+			"path": "pages/stocking/stocking",
+			"style": {
+				"navigationBarTitleText": "放鱼动态"
+			}
+		},
+		{
+			"path": "pages/reserve/reserve",
+			"style": {
+				"navigationBarTitleText": "钓位预订"
+			}
+		},
+		{
+			"path": "pages/catch/catch",
+			"style": {
+				"navigationBarTitleText": "钓获社区"
+			}
+		},
+		{
+			"path": "pages/member/member",
+			"style": {
+				"navigationBarTitleText": "会员中心"
+			}
+		},
+		{
+			"path": "pages/points/points",
+			"style": {
+				"navigationBarTitleText": "积分商城"
+			}
+		},
+		{
+			"path": "pages/group/group",
+			"style": {
+				"navigationBarTitleText": "拼场约钓"
+			}
+		},
+		{
+			"path": "pages/checkin/checkin",
+			"style": {
+				"navigationBarTitleText": "签到日历"
+			}
+		},
+		{
+			"path": "pages/rental/rental",
+			"style": {
+				"navigationBarTitleText": "装备租赁"
+			}
+		},
+		{
+			"path": "pages/competition/competition",
+			"style": {
+				"navigationBarTitleText": "钓王争霸"
+			}
+		},
+		{
 			"path": "pages/session/session",
 			"style": {
 				"navigationBarTitleText": "计时中"
@@ -106,6 +160,72 @@
 			"path": "pages/venue/venue",
 			"style": {
 				"navigationBarTitleText": "钓场详情"
+			}
+		},
+		{
+			"path": "pages/refund/apply",
+			"style": {
+				"navigationBarTitleText": "申请退款"
+			}
+		},
+		{
+			"path": "pages/refund/list",
+			"style": {
+				"navigationBarTitleText": "退款记录"
+			}
+		},
+		{
+			"path": "pages/mall/index",
+			"style": {
+				"navigationBarTitleText": "钓场商城"
+			}
+		},
+		{
+			"path": "pages/mall/detail",
+			"style": {
+				"navigationBarTitleText": "商品详情"
+			}
+		},
+		{
+			"path": "pages/mall/cart",
+			"style": {
+				"navigationBarTitleText": "购物车"
+			}
+		},
+		{
+			"path": "pages/mall/checkout",
+			"style": {
+				"navigationBarTitleText": "确认订单"
+			}
+		},
+		{
+			"path": "pages/mall/orders",
+			"style": {
+				"navigationBarTitleText": "商城订单"
+			}
+		},
+		{
+			"path": "pages/mall/voucher",
+			"style": {
+				"navigationBarTitleText": "核销码"
+			}
+		},
+		{
+			"path": "pages/staff/workbench",
+			"style": {
+				"navigationBarTitleText": "商家工作台"
+			}
+		},
+		{
+			"path": "pages/wallet/wallet",
+			"style": {
+				"navigationBarTitleText": "我的钱包"
+			}
+		},
+		{
+			"path": "pages/wallet/recharge",
+			"style": {
+				"navigationBarTitleText": "钱包充值"
 			}
 		}
 	],

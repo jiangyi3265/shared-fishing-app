@@ -45,25 +45,34 @@
 			<text class="empty-desc">扫码入场即可开始第一次计时</text>
 		</view>
 
-		<view v-for="item in filteredOrders" :key="item.orderId" class="order" @click="viewOrder(item)">
-			<view class="order-head">
-				<text class="order-no">{{ item.orderNo }}</text>
-				<view class="pill" :class="pillClass(item.status)">{{ statusLabel[item.status] || '未知' }}</view>
-			</view>
-			<view class="order-body">
-				<view class="order-amount">
-					<text class="order-currency">¥</text>
-					<text class="order-number">{{ formatMoney(item.amountCents || 0) }}</text>
+		<view v-for="item in filteredOrders" :key="item.orderId" class="order">
+			<view class="order-clickable" @click="viewOrder(item)">
+				<view class="order-head">
+					<text class="order-no">{{ item.orderNo }}</text>
+					<view class="pill" :class="pillClass(item.status)">{{ statusLabel[item.status] || '未知' }}</view>
 				</view>
-				<view class="order-duration">
-					<text class="order-duration-label">计费时长</text>
-					<text class="order-duration-value">{{ formatDuration(item.durationSeconds || 0) }}</text>
+				<view class="order-body">
+					<view class="order-amount">
+						<text class="order-currency">¥</text>
+						<text class="order-number">{{ formatMoney(item.amountCents || 0) }}</text>
+					</view>
+					<view class="order-duration">
+						<text class="order-duration-label">计费时长</text>
+						<text class="order-duration-value">{{ formatDuration(item.durationSeconds || 0) }}</text>
+					</view>
+				</view>
+				<view class="order-foot">
+					<text class="order-time">{{ formatDatetime(item.startTime) }}</text>
+					<text class="order-arrow">详情 ›</text>
 				</view>
 			</view>
-			<view class="order-foot">
-				<text class="order-time">{{ formatDatetime(item.startTime) }}</text>
-				<text class="order-arrow">详情 ›</text>
+			<view class="order-actions" v-if="item.status === ORDER_STATUS.PAID">
+				<text class="order-action" @click.stop="goRefundApply(item)">申请退款</text>
 			</view>
+		</view>
+
+		<view v-if="orders.length" class="footer-link" @click="goRefundList">
+			<text>查看退款记录 ›</text>
 		</view>
 	</view>
 </template>
@@ -84,6 +93,7 @@
 			return {
 				orders: [],
 				filter: 'all',
+				ORDER_STATUS,
 				statusLabel: {
 					[ORDER_STATUS.READY]: '待处理',
 					[ORDER_STATUS.RUNNING]: '计时中',
@@ -142,6 +152,12 @@
 					return
 				}
 				uni.showToast({ title: '订单已归档', icon: 'none' })
+			},
+			goRefundApply(item) {
+				uni.navigateTo({ url: '/pages/refund/apply?orderId=' + item.orderId })
+			},
+			goRefundList() {
+				uni.navigateTo({ url: '/pages/refund/list' })
 			},
 			formatMoney,
 			formatDuration,
@@ -376,5 +392,30 @@
 		font-size: 24rpx;
 		color: #b8860b;
 		font-weight: 700;
+	}
+
+	.order-actions {
+		margin-top: 18rpx;
+		padding-top: 18rpx;
+		border-top: 1rpx dashed #eef0f5;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.order-action {
+		padding: 10rpx 28rpx;
+		border-radius: 999rpx;
+		background: #fff7e0;
+		color: #b8860b;
+		font-size: 24rpx;
+		font-weight: 700;
+	}
+
+	.footer-link {
+		margin: 28rpx;
+		padding: 22rpx;
+		text-align: center;
+		color: #6b7280;
+		font-size: 26rpx;
 	}
 </style>

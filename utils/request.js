@@ -44,6 +44,11 @@ export function request(options) {
 				if (body && typeof body === 'object' && 'code' in body) {
 					if (body.code === 200) {
 						resolve(body.data !== undefined ? body.data : body.rows)
+					} else if (body.code === 401) {
+						uni.removeStorageSync('fishpond_login')
+						uni.removeStorageSync('fishpond_user')
+						uni.navigateTo({ url: '/pages/login/login' })
+						reject(body)
 					} else {
 						uni.showToast({ title: body.msg || '请求失败', icon: 'none' })
 						reject(body)
@@ -106,4 +111,30 @@ function isValidBaseUrl(baseUrl) {
 	}
 	if (getMiniProgramEnv() === 'release') return baseUrl.startsWith('https://')
 	return /^https?:\/\//.test(baseUrl)
+}
+
+export function uploadFile(filePath) {
+	return new Promise((resolve, reject) => {
+		const baseUrl = resolveBaseUrl()
+		const token = getToken()
+		uni.uploadFile({
+			url: baseUrl + '/common/upload',
+			filePath,
+			name: 'file',
+			header: token ? { Authorization: 'Bearer ' + token } : {},
+			success: (res) => {
+				try {
+					const data = JSON.parse(res.data)
+					if (data.code === 200) {
+						resolve(data.fileName)
+					} else {
+						reject({ msg: data.msg || '上传失败' })
+					}
+				} catch (e) {
+					reject({ msg: '上传响应解析失败' })
+				}
+			},
+			fail: (err) => reject({ msg: '上传失败' })
+		})
+	})
 }

@@ -26,6 +26,11 @@
 			<text class="notice-text">起步 {{ rule.minDurationMinutes }} 分钟 ¥{{ stepPriceYuan }}，超时按 {{ rule.stepMinutes }} 分钟递增</text>
 		</view>
 
+		<view v-if="weather" class="weather-bar">
+			<text class="weather-text">{{ weather.text }} {{ weather.temp }}℃</text>
+			<text class="weather-detail">气压 {{ weather.pressure }}hPa · {{ weather.windDir }}{{ weather.windScale }}级 · 湿度{{ weather.humidity }}%</text>
+		</view>
+
 		<view v-if="pendingOrder" class="alert">
 			<view class="alert-top">
 				<text class="alert-tag">待支付</text>
@@ -70,9 +75,29 @@
 				<view class="quick-icon">📄</view>
 				<text class="quick-name">我的订单</text>
 			</view>
-			<view class="quick-item" @click="goPay">
-				<view class="quick-icon">💰</view>
-				<text class="quick-name">待支付</text>
+			<view class="quick-item" @click="goStocking">
+				<view class="quick-icon">🐟</view>
+				<text class="quick-name">放鱼动态</text>
+			</view>
+			<view class="quick-item" @click="goReserve">
+				<view class="quick-icon">📅</view>
+				<text class="quick-name">钓位预订</text>
+			</view>
+			<view class="quick-item" @click="goCatch">
+				<view class="quick-icon">📸</view>
+				<text class="quick-name">钓获社区</text>
+			</view>
+			<view class="quick-item" @click="goMember">
+				<view class="quick-icon">👑</view>
+				<text class="quick-name">会员中心</text>
+			</view>
+			<view class="quick-item" @click="goPoints">
+				<view class="quick-icon">💎</view>
+				<text class="quick-name">积分商城</text>
+			</view>
+			<view class="quick-item" @click="goGroup">
+				<view class="quick-icon">🤝</view>
+				<text class="quick-name">拼场约钓</text>
 			</view>
 			<view class="quick-item" @click="goVenue">
 				<view class="quick-icon quick-icon-car">📍</view>
@@ -110,6 +135,7 @@
 		calcAmount,
 		isLoggedIn,
 		fetchAds,
+		fetchWeather,
 		loadDefaultVenue,
 		getCachedVenue,
 		resolveQrcode
@@ -129,7 +155,8 @@
 				venue: FALLBACK_VENUE,
 				rule: FALLBACK_RULE,
 				keyword: '',
-				ads: []
+				ads: [],
+				weather: null
 			}
 		},
 		computed: {
@@ -194,6 +221,7 @@
 				fetchRunningOrder(this.user.userId).then((r) => { this.runningOrder = r }).catch(() => {})
 				fetchPendingOrder(this.user.userId).then((p) => { this.pendingOrder = p }).catch(() => {})
 				fetchAds().then((list) => { this.ads = list }).catch(() => {})
+				fetchWeather().then((w) => { this.weather = w }).catch(() => {})
 				this.now = Date.now()
 			},
 			startTimer() {
@@ -284,6 +312,12 @@
 			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
 			goMine() { uni.redirectTo({ url: '/pages/mine/mine' }) },
 			goVenue() { uni.navigateTo({ url: '/pages/venue/venue' }) },
+			goStocking() { uni.navigateTo({ url: '/pages/stocking/stocking' }) },
+			goReserve() { uni.navigateTo({ url: '/pages/reserve/reserve' }) },
+			goCatch() { uni.navigateTo({ url: '/pages/catch/catch' }) },
+			goMember() { uni.navigateTo({ url: '/pages/member/member' }) },
+			goPoints() { uni.navigateTo({ url: '/pages/points/points' }) },
+			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
 			formatMoney,
 			formatDuration
 		}
@@ -357,6 +391,18 @@
 		flex: 1;
 		color: #f2f2f2;
 	}
+
+	.weather-bar {
+		margin: 16rpx 28rpx 0;
+		background: #e8f4fd;
+		border-radius: 12rpx;
+		padding: 16rpx 24rpx;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.weather-text { font-size: 26rpx; color: #1a2030; font-weight: bold; }
+	.weather-detail { font-size: 22rpx; color: #666; }
 
 	.alert {
 		margin: 24rpx 28rpx 0;

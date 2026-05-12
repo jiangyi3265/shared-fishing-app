@@ -40,6 +40,15 @@
 			</view>
 		</view>
 
+		<view v-if="isStaff" class="staff-card" @click="goWorkbench">
+			<view class="staff-icon">📷</view>
+			<view class="staff-text">
+				<text class="staff-title">商家工作台</text>
+				<text class="staff-desc">进入扫码核销 / 查看待核销订单</text>
+			</view>
+			<text class="staff-arrow">›</text>
+		</view>
+
 		<view v-if="stats.pendingCount > 0" class="alert" @click="goPay">
 			<view class="alert-icon">⚠️</view>
 			<view class="alert-text">
@@ -67,6 +76,38 @@
 				<view class="tool" @click="goCoupons">
 					<view class="tool-icon tool-icon-4">🎫</view>
 					<text class="tool-name">我的优惠券</text>
+				</view>
+				<view class="tool" @click="goWallet">
+					<view class="tool-icon tool-icon-11">💳</view>
+					<text class="tool-name">我的钱包</text>
+				</view>
+				<view class="tool" @click="goMall">
+					<view class="tool-icon tool-icon-9">🛍️</view>
+					<text class="tool-name">钓场商城</text>
+				</view>
+				<view class="tool" @click="goMallOrders">
+					<view class="tool-icon tool-icon-10">🧾</view>
+					<text class="tool-name">商城订单</text>
+				</view>
+				<view class="tool" @click="goCheckin">
+					<view class="tool-icon">📅</view>
+					<text class="tool-name">签到日历</text>
+				</view>
+				<view class="tool" @click="goReserve">
+					<view class="tool-icon">🪑</view>
+					<text class="tool-name">我的预订</text>
+				</view>
+				<view class="tool" @click="goRental">
+					<view class="tool-icon">🎣</view>
+					<text class="tool-name">我的租赁</text>
+				</view>
+				<view class="tool" @click="goCompetition">
+					<view class="tool-icon">🏆</view>
+					<text class="tool-name">钓王争霸</text>
+				</view>
+				<view class="tool" @click="goGroup">
+					<view class="tool-icon">🤝</view>
+					<text class="tool-name">我的拼场</text>
 				</view>
 				<view class="tool" @click="goPromotions">
 					<view class="tool-icon tool-icon-5">🎁</view>
@@ -121,7 +162,8 @@
 		logout,
 		finishOrder,
 		fetchRunningOrder,
-		fetchPendingOrder
+		fetchPendingOrder,
+		fetchStaffInfo
 	} from '../../utils/fishingStore.js'
 
 	export default {
@@ -129,6 +171,7 @@
 			return {
 				user: null,
 				loggedIn: false,
+				isStaff: false,
 				stats: { pendingCount: 0, paidCount: 0, totalAmount: 0 }
 			}
 		},
@@ -143,6 +186,7 @@
 			this.loggedIn = isLoggedIn()
 			this.user = getUser()
 			if (!this.loggedIn || !this.user) return
+			fetchStaffInfo().then((data) => { this.isStaff = !!(data && data.isStaff) }).catch(() => {})
 			fetchOrders(this.user.userId).then((orders) => {
 				const paid = orders.filter((o) => o.status === ORDER_STATUS.PAID)
 				this.stats = {
@@ -195,6 +239,15 @@
 			goContact() { uni.navigateTo({ url: '/pages/contact/contact' }) },
 			goAbout() { uni.navigateTo({ url: '/pages/about/about' }) },
 			goCoupons() { uni.navigateTo({ url: '/pages/coupons/coupons' }) },
+			goMall() { uni.navigateTo({ url: '/pages/mall/index' }) },
+			goMallOrders() { uni.navigateTo({ url: '/pages/mall/orders' }) },
+			goWorkbench() { uni.navigateTo({ url: '/pages/staff/workbench' }) },
+			goWallet() { uni.navigateTo({ url: '/pages/wallet/wallet' }) },
+			goCheckin() { uni.navigateTo({ url: '/pages/checkin/checkin' }) },
+			goReserve() { uni.navigateTo({ url: '/pages/reserve/reserve' }) },
+			goRental() { uni.navigateTo({ url: '/pages/rental/rental' }) },
+			goCompetition() { uni.navigateTo({ url: '/pages/competition/competition' }) },
+			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
 			formatMoney
 		}
 	}
@@ -346,6 +399,52 @@
 		background: #eef0f5;
 	}
 
+	.staff-card {
+		margin: 24rpx 28rpx 0;
+		padding: 28rpx;
+		border-radius: 22rpx;
+		background: linear-gradient(135deg, #f5c23b 0%, #e0a523 100%);
+		display: flex;
+		align-items: center;
+		gap: 18rpx;
+		box-shadow: 0 12rpx 28rpx rgba(245, 194, 59, 0.3);
+	}
+
+	.staff-icon {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.15);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 40rpx;
+	}
+
+	.staff-text {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 4rpx;
+	}
+
+	.staff-title {
+		color: #1a1306;
+		font-size: 30rpx;
+		font-weight: 800;
+	}
+
+	.staff-desc {
+		color: #5a4a17;
+		font-size: 22rpx;
+	}
+
+	.staff-arrow {
+		color: #1a1306;
+		font-size: 36rpx;
+		font-weight: 800;
+	}
+
 	.alert {
 		margin: 24rpx 28rpx 0;
 		padding: 22rpx 24rpx;
@@ -433,6 +532,9 @@
 	.tool-icon-6 { background: #f0eaff; }
 	.tool-icon-7 { background: #e8f5ff; }
 	.tool-icon-8 { background: #f4f5f7; }
+	.tool-icon-9 { background: #fff3d1; }
+	.tool-icon-10 { background: #e3f7e3; }
+	.tool-icon-11 { background: #fff3d1; }
 
 	.tool-name {
 		font-size: 22rpx;
