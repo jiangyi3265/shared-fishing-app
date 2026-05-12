@@ -24,7 +24,7 @@
 1. 使用 HBuilderX 打开当前目录。
 2. 在 `manifest.json` 中确认微信小程序 AppID。
 3. 运行到微信小程序开发者工具。
-4. 在 `utils/config.js` 中配置接口地址。开发版默认 `http://localhost:8080`；体验版和正式版必须配置 HTTPS API 域名。
+4. 在 `utils/config.js` 中配置接口地址。开发版、体验版和正式版默认都走 `https://dy.oksja.cn`；本地联调时再临时改为本机后端地址。
 
 最小开发流程：
 

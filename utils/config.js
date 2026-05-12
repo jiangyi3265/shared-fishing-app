@@ -1,5 +1,5 @@
 export const API_BASE_URLS = {
-	develop: 'http://localhost:8005',
+	develop: 'https://dy.oksja.cn',
 	trial: 'https://dy.oksja.cn',
 	release: 'https://dy.oksja.cn'
 }
