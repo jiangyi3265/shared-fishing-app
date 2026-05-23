@@ -1,16 +1,39 @@
 <template>
 	<view class="app home">
-		<view class="page-head">
-			<text class="page-head-title">{{ venue.name }}</text>
+		<view class="home-hero">
+			<view class="hero-top">
+				<view class="hero-copy">
+					<text class="hero-kicker">共享钓场</text>
+					<text class="hero-title">{{ venue.name }}</text>
+				</view>
+				<view class="hero-status">
+					<text class="hero-status-dot"></text>
+					<text>开放中</text>
+				</view>
+			</view>
+			<view class="hero-metrics">
+				<view class="hero-metric">
+					<text class="metric-label">起步计费</text>
+					<text class="metric-value">{{ rule.minDurationMinutes }}分钟</text>
+				</view>
+				<view class="hero-metric">
+					<text class="metric-label">阶梯价格</text>
+					<text class="metric-value">¥{{ stepPriceYuan }}</text>
+				</view>
+				<view class="hero-metric">
+					<text class="metric-label">递增周期</text>
+					<text class="metric-value">{{ rule.stepMinutes }}分钟</text>
+				</view>
+			</view>
 		</view>
 
 		<view class="search">
-			<text class="search-icon">🔍</text>
-			<input class="search-input" placeholder="请输入关键词" placeholder-class="search-ph" v-model="keyword" />
+			<text class="search-icon"></text>
+			<input class="search-input" placeholder="搜索活动、钓位、商品" placeholder-class="search-ph" v-model="keyword" />
 			<view class="search-btn" @click="onSearch">搜索</view>
 		</view>
 
-		<swiper class="banner" autoplay circular indicator-dots indicator-active-color="#f5c23b" indicator-color="rgba(26,32,48,0.25)">
+		<swiper class="banner" autoplay circular indicator-dots indicator-active-color="#c79a39" indicator-color="rgba(16,35,31,0.22)">
 			<swiper-item v-for="ad in ads" :key="ad.id" @click="onAdClick(ad)">
 				<view class="banner-slide" :style="{ background: ad.bgColor || '#e9e2d3' }">
 					<text class="banner-title">{{ ad.title }}</text>
@@ -22,7 +45,7 @@
 		</swiper>
 
 		<view class="notice">
-			<text class="notice-icon">📣</text>
+			<text class="notice-icon"></text>
 			<text class="notice-text">起步 {{ rule.minDurationMinutes }} 分钟 ¥{{ stepPriceYuan }}，超时按 {{ rule.stepMinutes }} 分钟递增</text>
 		</view>
 
@@ -54,53 +77,59 @@
 		</view>
 
 		<view class="two-grid">
-			<view class="two-item" @click="scanStart">
+			<view class="two-item two-item-primary" @click="scanStart">
 				<view class="two-text">
 					<text class="two-title">扫码入场</text>
 					<text class="two-desc">扫钓位入口二维码</text>
 				</view>
-				<view class="two-ill two-ill-enter">🎣</view>
+				<view class="two-ill two-ill-enter">
+					<text class="two-ill-word">入</text>
+					<text class="two-ill-line"></text>
+				</view>
 			</view>
-			<view class="two-item" @click="scanEnd">
+			<view class="two-item two-item-secondary" @click="scanEnd">
 				<view class="two-text">
 					<text class="two-title">扫码出场</text>
 					<text class="two-desc">结束计时并结算</text>
 				</view>
-				<view class="two-ill two-ill-exit">🏷️</view>
+				<view class="two-ill two-ill-exit">
+					<text class="two-ill-word">结</text>
+					<text class="two-ill-line"></text>
+				</view>
 			</view>
 		</view>
 
 		<view class="quick-grid">
 			<view class="quick-item" @click="goOrders">
-				<view class="quick-icon">📄</view>
+				<view class="quick-icon quick-icon-order">单</view>
 				<text class="quick-name">我的订单</text>
 			</view>
 			<view class="quick-item" @click="goStocking">
-				<view class="quick-icon">🐟</view>
+				<view class="quick-icon quick-icon-stock">鱼</view>
 				<text class="quick-name">放鱼动态</text>
 			</view>
 			<view class="quick-item" @click="goReserve">
-				<view class="quick-icon">📅</view>
+				<view class="quick-icon quick-icon-date">位</view>
 				<text class="quick-name">钓位预订</text>
 			</view>
 			<view class="quick-item" @click="goCatch">
-				<view class="quick-icon">📸</view>
+				<view class="quick-icon quick-icon-catch">获</view>
 				<text class="quick-name">钓获社区</text>
 			</view>
 			<view class="quick-item" @click="goMember">
-				<view class="quick-icon">👑</view>
+				<view class="quick-icon quick-icon-member">会</view>
 				<text class="quick-name">会员中心</text>
 			</view>
 			<view class="quick-item" @click="goPoints">
-				<view class="quick-icon">💎</view>
+				<view class="quick-icon quick-icon-points">积</view>
 				<text class="quick-name">积分商城</text>
 			</view>
 			<view class="quick-item" @click="goGroup">
-				<view class="quick-icon">🤝</view>
+				<view class="quick-icon quick-icon-group">约</view>
 				<text class="quick-name">拼场约钓</text>
 			</view>
 			<view class="quick-item" @click="goVenue">
-				<view class="quick-icon quick-icon-car">📍</view>
+				<view class="quick-icon quick-icon-venue">店</view>
 				<text class="quick-name">附近门店</text>
 			</view>
 		</view>
@@ -109,15 +138,15 @@
 
 		<view class="tabbar">
 			<view class="tabbar-item active">
-				<text class="tabbar-icon">🏠</text>
+				<text class="tabbar-icon tabbar-icon-home"></text>
 				<text>首页</text>
 			</view>
 			<view class="tabbar-mid" @click="scanEnd">
-				<view class="tabbar-mid-btn">¥</view>
+				<view class="tabbar-mid-btn"></view>
 				<text>结算离场</text>
 			</view>
 			<view class="tabbar-item" @click="goMine">
-				<text class="tabbar-icon">👤</text>
+				<text class="tabbar-icon tabbar-icon-user"></text>
 				<text>我的</text>
 			</view>
 		</view>
@@ -325,15 +354,130 @@
 </script>
 
 <style>
+	.home {
+		background: #f3f6f1;
+	}
+
+	.home-hero {
+		margin: 0;
+		padding: 42rpx 32rpx 54rpx;
+		background: linear-gradient(145deg, #0d211d 0%, #163b34 58%, #275b55 100%);
+		color: #f8f4e8;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.home-hero::after {
+		content: '';
+		position: absolute;
+		left: 32rpx;
+		right: 32rpx;
+		bottom: 24rpx;
+		height: 1rpx;
+		background: rgba(248, 244, 232, 0.18);
+	}
+
+	.hero-top {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 28rpx;
+	}
+
+	.hero-copy {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 12rpx;
+	}
+
+	.hero-kicker {
+		font-size: 22rpx;
+		font-weight: 700;
+		color: rgba(240, 210, 138, 0.88);
+		letter-spacing: 6rpx;
+	}
+
+	.hero-title {
+		font-size: 52rpx;
+		font-weight: 800;
+		line-height: 1.12;
+		color: #ffffff;
+		letter-spacing: 0;
+	}
+
+	.hero-status {
+		height: 48rpx;
+		padding: 0 18rpx;
+		border-radius: 999rpx;
+		background: rgba(255, 255, 255, 0.12);
+		border: 1rpx solid rgba(255, 255, 255, 0.18);
+		display: flex;
+		align-items: center;
+		gap: 10rpx;
+		color: #f8f4e8;
+		font-size: 22rpx;
+		font-weight: 700;
+	}
+
+	.hero-status-dot {
+		width: 12rpx;
+		height: 12rpx;
+		border-radius: 50%;
+		background: #f0d28a;
+		box-shadow: 0 0 0 6rpx rgba(240, 210, 138, 0.18);
+	}
+
+	.hero-metrics {
+		position: relative;
+		z-index: 1;
+		margin-top: 38rpx;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 14rpx;
+	}
+
+	.hero-metric {
+		padding: 18rpx 14rpx;
+		border-radius: 16rpx;
+		background: rgba(255, 255, 255, 0.1);
+		border: 1rpx solid rgba(255, 255, 255, 0.16);
+		display: flex;
+		flex-direction: column;
+		gap: 8rpx;
+	}
+
+	.metric-label {
+		color: rgba(248, 244, 232, 0.62);
+		font-size: 20rpx;
+	}
+
+	.metric-value {
+		color: #ffffff;
+		font-size: 27rpx;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.home .search {
+		margin-top: -28rpx;
+		position: relative;
+		z-index: 2;
+	}
+
 	.search-ph {
-		color: #9aa3b2;
+		color: #8b978f;
 	}
 
 	.banner {
-		margin: 0 28rpx;
-		height: 320rpx;
-		border-radius: 24rpx;
+		margin: 0 32rpx;
+		height: 292rpx;
+		border-radius: 16rpx;
 		overflow: hidden;
+		border: 1rpx solid rgba(16, 35, 31, 0.08);
+		box-shadow: 0 14rpx 34rpx rgba(16, 35, 31, 0.08);
 	}
 
 	.banner-slide {
@@ -341,80 +485,108 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: center;
-		gap: 10rpx;
+		gap: 12rpx;
+		box-sizing: border-box;
+		padding: 44rpx;
 	}
 
 	.banner-title {
 		font-size: 40rpx;
 		font-weight: 800;
-		letter-spacing: 2rpx;
-		color: #1a2030;
+		line-height: 1.18;
+		color: #10231f;
+		letter-spacing: 0;
 	}
 
 	.banner-desc {
 		font-size: 24rpx;
-		color: #6b7280;
-		letter-spacing: 2rpx;
+		color: #4d5f57;
+		letter-spacing: 0;
 	}
 
 	.banner-tag {
 		margin-top: 12rpx;
-		padding: 6rpx 24rpx;
+		padding: 8rpx 20rpx;
 		border-radius: 999rpx;
-		background: #f5c23b;
-		color: #1a1306;
+		background: #c79a39;
+		color: #10231f;
 		font-size: 22rpx;
-		font-weight: 700;
+		font-weight: 800;
 	}
 
 	.banner-tag-ad {
-		background: #1a2030;
-		color: #ffffff;
+		background: #10231f;
+		color: #f8f4e8;
 	}
 
 	.notice {
-		margin: 24rpx 28rpx 0;
-		background: #2a2a2a;
-		color: #ffffff;
+		margin: 24rpx 32rpx 0;
+		background: #ffffff;
+		color: #10231f;
 		border-radius: 16rpx;
-		height: 72rpx;
+		min-height: 78rpx;
 		display: flex;
 		align-items: center;
 		padding: 0 24rpx;
-		gap: 14rpx;
+		gap: 16rpx;
 		font-size: 24rpx;
+		border: 1rpx solid rgba(16, 35, 31, 0.07);
+		box-shadow: 0 10rpx 30rpx rgba(16, 35, 31, 0.05);
+	}
+
+	.notice-icon {
+		width: 8rpx;
+		height: 42rpx;
+		border-radius: 999rpx;
+		background: #c79a39;
+		flex: 0 0 auto;
 	}
 
 	.notice-text {
 		flex: 1;
-		color: #f2f2f2;
+		color: #3c5048;
+		line-height: 1.5;
 	}
 
 	.weather-bar {
-		margin: 16rpx 28rpx 0;
-		background: #e8f4fd;
-		border-radius: 12rpx;
-		padding: 16rpx 24rpx;
+		margin: 16rpx 32rpx 0;
+		background: #e7f0ed;
+		border-radius: 16rpx;
+		padding: 18rpx 24rpx;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		border: 1rpx solid rgba(44, 107, 115, 0.12);
 	}
-	.weather-text { font-size: 26rpx; color: #1a2030; font-weight: bold; }
-	.weather-detail { font-size: 22rpx; color: #666; }
+
+	.weather-text {
+		font-size: 27rpx;
+		color: #10231f;
+		font-weight: 800;
+	}
+
+	.weather-detail {
+		font-size: 22rpx;
+		color: #566861;
+		text-align: right;
+		max-width: 450rpx;
+		line-height: 1.4;
+	}
 
 	.alert {
-		margin: 24rpx 28rpx 0;
-		background: #fff7df;
-		border-radius: 20rpx;
-		padding: 24rpx;
-		border: 1rpx solid #f0d47a;
+		margin: 24rpx 32rpx 0;
+		background: #fff8e8;
+		border-radius: 16rpx;
+		padding: 26rpx;
+		border: 1rpx solid rgba(199, 154, 57, 0.32);
+		box-shadow: 0 12rpx 30rpx rgba(144, 105, 28, 0.08);
 	}
 
 	.alert-ok {
-		background: #eaf5ee;
-		border-color: #b5ddc3;
+		background: #eaf3ef;
+		border-color: rgba(44, 107, 115, 0.2);
 	}
 
 	.alert-top {
@@ -425,24 +597,24 @@
 
 	.alert-tag {
 		display: inline-block;
-		padding: 4rpx 16rpx;
+		padding: 5rpx 16rpx;
 		border-radius: 999rpx;
-		background: #f5c23b;
-		color: #1a1306;
+		background: rgba(199, 154, 57, 0.18);
+		color: #90691c;
 		font-size: 22rpx;
 		font-weight: 800;
-		letter-spacing: 2rpx;
+		letter-spacing: 0;
 	}
 
 	.alert-tag-ok {
-		background: #4fb38a;
-		color: #ffffff;
+		background: rgba(44, 107, 115, 0.14);
+		color: #1f636a;
 	}
 
 	.alert-amount {
-		font-size: 40rpx;
+		font-size: 42rpx;
 		font-weight: 800;
-		color: #1a2030;
+		color: #10231f;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -450,118 +622,184 @@
 		display: block;
 		margin-top: 12rpx;
 		font-size: 26rpx;
-		color: #4a5567;
+		color: #3c5048;
+		line-height: 1.45;
 	}
 
 	.alert-actions {
-		margin-top: 16rpx;
+		margin-top: 18rpx;
 		display: flex;
 		justify-content: flex-end;
 	}
 
 	.alert-btn {
-		background: #1a2030;
-		color: #ffffff;
-		padding: 14rpx 32rpx;
-		border-radius: 999rpx;
+		background: #10231f;
+		color: #f8f4e8;
+		padding: 14rpx 30rpx;
+		border-radius: 14rpx;
 		font-size: 26rpx;
-		font-weight: 700;
+		font-weight: 800;
 	}
 
 	.two-grid {
-		margin: 24rpx 28rpx 0;
+		margin: 24rpx 32rpx 0;
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 20rpx;
+		gap: 18rpx;
 	}
 
 	.two-item {
-		background: #ffffff;
-		border-radius: 22rpx;
+		border-radius: 16rpx;
 		padding: 28rpx 24rpx;
 		display: flex;
 		flex-direction: column;
-		gap: 14rpx;
-		min-height: 240rpx;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.05);
+		justify-content: space-between;
+		gap: 20rpx;
+		min-height: 250rpx;
+		box-shadow: 0 14rpx 34rpx rgba(16, 35, 31, 0.08);
+		box-sizing: border-box;
+	}
+
+	.two-item-primary {
+		background: #10231f;
+		color: #ffffff;
+	}
+
+	.two-item-secondary {
+		background: #ffffff;
+		border: 1rpx solid rgba(16, 35, 31, 0.08);
 	}
 
 	.two-text {
 		display: flex;
 		flex-direction: column;
-		gap: 6rpx;
+		gap: 8rpx;
 	}
 
 	.two-title {
-		font-size: 32rpx;
-		font-weight: 700;
-		color: #1a2030;
+		font-size: 34rpx;
+		font-weight: 800;
+		color: #10231f;
+	}
+
+	.two-item-primary .two-title {
+		color: #ffffff;
 	}
 
 	.two-desc {
 		font-size: 22rpx;
-		color: #6b7280;
+		color: #65736c;
+		line-height: 1.4;
+	}
+
+	.two-item-primary .two-desc {
+		color: rgba(248, 244, 232, 0.68);
 	}
 
 	.two-ill {
 		align-self: flex-end;
-		width: 120rpx;
-		height: 120rpx;
-		border-radius: 50%;
-		background: #fff3d1;
+		width: 118rpx;
+		height: 118rpx;
+		border-radius: 28rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 56rpx;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.two-ill-enter {
+		background: linear-gradient(145deg, #c79a39 0%, #efd086 100%);
+		color: #10231f;
 	}
 
 	.two-ill-exit {
-		background: #ffe6a8;
+		background: #e7f0ed;
+		color: #1f636a;
+	}
+
+	.two-ill-word {
+		font-size: 48rpx;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	.two-ill-line {
+		position: absolute;
+		right: 18rpx;
+		bottom: 20rpx;
+		width: 42rpx;
+		height: 6rpx;
+		border-radius: 999rpx;
+		background: currentColor;
+		opacity: 0.32;
 	}
 
 	.quick-grid {
-		margin: 24rpx 28rpx 0;
+		margin: 24rpx 32rpx 0;
 		background: #ffffff;
-		border-radius: 22rpx;
-		padding: 30rpx 20rpx;
+		border-radius: 16rpx;
+		padding: 30rpx 16rpx 26rpx;
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 16rpx;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.05);
+		grid-template-columns: repeat(4, 1fr);
+		gap: 22rpx 0;
+		border: 1rpx solid rgba(16, 35, 31, 0.07);
+		box-shadow: 0 12rpx 32rpx rgba(16, 35, 31, 0.05);
 	}
 
 	.quick-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 14rpx;
-		padding: 10rpx 0;
+		gap: 12rpx;
+		padding: 4rpx 0;
 	}
 
 	.quick-icon {
-		width: 96rpx;
-		height: 96rpx;
-		border-radius: 50%;
-		background: #fff3d1;
+		width: 74rpx;
+		height: 74rpx;
+		border-radius: 20rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 42rpx;
+		font-size: 28rpx;
+		font-weight: 900;
+		color: #10231f;
+		background: #eef3ed;
+		border: 1rpx solid rgba(16, 35, 31, 0.06);
+		box-sizing: border-box;
 	}
 
-	.quick-icon-car {
-		background: #ffe6a8;
+	.quick-icon-order,
+	.quick-icon-member,
+	.quick-icon-venue {
+		background: #f8f0dc;
+		color: #90691c;
+	}
+
+	.quick-icon-stock,
+	.quick-icon-catch,
+	.quick-icon-group {
+		background: #e7f0ed;
+		color: #1f636a;
+	}
+
+	.quick-icon-date,
+	.quick-icon-points {
+		background: #edf1ea;
+		color: #243d36;
 	}
 
 	.quick-name {
-		font-size: 24rpx;
-		color: #3a4355;
-		font-weight: 600;
+		font-size: 22rpx;
+		color: #334942;
+		font-weight: 700;
+		line-height: 1.2;
 	}
 
 	.footer-text {
 		text-align: center;
-		color: #9aa3b2;
+		color: #8b978f;
 		font-size: 22rpx;
 		margin: 40rpx 0 24rpx;
 	}

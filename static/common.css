@@ -1,18 +1,19 @@
-/* 共享钓场 · 视觉 v3（亮色 + 黄色强调） */
+/* 共享钓场 · 视觉 v4（深青信任感 + 暖金强调） */
 page {
-	background: #f4f5f7;
-	color: #1a2030;
+	background: #f3f6f1;
+	color: #10231f;
 	font-family: 'PingFang SC', 'HarmonyOS Sans SC', -apple-system, sans-serif;
+	-webkit-font-smoothing: antialiased;
 }
 
 .app {
 	min-height: 100vh;
-	padding-bottom: 160rpx;
+	padding-bottom: 178rpx;
 	box-sizing: border-box;
 }
 
 .section {
-	padding: 0 28rpx;
+	padding: 0 32rpx;
 }
 
 .section + .section {
@@ -21,73 +22,93 @@ page {
 
 /* ---------- 顶部头 ---------- */
 .page-head {
-	background: #ffffff;
-	padding: 24rpx 28rpx 20rpx;
+	background: transparent;
+	padding: 32rpx 32rpx 18rpx;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
 .page-head-title {
-	font-size: 34rpx;
-	font-weight: 700;
-	color: #1a2030;
-	letter-spacing: 1rpx;
+	font-size: 38rpx;
+	font-weight: 800;
+	color: #10231f;
+	letter-spacing: 0;
 }
 
 .search {
-	margin: 8rpx 28rpx 20rpx;
-	background: #ffffff;
-	border-radius: 999rpx;
-	height: 88rpx;
+	margin: 12rpx 32rpx 22rpx;
+	background: rgba(255, 255, 255, 0.92);
+	border: 1rpx solid rgba(16, 35, 31, 0.08);
+	border-radius: 16rpx;
+	height: 84rpx;
 	display: flex;
 	align-items: center;
-	padding: 0 10rpx 0 28rpx;
-	box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.05);
+	padding: 0 10rpx 0 24rpx;
+	box-shadow: 0 10rpx 30rpx rgba(16, 35, 31, 0.06);
 }
 
 .search-icon {
-	color: #9aa3b2;
-	margin-right: 14rpx;
-	font-size: 32rpx;
+	width: 24rpx;
+	height: 24rpx;
+	border: 4rpx solid #8b978f;
+	border-radius: 50%;
+	margin-right: 18rpx;
+	position: relative;
+	box-sizing: border-box;
+	font-size: 0;
+	flex: 0 0 auto;
+}
+
+.search-icon::after {
+	content: '';
+	position: absolute;
+	width: 12rpx;
+	height: 4rpx;
+	background: #8b978f;
+	right: -10rpx;
+	bottom: -6rpx;
+	transform: rotate(45deg);
+	border-radius: 999rpx;
 }
 
 .search-input {
 	flex: 1;
-	color: #1a2030;
+	color: #10231f;
 	font-size: 28rpx;
 }
 
 .search-btn {
-	background: #f5c23b;
-	color: #1a1306;
-	font-size: 28rpx;
+	background: #10231f;
+	color: #f8f4e8;
+	font-size: 26rpx;
 	font-weight: 700;
-	padding: 0 32rpx;
-	height: 68rpx;
-	line-height: 68rpx;
-	border-radius: 999rpx;
-	letter-spacing: 2rpx;
+	padding: 0 30rpx;
+	height: 64rpx;
+	line-height: 64rpx;
+	border-radius: 14rpx;
+	letter-spacing: 0;
 }
 
 /* ---------- 通用卡片 ---------- */
 .card {
 	background: #ffffff;
-	border-radius: 24rpx;
+	border-radius: 16rpx;
 	padding: 28rpx;
-	box-shadow: 0 8rpx 24rpx rgba(26, 32, 48, 0.04);
-	margin: 0 28rpx 24rpx;
+	border: 1rpx solid rgba(16, 35, 31, 0.07);
+	box-shadow: 0 12rpx 32rpx rgba(16, 35, 31, 0.05);
+	margin: 0 32rpx 24rpx;
 }
 
 .card-title {
 	font-size: 30rpx;
-	font-weight: 700;
-	color: #1a2030;
+	font-weight: 800;
+	color: #10231f;
 }
 
 .card-sub {
 	font-size: 24rpx;
-	color: #6b7280;
+	color: #65736c;
 	margin-top: 8rpx;
 	display: block;
 }
@@ -98,7 +119,7 @@ page {
 	justify-content: space-between;
 	align-items: center;
 	padding: 22rpx 0;
-	border-bottom: 1rpx solid #eef0f5;
+	border-bottom: 1rpx solid #e5ebe4;
 	font-size: 28rpx;
 }
 
@@ -107,12 +128,12 @@ page {
 }
 
 .kv-key {
-	color: #6b7280;
+	color: #65736c;
 	font-size: 26rpx;
 }
 
 .kv-val {
-	color: #1a2030;
+	color: #10231f;
 	font-weight: 600;
 	font-size: 28rpx;
 	font-variant-numeric: tabular-nums;
@@ -122,43 +143,43 @@ page {
 .pill {
 	display: inline-flex;
 	align-items: center;
-	padding: 6rpx 18rpx;
+	padding: 6rpx 16rpx;
 	border-radius: 999rpx;
 	font-size: 22rpx;
 	font-weight: 700;
-	letter-spacing: 2rpx;
+	letter-spacing: 0;
 }
 
 .pill-idle {
-	background: #f0f1f4;
-	color: #6b7280;
+	background: #edf1ea;
+	color: #65736c;
 }
 
 .pill-running {
-	background: rgba(79, 179, 138, 0.12);
-	color: #2fa273;
+	background: rgba(44, 107, 115, 0.12);
+	color: #1f636a;
 }
 
 .pill-pending {
-	background: rgba(245, 194, 59, 0.18);
-	color: #b8860b;
+	background: rgba(199, 154, 57, 0.16);
+	color: #90691c;
 }
 
 .pill-paid {
-	background: rgba(79, 179, 138, 0.12);
-	color: #2fa273;
+	background: rgba(44, 107, 115, 0.12);
+	color: #1f636a;
 }
 
 .pill-cancel {
-	background: rgba(232, 106, 75, 0.12);
-	color: #c9482b;
+	background: rgba(166, 91, 56, 0.13);
+	color: #96482b;
 }
 
 /* ---------- 数字 ---------- */
 .big-number {
 	font-size: 104rpx;
 	font-weight: 700;
-	letter-spacing: 1rpx;
+	letter-spacing: 0;
 	line-height: 1.1;
 	font-variant-numeric: tabular-nums;
 }
@@ -166,7 +187,7 @@ page {
 .money-number {
 	font-size: 64rpx;
 	font-weight: 700;
-	letter-spacing: 1rpx;
+	letter-spacing: 0;
 	font-variant-numeric: tabular-nums;
 }
 
@@ -180,13 +201,13 @@ page {
 .btn {
 	height: 96rpx;
 	line-height: 96rpx;
-	border-radius: 20rpx;
+	border-radius: 16rpx;
 	font-size: 32rpx;
 	font-weight: 700;
-	letter-spacing: 2rpx;
+	letter-spacing: 0;
 	border: 0;
 	padding: 0;
-	margin: 20rpx 28rpx 0;
+	margin: 20rpx 32rpx 0;
 }
 
 .btn::after {
@@ -194,25 +215,25 @@ page {
 }
 
 .btn-primary {
-	background: #f5c23b;
-	color: #1a1306;
-	box-shadow: 0 12rpx 24rpx rgba(245, 194, 59, 0.28);
+	background: #10231f;
+	color: #f8f4e8;
+	box-shadow: 0 14rpx 28rpx rgba(16, 35, 31, 0.2);
 }
 
 .btn-primary:active {
-	background: #e6b025;
+	background: #193a33;
 }
 
 .btn-danger {
-	background: #e86a4b;
+	background: #a65b38;
 	color: #ffffff;
-	box-shadow: 0 12rpx 24rpx rgba(232, 106, 75, 0.25);
+	box-shadow: 0 12rpx 24rpx rgba(166, 91, 56, 0.22);
 }
 
 .btn-ghost {
 	background: #ffffff;
-	color: #3a4355;
-	border: 1rpx solid #e4e7ee;
+	color: #243d36;
+	border: 1rpx solid #dce4dc;
 }
 
 .btn-block {
@@ -222,26 +243,28 @@ page {
 
 /* ---------- 文本色 ---------- */
 .text-warn {
-	color: #b8860b;
+	color: #90691c;
 }
 
 .text-danger {
-	color: #c9482b;
+	color: #96482b;
 }
 
 .text-ok {
-	color: #2fa273;
+	color: #1f636a;
 }
 
 /* ---------- 底部导航 ---------- */
 .tabbar {
 	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	height: 120rpx;
-	background: #ffffff;
-	box-shadow: 0 -4rpx 20rpx rgba(26, 32, 48, 0.06);
+	left: 22rpx;
+	right: 22rpx;
+	bottom: 18rpx;
+	height: 116rpx;
+	background: rgba(255, 255, 255, 0.96);
+	border: 1rpx solid rgba(16, 35, 31, 0.08);
+	border-radius: 28rpx;
+	box-shadow: 0 16rpx 44rpx rgba(16, 35, 31, 0.14);
 	display: flex;
 	align-items: center;
 	justify-content: space-around;
@@ -254,19 +277,76 @@ page {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 6rpx;
-	color: #9aa3b2;
+	gap: 8rpx;
+	color: #7d8a82;
 	font-size: 22rpx;
 }
 
 .tabbar-item.active {
-	color: #1a2030;
+	color: #10231f;
 	font-weight: 700;
 }
 
 .tabbar-icon {
-	font-size: 40rpx;
-	line-height: 1;
+	width: 34rpx;
+	height: 34rpx;
+	border-radius: 10rpx;
+	border: 3rpx solid currentColor;
+	box-sizing: border-box;
+	position: relative;
+	font-size: 0;
+	line-height: 0;
+}
+
+.tabbar-icon-home::before,
+.tabbar-icon-home::after {
+	content: '';
+	position: absolute;
+	background: currentColor;
+}
+
+.tabbar-icon-home::before {
+	width: 18rpx;
+	height: 3rpx;
+	left: 5rpx;
+	top: -8rpx;
+	transform: rotate(-35deg);
+	border-radius: 999rpx;
+}
+
+.tabbar-icon-home::after {
+	width: 18rpx;
+	height: 3rpx;
+	right: 5rpx;
+	top: -8rpx;
+	transform: rotate(35deg);
+	border-radius: 999rpx;
+}
+
+.tabbar-icon-user {
+	border-radius: 50%;
+}
+
+.tabbar-icon-user::before {
+	content: '';
+	position: absolute;
+	left: 7rpx;
+	right: 7rpx;
+	top: 6rpx;
+	height: 8rpx;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.tabbar-icon-user::after {
+	content: '';
+	position: absolute;
+	left: 5rpx;
+	right: 5rpx;
+	bottom: 5rpx;
+	height: 10rpx;
+	border-radius: 999rpx 999rpx 0 0;
+	background: currentColor;
 }
 
 .tabbar-mid {
@@ -275,24 +355,46 @@ page {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 8rpx;
-	color: #1a2030;
+	gap: 6rpx;
+	color: #10231f;
 	font-size: 22rpx;
 	font-weight: 700;
-	transform: translateY(-28rpx);
+	transform: translateY(-30rpx);
 }
 
 .tabbar-mid-btn {
-	width: 112rpx;
-	height: 112rpx;
-	border-radius: 50%;
-	background: #f5c23b;
-	color: #1a1306;
-	font-size: 52rpx;
+	width: 110rpx;
+	height: 110rpx;
+	border-radius: 34rpx;
+	background: linear-gradient(135deg, #c79a39 0%, #f0d28a 100%);
+	color: #10231f;
+	font-size: 0;
 	font-weight: 800;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 14rpx 30rpx rgba(245, 194, 59, 0.45);
-	border: 6rpx solid #ffffff;
+	box-shadow: 0 16rpx 34rpx rgba(144, 105, 28, 0.35);
+	border: 8rpx solid #ffffff;
+	position: relative;
+	box-sizing: border-box;
+}
+
+.tabbar-mid-btn::before {
+	content: '';
+	width: 42rpx;
+	height: 42rpx;
+	border: 5rpx solid #10231f;
+	border-radius: 12rpx;
+	box-sizing: border-box;
+}
+
+.tabbar-mid-btn::after {
+	content: '';
+	position: absolute;
+	width: 34rpx;
+	height: 5rpx;
+	background: #10231f;
+	left: 38rpx;
+	top: 52rpx;
+	border-radius: 999rpx;
 }
