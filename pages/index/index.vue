@@ -34,11 +34,12 @@
 		</view>
 
 		<swiper class="banner" autoplay circular indicator-dots indicator-active-color="#c79a39" indicator-color="rgba(16,35,31,0.22)">
-			<swiper-item v-for="ad in ads" :key="ad.id" @click="onAdClick(ad)">
+			<swiper-item v-for="ad in bannerAds" :key="ad.id" @click="onAdClick(ad)">
 				<view class="banner-slide" :style="{ background: ad.bgColor || '#e9e2d3' }">
 					<text class="banner-title">{{ ad.title }}</text>
 					<text class="banner-desc">{{ ad.desc }}</text>
 					<text v-if="ad.type === 'activity'" class="banner-tag">点击报名</text>
+					<text v-else-if="ad.type === 'fallback'" class="banner-tag banner-tag-ad">查看钓场</text>
 					<text v-else class="banner-tag banner-tag-ad">查看详情</text>
 				</view>
 			</swiper-item>
@@ -172,6 +173,13 @@
 
 	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
 	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
+	const FALLBACK_ADS = [{
+		id: 'fallback-open',
+		type: 'fallback',
+		title: '今日开放营业',
+		desc: '扫码入场 · 离场结算 · 会员优惠',
+		bgColor: 'linear-gradient(135deg, #e9f2ee 0%, #f8f1df 100%)'
+	}]
 
 	export default {
 		data() {
@@ -205,6 +213,9 @@
 			estimate() {
 				if (!this.runningStartMillis) return { amountCents: 0 }
 				return calcAmount(this.now - this.runningStartMillis, this.rule)
+			},
+			bannerAds() {
+				return this.ads.length ? this.ads : FALLBACK_ADS
 			}
 		},
 		onLoad(option = {}) {
@@ -265,6 +276,10 @@
 				uni.navigateTo({ url: '/pages/promotions/promotions?keyword=' + encodeURIComponent(this.keyword) })
 			},
 			onAdClick(ad) {
+				if (ad.type === 'fallback') {
+					this.goVenue()
+					return
+				}
 				if (ad.type === 'activity') {
 					uni.navigateTo({ url: '/pages/activityRegister/activityRegister?id=' + ad.id })
 				} else {
