@@ -12,7 +12,7 @@
 			</view>
 			<view class="row"><text class="k">订单类型</text><text class="v">
 				<text class="type-tag" :class="r.orderType === 'mall' ? 'type-mall' : 'type-fishing'">
-					{{ r.orderType === 'mall' ? '商城' : '钓场' }}
+					{{ r.orderType === 'mall' ? '补给' : '钓场' }}
 				</text>
 			</text></view>
 			<view class="row"><text class="k">订单号</text><text class="v">{{ r.orderNo }}</text></view>

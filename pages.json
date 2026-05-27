@@ -19,6 +19,18 @@
 			}
 		},
 		{
+			"path": "pages/protocol/user",
+			"style": {
+				"navigationBarTitleText": "用户服务协议"
+			}
+		},
+		{
+			"path": "pages/protocol/privacy",
+			"style": {
+				"navigationBarTitleText": "隐私政策"
+			}
+		},
+		{
 			"path": "pages/start/start",
 			"style": {
 				"navigationBarTitleText": "开始计时"
@@ -51,7 +63,7 @@
 		{
 			"path": "pages/points/points",
 			"style": {
-				"navigationBarTitleText": "积分商城"
+				"navigationBarTitleText": "积分兑换"
 			}
 		},
 		{
@@ -177,13 +189,13 @@
 		{
 			"path": "pages/mall/index",
 			"style": {
-				"navigationBarTitleText": "钓场商城"
+				"navigationBarTitleText": "钓场补给"
 			}
 		},
 		{
 			"path": "pages/mall/detail",
 			"style": {
-				"navigationBarTitleText": "商品详情"
+				"navigationBarTitleText": "补给详情"
 			}
 		},
 		{
@@ -201,7 +213,7 @@
 		{
 			"path": "pages/mall/orders",
 			"style": {
-				"navigationBarTitleText": "商城订单"
+				"navigationBarTitleText": "补给订单"
 			}
 		},
 		{
@@ -232,8 +244,8 @@
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "共享钓场",
-		"navigationBarBackgroundColor": "#ffffff",
-		"backgroundColor": "#f4f5f7"
+		"navigationBarBackgroundColor": "#fbfcfb",
+		"backgroundColor": "#f4f7f5"
 	},
 	"uniIdRouter": {}
 }

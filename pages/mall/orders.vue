@@ -1,9 +1,9 @@
 <template>
 	<view class="app mall-orders">
 		<view v-if="!list.length" class="empty">
-			<text class="empty-emoji">🧾</text>
-			<text class="empty-title">暂无商城订单</text>
-			<button class="empty-btn" @click="goMall">去逛商城</button>
+			<text class="empty-emoji">🛍️</text>
+			<text class="empty-title">暂无商品订单</text>
+			<button class="empty-btn" @click="goMall">去选购</button>
 		</view>
 
 		<view v-for="o in list" :key="o.mallOrderId" class="order" @click="goVoucher(o)">
@@ -32,8 +32,8 @@
 				list: [],
 				statusLabel: {
 					[MALL_ORDER_STATUS.UNPAID]: '待支付',
-					[MALL_ORDER_STATUS.PAID]: '待核销',
-					[MALL_ORDER_STATUS.REDEEMED]: '已核销',
+					[MALL_ORDER_STATUS.PAID]: '可使用',
+					[MALL_ORDER_STATUS.REDEEMED]: '已领取',
 					[MALL_ORDER_STATUS.CANCELED]: '已取消'
 				}
 			}

@@ -1,4 +1,5 @@
 import { http } from './request.js'
+import { normalizePaymentError } from './fishingStore.js'
 
 export const BALANCE_LOG_TYPE = {
 	RECHARGE: 'recharge',
@@ -38,8 +39,8 @@ export function submitRecharge({ planId, amountCents }) {
 					package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
 					signType: data.pay.signType || 'RSA',
 					paySign: data.pay.paySign || '',
-					success: () => resolve(data.order),
-					fail: (err) => reject(err)
+					success: () => resolve(waitRechargePaid(data.order)),
+					fail: (err) => reject(normalizePaymentError(err))
 				})
 			})
 		}
@@ -49,4 +50,25 @@ export function submitRecharge({ planId, amountCents }) {
 
 export function fetchMyRecharges() {
 	return http.get('/app/wallet/recharges').then((rows) => rows || [])
+}
+
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function waitRechargePaid(fallback) {
+	if (!fallback) return null
+	let latest = fallback
+	for (let i = 0; i < 8; i += 1) {
+		await sleep(i === 0 ? 600 : 900)
+		try {
+			const rows = await fetchMyRecharges()
+			const matched = rows.find((item) =>
+				item.rechargeId === fallback.rechargeId || item.rechargeNo === fallback.rechargeNo
+			)
+			if (matched) latest = matched
+			if (latest && latest.status === 1) return latest
+		} catch (e) {}
+	}
+	return latest
 }

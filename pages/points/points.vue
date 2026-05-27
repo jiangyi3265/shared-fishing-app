@@ -8,7 +8,7 @@
 			</view>
 		</view>
 
-		<view class="section-title">积分商城</view>
+		<view class="section-title">积分兑换</view>
 		<view class="goods-list">
 			<view class="goods-card" v-for="g in goods" :key="g.goodsId">
 				<image v-if="g.image" :src="g.image" class="goods-img" mode="aspectFill" />

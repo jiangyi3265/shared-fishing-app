@@ -137,13 +137,37 @@ export function payOrder(userId, orderId, couponId, mallOrderIds, useBalance) {
 					package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
 					signType: data.pay.signType || 'RSA',
 					paySign: data.pay.paySign || '',
-					success: () => resolve(data.order),
-					fail: (err) => reject(err)
+					success: () => resolve(waitOrderPaid(data.order && data.order.orderId, data.order)),
+					fail: (err) => reject(normalizePaymentError(err))
 				})
 			})
 		}
 		return data.order || data
 	})
+}
+
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function waitOrderPaid(orderId, fallback) {
+	if (!orderId) return fallback || null
+	let latest = fallback || null
+	for (let i = 0; i < 8; i += 1) {
+		await sleep(i === 0 ? 600 : 900)
+		try {
+			latest = await fetchOrderDetail(orderId)
+			if (latest && latest.status === ORDER_STATUS.PAID) return latest
+		} catch (e) {}
+	}
+	return latest || fallback || null
+}
+
+export function normalizePaymentError(err = {}) {
+	const raw = err.errMsg || err.msg || '微信支付失败'
+	if (raw.includes('cancel')) return { ...err, msg: '已取消支付' }
+	if (raw.includes('requestPayment:fail')) return { ...err, msg: raw.replace('requestPayment:fail ', '') || '微信支付调起失败' }
+	return { ...err, msg: raw }
 }
 
 export function fetchOrders(userId, limit = 50) {
@@ -218,7 +242,40 @@ export function submitRegistration(adId, userId, info) {
 }
 
 export function payRegistration(regId) {
-	return http.post('/app/registration/pay', { regId })
+	return http.post('/app/registration/pay', { regId }).then((data) => {
+		if (!data) return null
+		if (data.needWxPay && data.pay && !data.pay.mock) {
+			return new Promise((resolve, reject) => {
+				uni.requestPayment({
+					provider: 'wxpay',
+					timeStamp: String(data.pay.timeStamp || ''),
+					nonceStr: data.pay.nonceStr || '',
+					package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
+					signType: data.pay.signType || 'RSA',
+					paySign: data.pay.paySign || '',
+					success: () => resolve(waitRegistrationPaid(regId, data.order)),
+					fail: (err) => reject(normalizePaymentError(err))
+				})
+			})
+		}
+		return data.order || data
+	})
+}
+
+async function waitRegistrationPaid(regId, fallback) {
+	let latest = fallback || null
+	for (let i = 0; i < 8; i += 1) {
+		await sleep(i === 0 ? 600 : 900)
+		try {
+			const user = getUser()
+			if (!user) return latest
+			const rows = await fetchMyRegistrations(user.userId)
+			const matched = rows.find((item) => item.regId === regId)
+			if (matched) latest = matched
+			if (latest && latest.paid === 1) return latest
+		} catch (e) {}
+	}
+	return latest
 }
 
 export function fetchMyRegistrations(userId) {

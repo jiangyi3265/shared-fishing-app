@@ -3,7 +3,7 @@
 		<view class="card" v-if="order">
 			<text class="card-title">订单信息</text>
 			<view class="row"><text class="row-k">订单号</text><text class="row-v">{{ orderNoText }}</text></view>
-			<view class="row"><text class="row-k">订单类型</text><text class="row-v">{{ orderType === 'mall' ? '商城订单' : '钓场订单' }}</text></view>
+			<view class="row"><text class="row-k">订单类型</text><text class="row-v">{{ orderType === 'mall' ? '补给订单' : '钓场订单' }}</text></view>
 			<view class="row"><text class="row-k">实付金额</text><text class="row-v price">¥{{ formatMoney(order.amountPaid) }}</text></view>
 			<view v-if="order.balanceCents > 0" class="row"><text class="row-k">余额抵扣</text><text class="row-v price">¥{{ formatMoney(order.balanceCents) }}</text></view>
 			<view class="row"><text class="row-k">{{ orderType === 'mall' ? '支付时间' : '支付时间' }}</text><text class="row-v">{{ formatDatetime(order.paidTime) }}</text></view>
@@ -60,7 +60,7 @@
 			maxCents() {
 				if (!this.order) return 0
 				if (this.orderType === 'mall') {
-					// 商城：可退 = 实付 + 余额抵扣（余额部分原路退回余额）
+					// 补给订单：可退 = 实付 + 余额抵扣（余额部分原路退回余额）
 					return (this.order.amountPaid || 0) + (this.order.balanceCents || 0)
 				}
 				return (this.order.amountPaid || 0) + (this.order.balanceCents || 0)

@@ -112,52 +112,75 @@
 
 <style>
 	.venue-detail {
-		padding-bottom: 60rpx;
+		padding-bottom: 80rpx;
 	}
 
+	/* ---------------- 英雄详情 Banner ---------------- */
 	.hero {
 		position: relative;
-		margin: 20rpx 28rpx 0;
-		padding: 40rpx 32rpx 36rpx;
-		border-radius: 28rpx;
+		margin: 24rpx 32rpx 0;
+		padding: 48rpx 36rpx 48rpx;
+		border-radius: 32rpx;
 		overflow: hidden;
+		box-shadow: 0 16rpx 40rpx rgba(10, 46, 36, 0.15);
 	}
 
 	.hero-bg {
 		position: absolute;
 		top: 0; right: 0; bottom: 0; left: 0;
-		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
+		background: linear-gradient(135deg, #0d382c 0%, #06221a 70%, #031410 100%);
+	}
+	
+	.hero-bg::after {
+		content: '';
+		position: absolute;
+		right: -60rpx;
+		top: -80rpx;
+		width: 260rpx;
+		height: 260rpx;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(199, 154, 57, 0.12) 0%, rgba(199, 154, 57, 0) 70%);
+		filter: blur(15px);
 	}
 
 	.hero-content {
 		position: relative;
 		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 12rpx;
 	}
 
 	.hero-title {
-		font-size: 44rpx;
+		font-size: 48rpx;
 		font-weight: 800;
 		color: #ffffff;
-		letter-spacing: 2rpx;
+		letter-spacing: 1rpx;
 		display: block;
+		text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 	}
 
 	.hero-sub {
 		font-size: 22rpx;
-		color: #f5c23b;
-		letter-spacing: 4rpx;
+		color: var(--accent);
+		letter-spacing: 6rpx;
 		display: block;
-		margin-top: 8rpx;
+		font-weight: 800;
+		text-transform: uppercase;
 	}
 
+	/* ---------------- 地址栏 ---------------- */
 	.info-row {
 		display: flex;
 		align-items: center;
-		gap: 16rpx;
+		gap: 20rpx;
 	}
 
 	.info-icon {
-		font-size: 36rpx;
+		font-size: 40rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.info-body {
@@ -165,71 +188,91 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6rpx;
+		min-width: 0;
 	}
 
 	.info-label {
 		font-size: 22rpx;
-		color: #9aa3b2;
+		color: var(--text-light);
+		font-weight: 600;
 	}
 
 	.info-value {
 		font-size: 28rpx;
-		color: #1a2030;
-		font-weight: 600;
+		color: var(--text-main);
+		font-weight: 700;
+		line-height: 1.4;
 	}
 
 	.nav-btn {
-		padding: 12rpx 28rpx;
-		background: #f5c23b;
-		border-radius: 999rpx;
+		padding: 16rpx 36rpx;
+		background: var(--accent-gradient);
+		border-radius: 99rpx;
 		font-size: 24rpx;
-		font-weight: 700;
-		color: #1a1306;
+		font-weight: 800;
+		color: var(--primary);
+		box-shadow: var(--accent-glow);
+		transition: var(--transition);
 	}
 
+	.nav-btn:active {
+		transform: scale(0.95);
+	}
+
+	/* 公告 */
 	.notice-text {
 		display: block;
-		margin-top: 12rpx;
+		margin-top: 14rpx;
 		font-size: 26rpx;
-		color: #6b7280;
+		color: var(--text-muted);
 		line-height: 1.6;
+		font-weight: 600;
 	}
 
+	/* ---------------- 底部操作 ---------------- */
 	.actions {
-		margin: 32rpx 28rpx 0;
+		margin: 40rpx 32rpx 0;
 		display: flex;
 		gap: 20rpx;
 	}
 
 	.action-btn {
 		flex: 1;
-		height: 96rpx;
+		height: 100rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 12rpx;
-		background: #f5c23b;
-		border-radius: 20rpx;
-		box-shadow: 0 12rpx 24rpx rgba(245, 194, 59, 0.28);
+		background: var(--accent-gradient);
+		border-radius: 22rpx;
+		box-shadow: var(--accent-glow);
+		transition: var(--transition);
+		border: 0;
+	}
+
+	.action-btn:active {
+		transform: scale(0.97);
+		opacity: 0.95;
 	}
 
 	.action-btn-ghost {
 		background: #ffffff;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
-		border: 1rpx solid #e4e7ee;
+		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+		border: 1rpx solid rgba(10, 46, 36, 0.15);
 	}
 
 	.action-btn-icon {
-		font-size: 28rpx;
+		font-size: 32rpx;
 	}
 
 	.action-btn-text {
 		font-size: 28rpx;
-		font-weight: 700;
-		color: #1a1306;
+		font-weight: 800;
+		color: var(--primary);
 	}
 
 	.action-btn-ghost .action-btn-text {
-		color: #3a4355;
+		color: var(--text-main);
 	}
+
 </style>

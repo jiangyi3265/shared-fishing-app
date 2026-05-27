@@ -2,9 +2,9 @@
 	<view class="app cart">
 		<view v-if="!items.length" class="empty">
 			<text class="empty-emoji">🛒</text>
-			<text class="empty-title">购物车是空的</text>
-			<text class="empty-desc">逛逛商城选点钓饵或饮料吧</text>
-			<button class="empty-btn" @click="goMall">去逛商城</button>
+			<text class="empty-title">补给车是空的</text>
+			<text class="empty-desc">去钓场补给选点钓饵或饮品吧</text>
+			<button class="empty-btn" @click="goMall">去选补给</button>
 		</view>
 
 		<view v-for="(it, idx) in items" :key="it.goodsId" class="item">
@@ -54,7 +54,7 @@
 			formatMoney,
 			setQty(it, qty) { this.items = updateCartQty(it.goodsId, qty) },
 			remove(it) {
-				uni.showModal({ title: '删除商品', content: '确定从购物车移除？', success: (res) => {
+				uni.showModal({ title: '移除补给', content: '确定从补给车移除？', success: (res) => {
 					if (res.confirm) this.items = removeFromCart(it.goodsId)
 				}})
 			},

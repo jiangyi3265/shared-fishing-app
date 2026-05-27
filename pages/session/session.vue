@@ -185,122 +185,180 @@
 
 <style>
 	.session {
-		padding-bottom: 200rpx;
+		padding-bottom: 220rpx;
+		background: transparent;
 	}
 
+	/* ---------------- 计时仪表盘 ---------------- */
 	.hero {
-		margin: 20rpx 28rpx 0;
-		padding: 40rpx 36rpx 36rpx;
-		border-radius: 28rpx;
-		background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+		margin: 24rpx 32rpx 0;
+		padding: 52rpx 36rpx 56rpx;
+		border-radius: 48rpx 16rpx 48rpx 16rpx;
+		background: linear-gradient(135deg, #071f18 0%, #0c352a 50%, #031410 100%);
 		color: #ffffff;
-		box-shadow: 0 18rpx 40rpx rgba(0, 0, 0, 0.2);
+		box-shadow: 0 24rpx 56rpx rgba(10, 46, 36, 0.2);
+		position: relative;
+		overflow: hidden;
+		border: 1rpx solid rgba(245, 210, 133, 0.16);
+	}
+
+	.hero::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 320rpx;
+		height: 320rpx;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
+		filter: blur(30px);
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.hero-top {
 		display: flex;
 		align-items: center;
-		gap: 14rpx;
+		gap: 16rpx;
+		position: relative;
+		z-index: 1;
 	}
 
 	.dot-pulse {
 		width: 14rpx;
 		height: 14rpx;
 		border-radius: 50%;
-		background: #f5c23b;
-		box-shadow: 0 0 0 8rpx rgba(245, 194, 59, 0.25);
+		background: #10b981;
+		box-shadow: 0 0 12rpx rgba(16, 185, 129, 0.8);
+		position: relative;
+	}
+
+	.dot-pulse::after {
+		content: '';
+		position: absolute;
+		top: -12rpx;
+		left: -12rpx;
+		right: -12rpx;
+		bottom: -12rpx;
+		border-radius: 50%;
+		border: 2rpx solid rgba(16, 185, 129, 0.4);
+		animation: radar-pulse 1.8s infinite cubic-bezier(0.25, 0, 0, 1);
 	}
 
 	.hero-status {
-		color: #f5c23b;
+		color: #10b981;
 		font-size: 22rpx;
 		letter-spacing: 4rpx;
-		font-weight: 700;
+		font-weight: 800;
 	}
 
 	.hero-label {
 		display: block;
-		margin-top: 28rpx;
-		color: #a8a8a8;
+		margin-top: 32rpx;
+		color: rgba(255, 255, 255, 0.5);
 		font-size: 22rpx;
 		letter-spacing: 4rpx;
+		font-weight: 700;
 	}
 
 	.hero-timer {
 		display: block;
 		margin-top: 14rpx;
 		color: #ffffff;
-		font-size: 140rpx;
-		font-weight: 700;
+		font-size: 120rpx;
+		font-weight: 800;
 		letter-spacing: 2rpx;
 		font-variant-numeric: tabular-nums;
 		line-height: 1;
+		text-shadow: 0 0 20rpx rgba(16, 185, 129, 0.6), 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+		position: relative;
+		z-index: 1;
 	}
 
+	/* 仪表盘进度条 */
 	.hero-bar {
-		margin-top: 30rpx;
-		height: 10rpx;
+		margin-top: 40rpx;
+		height: 12rpx;
 		background: rgba(255, 255, 255, 0.1);
-		border-radius: 999rpx;
+		border-radius: 99rpx;
 		overflow: hidden;
 	}
 
 	.hero-bar-inner {
 		height: 100%;
-		background: #f5c23b;
-		border-radius: 999rpx;
-		transition: width 0.5s ease;
+		background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+		border-radius: 99rpx;
+		transition: width 0.5s ease-in-out;
+		position: relative;
+	}
+
+	.hero-bar-inner::after {
+		content: '';
+		position: absolute;
+		top: 0; right: 0; bottom: 0; left: 0;
+		background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+		animation: shimmer 1.5s infinite;
+	}
+
+	@keyframes shimmer {
+		0% { transform: translateX(-100%); }
+		100% { transform: translateX(100%); }
 	}
 
 	.hero-meta {
-		margin-top: 28rpx;
+		margin-top: 36rpx;
 		display: flex;
 		align-items: center;
-		gap: 18rpx;
+		gap: 20rpx;
 	}
 
 	.hero-meta-item {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 6rpx;
+		gap: 8rpx;
 	}
 
 	.hero-meta-label {
 		font-size: 22rpx;
-		color: #8c8c8c;
+		color: rgba(255, 255, 255, 0.4);
 	}
 
 	.hero-meta-value {
 		font-size: 26rpx;
 		color: #ffffff;
-		font-weight: 600;
+		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 	}
 
 	.hero-meta-sep {
 		width: 1rpx;
-		height: 60rpx;
-		background: rgba(255, 255, 255, 0.12);
+		height: 64rpx;
+		background: rgba(255, 255, 255, 0.1);
 	}
 
+	/* ---------------- 预估账单卡 ---------------- */
 	.amount-card {
-		margin: 24rpx 28rpx 0;
+		margin: 24rpx 32rpx 0;
 		padding: 40rpx 32rpx;
-		border-radius: 24rpx;
-		background: #ffffff;
-		box-shadow: 0 10rpx 28rpx rgba(26, 32, 48, 0.05);
+		border-radius: 16rpx 48rpx 16rpx 48rpx;
+		background: rgba(255, 255, 255, 0.78);
+		backdrop-filter: blur(20px);
+		border: 1rpx solid rgba(255, 255, 255, 0.45);
+		box-shadow: var(--card-shadow);
 		text-align: center;
 	}
 
 	.amount-badge {
-		display: inline-block;
-		padding: 6rpx 20rpx;
-		border-radius: 999rpx;
-		background: #fff3d1;
-		color: #b8860b;
+		display: inline-flex;
+		padding: 8rpx 24rpx;
+		border-radius: 99rpx;
+		background: var(--warning-bg);
+		color: var(--warning);
+		border: 1rpx solid var(--warning-border);
 		font-size: 22rpx;
-		font-weight: 700;
+		font-weight: 800;
 		letter-spacing: 2rpx;
 	}
 
@@ -308,64 +366,70 @@
 		display: flex;
 		align-items: baseline;
 		justify-content: center;
-		margin-top: 18rpx;
-		color: #1a2030;
+		margin-top: 24rpx;
 	}
 
 	.amount-row .money-currency {
-		color: #1a2030;
-		font-size: 34rpx;
+		font-size: 38rpx;
+		font-weight: 800;
+		color: var(--primary);
 	}
 
 	.amount-row .money-number {
-		color: #1a2030;
 		font-size: 96rpx;
+		font-weight: 900;
+		color: var(--primary);
 	}
 
 	.amount-tip {
 		display: block;
-		margin-top: 10rpx;
-		color: #6b7280;
+		margin-top: 14rpx;
+		color: var(--text-muted);
 		font-size: 24rpx;
+		font-weight: 600;
 	}
 
+	/* 计费详情芯片 */
 	.amount-chips {
-		margin-top: 24rpx;
+		margin-top: 36rpx;
 		display: flex;
-		gap: 18rpx;
+		gap: 20rpx;
 	}
 
 	.chip {
 		flex: 1;
-		padding: 18rpx;
-		border-radius: 18rpx;
-		background: #f7f8fb;
+		padding: 20rpx;
+		border-radius: 24rpx;
+		background: rgba(255, 255, 255, 0.4);
+		border: 1rpx solid rgba(255, 255, 255, 0.3);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 6rpx;
+		gap: 8rpx;
 	}
 
 	.chip-label {
 		font-size: 22rpx;
-		color: #9aa3b2;
+		color: var(--text-light);
+		font-weight: 600;
 	}
 
 	.chip-value {
 		font-size: 26rpx;
-		font-weight: 700;
-		color: #1a2030;
+		font-weight: 800;
+		color: var(--primary);
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* ---------------- 步骤流向图 ---------------- */
 	.steps {
-		margin: 24rpx 28rpx 0;
-		padding: 30rpx 28rpx;
-		border-radius: 22rpx;
-		background: #ffffff;
+		margin: 36rpx 32rpx 0;
+		padding: 24rpx 16rpx;
+		background: transparent;
+		border: none;
+		box-shadow: none;
 		display: flex;
 		align-items: center;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
 	}
 
 	.step {
@@ -381,59 +445,83 @@
 		width: 56rpx;
 		height: 56rpx;
 		border-radius: 50%;
-		background: #eef0f5;
-		color: #9aa3b2;
+		background: rgba(255, 255, 255, 0.4);
+		color: var(--text-light);
 		font-size: 26rpx;
 		font-weight: 800;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		border: 1rpx solid rgba(255, 255, 255, 0.3);
+		transition: var(--transition);
 	}
 
 	.step-done .step-dot {
-		background: #4fb38a;
+		background: var(--success);
 		color: #ffffff;
+		border-color: var(--success);
+		box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.2);
 	}
 
 	.step-active .step-dot {
-		background: #f5c23b;
-		color: #1a1306;
-		box-shadow: 0 0 0 8rpx rgba(245, 194, 59, 0.2);
+		background: var(--accent-gradient);
+		color: var(--primary);
+		border-color: transparent;
+		box-shadow: var(--accent-glow);
+		position: relative;
+	}
+
+	.step-active .step-dot::after {
+		content: '';
+		position: absolute;
+		top: -8rpx;
+		left: -8rpx;
+		right: -8rpx;
+		bottom: -8rpx;
+		border-radius: 50%;
+		border: 2rpx solid rgba(199, 154, 57, 0.5);
+		animation: radar-pulse 2s infinite cubic-bezier(0.25, 0, 0, 1);
 	}
 
 	.step-name {
 		font-size: 24rpx;
-		font-weight: 700;
-		color: #1a2030;
+		font-weight: 800;
+		color: var(--primary);
 	}
 
 	.step-desc {
 		font-size: 20rpx;
-		color: #9aa3b2;
+		color: var(--text-muted);
+		font-weight: 600;
 	}
 
 	.step-line {
 		flex: 1;
-		height: 2rpx;
-		background: #eef0f5;
+		height: 4rpx;
+		background: rgba(255, 255, 255, 0.4);
+		border-radius: 99rpx;
 	}
 
 	.step-line-active {
-		background: #4fb38a;
+		background: var(--success);
 	}
 
+	/* ---------------- 温馨提示 ---------------- */
 	.tip {
-		margin: 24rpx 28rpx 0;
-		padding: 22rpx 24rpx;
-		border-radius: 18rpx;
-		background: #fff7df;
+		margin: 24rpx 32rpx 0;
+		padding: 24rpx 32rpx;
+		border-radius: 36rpx 12rpx;
+		background: rgba(255, 251, 239, 0.85);
+		backdrop-filter: blur(10px);
+		border: 1rpx solid rgba(224, 169, 60, 0.2);
 		display: flex;
 		align-items: center;
-		gap: 14rpx;
+		gap: 16rpx;
+		box-shadow: 0 8rpx 24rpx rgba(224, 169, 60, 0.02);
 	}
 
 	.tip-emoji {
-		font-size: 30rpx;
+		font-size: 32rpx;
 	}
 
 	.tip-text {
@@ -441,34 +529,46 @@
 		font-size: 26rpx;
 		color: #8a6914;
 		line-height: 1.5;
+		font-weight: 600;
 	}
 
 	.spacer {
 		height: 40rpx;
 	}
 
+	/* ---------------- 底部悬浮操作板 ---------------- */
 	.dock {
 		position: fixed;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
-		background: rgba(244, 245, 247, 0.96);
+		padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+		background: rgba(255, 255, 255, 0.95);
 		display: flex;
-		gap: 16rpx;
-		box-shadow: 0 -8rpx 20rpx rgba(26, 32, 48, 0.06);
+		gap: 20rpx;
+		box-shadow: 0 -12rpx 40rpx rgba(10, 46, 36, 0.06);
+		backdrop-filter: blur(15px);
+		border-top: 1rpx solid rgba(10, 46, 36, 0.04);
+		z-index: 99;
 	}
 
 	.dock-ghost {
 		flex: 0 0 220rpx;
-		height: 96rpx;
-		line-height: 96rpx;
-		border-radius: 20rpx;
+		height: 100rpx;
+		line-height: 100rpx;
+		border-radius: 99rpx;
 		background: #ffffff;
-		color: #3a4355;
-		border: 1rpx solid #e4e7ee;
+		color: var(--primary);
+		border: 1rpx solid rgba(10, 46, 36, 0.15);
 		font-size: 30rpx;
-		font-weight: 700;
+		font-weight: 800;
+		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
+		transition: var(--transition);
+	}
+
+	.dock-ghost:active {
+		background: #f7faf8;
+		transform: scale(0.97);
 	}
 
 	.dock-ghost::after {
@@ -477,15 +577,37 @@
 
 	.dock-primary {
 		flex: 1;
-		height: 96rpx;
-		line-height: 96rpx;
-		border-radius: 20rpx;
-		background: #f5c23b;
-		color: #1a1306;
+		height: 100rpx;
+		line-height: 100rpx;
+		border-radius: 99rpx;
+		background: var(--accent-gradient);
+		color: var(--primary);
 		font-size: 32rpx;
 		font-weight: 800;
 		letter-spacing: 2rpx;
-		box-shadow: 0 12rpx 24rpx rgba(245, 194, 59, 0.3);
+		box-shadow: var(--accent-glow);
+		transition: var(--transition);
+		border: 0;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.dock-primary::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -150%;
+		width: 40%;
+		height: 100%;
+		background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
+		transform: skewX(-25deg);
+		animation: shimmer-sweep 3.5s infinite ease-in-out;
+		pointer-events: none;
+	}
+
+	.dock-primary:active {
+		transform: scale(0.97);
+		opacity: 0.95;
 	}
 
 	.dock-primary::after {

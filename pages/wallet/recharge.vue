@@ -30,7 +30,7 @@
 		<view class="agree">
 			<text>· 充值到账后不可提现，仅可在本钓场消费</text>
 			<text>· 余额永久有效（活动赠送另有说明的除外）</text>
-			<text>· 钓场费 / 商城均可使用</text>
+			<text>· 钓场费 / 现场补给均可使用</text>
 		</view>
 
 		<view class="footer">

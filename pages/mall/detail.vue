@@ -8,12 +8,12 @@
 			<text class="subtitle">{{ goods.subtitle }}</text>
 			<view class="meta">
 				<text class="price">¥{{ formatMoney(goods.priceCents) }}</text>
-				<text class="sales">已售 {{ goods.sales }} · 库存 {{ goods.stock }}</text>
+				<text class="sales">已领用 {{ goods.sales }} · 库存 {{ goods.stock }}</text>
 			</view>
 		</view>
 
 		<view class="card">
-			<text class="card-title">商品详情</text>
+			<text class="card-title">补给详情</text>
 			<text class="desc">{{ goods.desc }}</text>
 		</view>
 
@@ -23,8 +23,8 @@
 				<text class="qty-num">{{ qty }}</text>
 				<view class="qty-btn" @click="inc">+</view>
 			</view>
-			<button class="btn ghost" @click="addCart">加入购物车</button>
-			<button class="btn primary" @click="buyNow">立即购买</button>
+			<button class="btn ghost" @click="addCart">加入补给车</button>
+			<button class="btn primary" @click="buyNow">立即下单</button>
 		</view>
 	</view>
 </template>
@@ -37,7 +37,7 @@
 		data() { return { goods: null, qty: 1 } },
 		onLoad(query) {
 			fetchGoodsDetail(query.goodsId).then((g) => {
-				if (!g) { uni.showToast({ title: '商品不存在', icon: 'none' }); return }
+				if (!g) { uni.showToast({ title: '补给不存在', icon: 'none' }); return }
 				this.goods = g
 			})
 		},
@@ -47,7 +47,7 @@
 			dec() { if (this.qty > 1) this.qty-- },
 			addCart() {
 				addToCart(this.goods, this.qty)
-				uni.showToast({ title: '已加入购物车', icon: 'success' })
+				uni.showToast({ title: '已加入补给车', icon: 'success' })
 			},
 			buyNow() {
 				addToCart(this.goods, this.qty)

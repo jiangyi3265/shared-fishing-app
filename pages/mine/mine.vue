@@ -46,7 +46,7 @@
 			<view class="staff-icon">核</view>
 			<view class="staff-text">
 				<text class="staff-title">商家工作台</text>
-				<text class="staff-desc">进入扫码核销 / 查看待核销订单</text>
+				<text class="staff-desc">扫码识别订单 / 确认商品领取</text>
 			</view>
 			<text class="staff-arrow">›</text>
 		</view>
@@ -62,70 +62,25 @@
 
 		<view class="tools">
 			<text class="tools-title">常用工具</text>
-			<view class="tools-grid">
-				<view class="tool" @click="goOrders">
-					<view class="tool-icon tool-icon-1">单</view>
-					<text class="tool-name">我的订单</text>
-				</view>
-				<view class="tool" @click="goPay">
-					<view class="tool-icon tool-icon-2">付</view>
-					<text class="tool-name">待支付</text>
-				</view>
-				<view class="tool" @click="goGuide">
-					<view class="tool-icon tool-icon-3">引</view>
-					<text class="tool-name">操作指引</text>
-				</view>
-				<view class="tool" @click="goCoupons">
-					<view class="tool-icon tool-icon-4">券</view>
-					<text class="tool-name">我的优惠券</text>
-				</view>
-				<view class="tool" @click="goWallet">
-					<view class="tool-icon tool-icon-11">包</view>
-					<text class="tool-name">我的钱包</text>
-				</view>
-				<view class="tool" @click="goMall">
-					<view class="tool-icon tool-icon-9">商</view>
-					<text class="tool-name">钓场商城</text>
-				</view>
-				<view class="tool" @click="goMallOrders">
-					<view class="tool-icon tool-icon-10">购</view>
-					<text class="tool-name">商城订单</text>
-				</view>
-				<view class="tool" @click="goCheckin">
-					<view class="tool-icon">签</view>
-					<text class="tool-name">签到日历</text>
-				</view>
-				<view class="tool" @click="goReserve">
-					<view class="tool-icon">位</view>
-					<text class="tool-name">我的预订</text>
-				</view>
-				<view class="tool" @click="goRental">
-					<view class="tool-icon">租</view>
-					<text class="tool-name">我的租赁</text>
-				</view>
-				<view class="tool" @click="goCompetition">
-					<view class="tool-icon">赛</view>
-					<text class="tool-name">钓王争霸</text>
-				</view>
-				<view class="tool" @click="goGroup">
-					<view class="tool-icon">约</view>
-					<text class="tool-name">我的拼场</text>
-				</view>
-				<view class="tool" @click="goPromotions">
-					<view class="tool-icon tool-icon-5">惠</view>
-					<text class="tool-name">优惠活动</text>
-				</view>
-				<view class="tool" @click="goRateInfo">
-					<view class="tool-icon tool-icon-6">费</view>
-					<text class="tool-name">费率说明</text>
-				</view>
-				<view class="tool" @click="goContact">
-					<view class="tool-icon tool-icon-7">客</view>
-					<text class="tool-name">联系客服</text>
-				</view>
-				<view class="tool" @click="goAbout">
-					<view class="tool-icon tool-icon-8">关</view>
-					<text class="tool-name">关于我们</text>
+			<view class="tool-groups">
+				<view v-for="group in toolGroups" :key="group.title" class="tool-group">
+					<view class="tool-group-head">
+						<text class="tool-group-title">{{ group.title }}</text>
+						<text class="tool-group-count">{{ group.items.length }} 项</text>
+					</view>
+					<view
+						v-for="item in group.items"
+						:key="item.name"
+						class="tool-row"
+						@click="handleTool(item)"
+					>
+						<view class="tool-icon" :class="[item.icon, item.tone]"></view>
+						<view class="tool-copy">
+							<text class="tool-name">{{ item.name }}</text>
+							<text class="tool-desc">{{ item.desc }}</text>
+						</view>
+						<text class="tool-arrow">›</text>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -174,7 +129,40 @@
 				user: null,
 				loggedIn: false,
 				isStaff: false,
-				stats: { pendingCount: 0, paidCount: 0, totalAmount: 0 }
+				stats: { pendingCount: 0, paidCount: 0, totalAmount: 0 },
+				toolGroups: [
+					{
+						title: '订单与钱包',
+						items: [
+							{ name: '我的订单', desc: '钓场计时与历史消费', icon: 'icon-order', tone: 'tone-gold', action: 'goOrders' },
+							{ name: '待支付', desc: '处理未完成账单', icon: 'icon-pay', tone: 'tone-gold', action: 'goPay' },
+							{ name: '我的钱包', desc: '余额、充值与明细', icon: 'icon-wallet', tone: 'tone-teal', action: 'goWallet' },
+							{ name: '补给订单', desc: '钓场补给与领取记录', icon: 'icon-order', tone: 'tone-teal', action: 'goMallOrders' }
+						]
+					},
+					{
+						title: '钓场服务',
+						items: [
+							{ name: '钓场补给', desc: '鱼饵、钓具与现场补给', icon: 'icon-shop', tone: 'tone-gold', action: 'goMall' },
+							{ name: '我的预订', desc: '查看已预约钓位', icon: 'icon-pin', tone: 'tone-green', action: 'goReserve' },
+							{ name: '我的租赁', desc: '装备租借记录', icon: 'icon-bag', tone: 'tone-green', action: 'goRental' },
+							{ name: '我的拼场', desc: '约钓拼场进度', icon: 'icon-group', tone: 'tone-teal', action: 'goGroup' }
+						]
+					},
+					{
+						title: '权益与帮助',
+						items: [
+							{ name: '签到日历', desc: '每日签到领积分', icon: 'icon-calendar', tone: 'tone-green', action: 'goCheckin' },
+							{ name: '我的优惠券', desc: '查看可用优惠', icon: 'icon-coupon', tone: 'tone-teal', action: 'goCoupons' },
+							{ name: '优惠活动', desc: '近期活动与福利', icon: 'icon-coupon', tone: 'tone-gold', action: 'goPromotions' },
+							{ name: '操作指引', desc: '扫码入场与结算说明', icon: 'icon-guide', tone: 'tone-teal', action: 'goGuide' },
+							{ name: '钓王争霸', desc: '赛事榜单与报名', icon: 'icon-trophy', tone: 'tone-green', action: 'goCompetition' },
+							{ name: '费率说明', desc: '计费规则与封顶说明', icon: 'icon-rate', tone: 'tone-green', action: 'goRateInfo' },
+							{ name: '联系客服', desc: '遇到问题及时沟通', icon: 'icon-chat', tone: 'tone-teal', action: 'goContact' },
+							{ name: '关于我们', desc: '钓场介绍与服务信息', icon: 'icon-info', tone: 'tone-green', action: 'goAbout' }
+						]
+					}
+				]
 			}
 		},
 		computed: {
@@ -250,6 +238,10 @@
 			goRental() { uni.navigateTo({ url: '/pages/rental/rental' }) },
 			goCompetition() { uni.navigateTo({ url: '/pages/competition/competition' }) },
 			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
+			handleTool(item) {
+				const action = item && item.action
+				if (action && typeof this[action] === 'function') this[action]()
+			},
 			formatMoney
 		}
 	}
@@ -257,8 +249,8 @@
 
 <style>
 	.mine {
-		padding-bottom: 210rpx;
-		background: #f3f6f1;
+		padding-bottom: 220rpx;
+		background: transparent;
 	}
 
 	.hero {
@@ -272,40 +264,63 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		height: 392rpx;
-		background: linear-gradient(145deg, #0d211d 0%, #163b34 62%, #275b55 100%);
+		height: 420rpx;
+		background: linear-gradient(135deg, #071f18 0%, #0c352a 50%, #031410 100%);
 		z-index: 0;
+		border-bottom-left-radius: 64rpx;
+		border-bottom-right-radius: 64rpx;
+		box-shadow: 0 24rpx 56rpx rgba(10, 46, 36, 0.2);
+	}
+
+	.hero-bg::after {
+		content: '';
+		position: absolute;
+		right: -60rpx;
+		top: -60rpx;
+		width: 240rpx;
+		height: 240rpx;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(199, 154, 57, 0.15) 0%, rgba(199, 154, 57, 0) 70%);
+		filter: blur(20px);
 	}
 
 	.hero-content {
 		position: relative;
 		z-index: 1;
-		padding-top: 44rpx;
+		padding-top: 48rpx;
 	}
 
+	/* ---------------- 个人资料栏 ---------------- */
 	.profile {
 		display: flex;
 		align-items: center;
-		gap: 20rpx;
-		padding: 18rpx 0 34rpx;
+		gap: 24rpx;
+		padding: 20rpx 0 40rpx;
 	}
 
 	.avatar {
-		width: 118rpx;
-		height: 118rpx;
-		border-radius: 28rpx;
-		background: linear-gradient(145deg, #f0d28a 0%, #c79a39 100%);
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 36rpx 12rpx;
+		background: var(--accent-gradient);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 4rpx solid rgba(255, 255, 255, 0.72);
-		box-shadow: 0 16rpx 34rpx rgba(0, 0, 0, 0.22);
+		border: 4rpx solid #ffffff;
+		box-shadow: 0 16rpx 36rpx rgba(10, 46, 36, 0.25);
+		position: relative;
+		transition: var(--transition);
+	}
+
+	.avatar:active {
+		transform: scale(0.95) rotate(-3deg);
 	}
 
 	.avatar-text {
-		font-size: 44rpx;
+		font-size: 46rpx;
 		font-weight: 900;
-		color: #10231f;
+		color: var(--primary);
+		text-shadow: 0 2rpx 4rpx rgba(255, 255, 255, 0.2);
 	}
 
 	.profile-text {
@@ -317,10 +332,11 @@
 	}
 
 	.nickname {
-		font-size: 38rpx;
+		font-size: 40rpx;
 		font-weight: 800;
 		color: #ffffff;
-		line-height: 1.18;
+		line-height: 1.2;
+		text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 	}
 
 	.meta-row {
@@ -330,79 +346,79 @@
 	}
 
 	.vip-chip {
-		padding: 6rpx 14rpx;
-		border-radius: 999rpx;
-		background: rgba(199, 154, 57, 0.2);
-		color: #f0d28a;
+		padding: 6rpx 18rpx;
+		border-radius: 99rpx;
+		background: rgba(224, 169, 60, 0.22);
+		color: #f5d285;
 		font-size: 20rpx;
 		font-weight: 800;
 		display: flex;
 		align-items: center;
-		gap: 8rpx;
-		border: 1rpx solid rgba(240, 210, 138, 0.2);
+		gap: 10rpx;
+		border: 1rpx solid rgba(245, 210, 133, 0.3);
+		backdrop-filter: blur(5px);
 	}
 
 	.vip-mark {
-		width: 16rpx;
-		height: 16rpx;
+		width: 14rpx;
+		height: 14rpx;
 		border-radius: 50%;
-		background: #f0d28a;
-		box-shadow: 0 0 0 5rpx rgba(240, 210, 138, 0.16);
+		background: #f5d285;
+		box-shadow: 0 0 10rpx rgba(245, 210, 133, 0.6);
 	}
 
 	.login-chip {
-		padding: 6rpx 14rpx;
-		border-radius: 999rpx;
+		padding: 6rpx 18rpx;
+		border-radius: 99rpx;
 		background: rgba(255, 255, 255, 0.12);
-		color: rgba(248, 244, 232, 0.74);
+		color: rgba(255, 255, 255, 0.8);
 		font-size: 20rpx;
 		font-weight: 700;
+		border: 1rpx solid rgba(255, 255, 255, 0.08);
 	}
 
 	.login-chip-ok {
-		background: rgba(44, 107, 115, 0.32);
-		color: #cce5df;
+		background: rgba(16, 185, 129, 0.2);
+		color: #a7f3d0;
+		border-color: rgba(16, 185, 129, 0.15);
 	}
 
 	.set-btn {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 20rpx;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1rpx solid rgba(255, 255, 255, 0.16);
+		width: 76rpx;
+		height: 76rpx;
+		border-radius: 24rpx 10rpx;
+		background: rgba(255, 255, 255, 0.08);
+		border: 1rpx solid rgba(255, 255, 255, 0.12);
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transition: var(--transition);
+	}
+
+	.set-btn:active {
+		background: rgba(255, 255, 255, 0.18);
+		transform: rotate(45deg);
 	}
 
 	.set-icon {
-		width: 34rpx;
-		height: 24rpx;
-		border-top: 4rpx solid #f8f4e8;
-		border-bottom: 4rpx solid #f8f4e8;
-		position: relative;
-		box-sizing: border-box;
+		width: 36rpx;
+		height: 36rpx;
+		background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGZpbGw9J25vbmUnIHZpZXdCb3g9JzAgMCAyNCAyNCcgc3Ryb2tlPScjZmZmZmZmJyBzdHJva2Utd2lkdGg9JzIuMic+PHBhdGggc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBkPSdNMTAuMzI1IDQuMzE3Yy40MjYtMS43NTYgMi45MjQtMS43NTYgMy4zNSAwYTEuNzI0IDEuNzI0IDAgMDAyLjU3MyAxLjA2NmMxLjU0My0uOTQgMy4zMS54MmY2IDIuMzcgMi4zN2ExLjcyNCAxLjcyNCAwIDAwMS4wNjUgMi41NzJjMS43NTYuNDI2IDEuNzU2IDIuOTI0IDAgMy4zNWExLjcyNCAxLjcyNCAwIDAwLTEuMDY2IDIuNTczYy45NCAxLjU0My0uODI2IDMuMzEtMi4zNyAyLjM3YTEuNzI0IDEuNzI0IDAgMDAtMi41NzIgMS4wNjVjLS40MjYgMS43NTYtMi45MjQgMS43NTYtMy4zNSAwYTEuNzI0IDEuNzI0IDAgMDAtMi41NzMtMS4wNjZjLTEuNTQzLjk0LTMuMzEtLjgyNi0yLjM3LTIuMzdhMS43MjQgMS43MjQgMCAwMC0xLjA2NS0yLjU3MmMtMS43NTYtLjQyNi0xLjc1Ni0yLjkyNCAgMC0zLjM1YTEuNzI0IDEuNzI0IDAgMDAxLjA2Ni0yLjU3M2MtLjk0LTEuNTQzLjgyNi0zLjMxIDIuMzctMi4zNy45OTYuNjA4IDIuMjk2LjA3IDIuNTcyLTEuMDY1eicvPjxwYXRoIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcgZD0nTTE1IDEyYTMgMyAwIDExLTYgMCAzIDMgMCAwMTYgMHonLz48L3N2Zz4=");
+		background-size: contain;
+		background-repeat: no-repeat;
+		background-position: center;
 	}
 
-	.set-icon::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		top: 8rpx;
-		height: 4rpx;
-		background: #f8f4e8;
-		border-radius: 999rpx;
-	}
-
+	/* ---------------- 钱包概要区 ---------------- */
 	.wallet {
-		background: #ffffff;
-		border-radius: 16rpx;
-		padding: 34rpx 16rpx;
+		background: rgba(255, 255, 255, 0.85);
+		backdrop-filter: blur(24px);
+		border-radius: 48rpx 16rpx 48rpx 16rpx;
+		padding: 40rpx 20rpx;
 		display: flex;
 		align-items: center;
-		border: 1rpx solid rgba(16, 35, 31, 0.07);
-		box-shadow: 0 18rpx 42rpx rgba(16, 35, 31, 0.16);
+		border: 1rpx solid rgba(255, 255, 255, 0.6);
+		box-shadow: 0 20rpx 48rpx rgba(10, 46, 36, 0.06);
 	}
 
 	.wallet-item {
@@ -410,58 +426,63 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 8rpx;
+		gap: 10rpx;
 		min-width: 0;
 	}
 
 	.wallet-num {
-		font-size: 38rpx;
-		font-weight: 900;
-		color: #10231f;
+		font-size: 40rpx;
+		font-weight: 800;
+		color: var(--primary);
 		font-variant-numeric: tabular-nums;
 		line-height: 1.15;
 	}
 
 	.wallet-label {
 		font-size: 22rpx;
-		color: #65736c;
+		color: var(--text-muted);
+		font-weight: 600;
 	}
 
 	.wallet-sep {
 		width: 1rpx;
-		height: 62rpx;
-		background: #e5ebe4;
+		height: 64rpx;
+		background: rgba(10, 46, 36, 0.06);
 	}
 
+	/* ---------------- 商家工作台 ---------------- */
 	.staff-card {
 		margin: 24rpx 32rpx 0;
-		padding: 26rpx;
-		border-radius: 16rpx;
-		background: #10231f;
+		padding: 30rpx;
+		border-radius: 36rpx 12rpx;
+		background: linear-gradient(135deg, #0b2d23 0%, #041a14 100%);
 		display: flex;
 		align-items: center;
-		gap: 18rpx;
-		box-shadow: 0 14rpx 32rpx rgba(16, 35, 31, 0.14);
+		gap: 24rpx;
+		box-shadow: 0 16rpx 36rpx rgba(10, 46, 36, 0.16);
+		border: 1rpx solid rgba(245, 210, 133, 0.2);
+		transition: var(--transition);
 	}
 
 	.staff-icon {
-		width: 78rpx;
-		height: 78rpx;
-		border-radius: 20rpx;
-		background: #f0d28a;
-		color: #10231f;
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 24rpx;
+		background: var(--accent-gradient);
+		color: var(--primary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 30rpx;
+		font-size: 32rpx;
 		font-weight: 900;
+		box-shadow: var(--accent-glow);
 	}
 
 	.staff-text {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 6rpx;
+		gap: 8rpx;
 		min-width: 0;
 	}
 
@@ -472,179 +493,235 @@
 	}
 
 	.staff-desc {
-		color: rgba(248, 244, 232, 0.66);
+		color: rgba(255, 255, 255, 0.6);
 		font-size: 22rpx;
+		font-weight: 600;
 	}
 
 	.staff-arrow {
-		color: #f0d28a;
-		font-size: 36rpx;
+		color: #f5d285;
+		font-size: 38rpx;
 		font-weight: 800;
 	}
 
+	/* ---------------- 警报提醒 ---------------- */
 	.alert {
 		margin: 24rpx 32rpx 0;
-		padding: 22rpx 24rpx;
-		border-radius: 16rpx;
-		background: #fff8e8;
-		border: 1rpx solid rgba(199, 154, 57, 0.32);
+		padding: 24rpx 32rpx;
+		border-radius: 36rpx 12rpx;
+		background: rgba(255, 251, 239, 0.85);
+		backdrop-filter: blur(20px);
+		border: 1rpx solid rgba(224, 169, 60, 0.25);
 		display: flex;
 		align-items: center;
-		gap: 16rpx;
-		box-shadow: 0 12rpx 30rpx rgba(144, 105, 28, 0.08);
+		gap: 20rpx;
+		box-shadow: 0 12rpx 32rpx rgba(199, 154, 57, 0.04);
 	}
 
 	.alert-icon {
 		width: 8rpx;
-		height: 56rpx;
-		border-radius: 999rpx;
-		background: #c79a39;
+		height: 60rpx;
+		border-radius: 99rpx;
+		background: var(--accent-gradient);
+		box-shadow: var(--accent-glow);
 	}
 
 	.alert-text {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 4rpx;
+		gap: 6rpx;
 	}
 
 	.alert-title {
 		font-size: 26rpx;
 		font-weight: 800;
-		color: #90691c;
+		color: #b8860b;
 	}
 
 	.alert-desc {
 		font-size: 22rpx;
-		color: #806328;
+		color: #8a6914;
+		font-weight: 600;
 	}
 
 	.alert-arrow {
-		color: #90691c;
-		font-size: 32rpx;
+		color: #b8860b;
+		font-size: 34rpx;
 		font-weight: 800;
 	}
 
+	/* ---------------- 常用工具区 ---------------- */
 	.tools {
 		margin: 24rpx 32rpx 0;
-		padding: 30rpx 18rpx 26rpx;
-		border-radius: 16rpx;
-		background: #ffffff;
-		border: 1rpx solid rgba(16, 35, 31, 0.07);
-		box-shadow: 0 12rpx 32rpx rgba(16, 35, 31, 0.05);
+		padding: 24rpx 4rpx;
+		background: transparent;
+		border: none;
+		box-shadow: none;
 	}
 
 	.tools-title {
 		padding: 0 12rpx 24rpx;
-		font-size: 30rpx;
+		font-size: 32rpx;
 		font-weight: 800;
-		color: #10231f;
+		color: var(--primary);
 		display: block;
 	}
 
-	.tools-grid {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 24rpx 0;
-	}
-
-	.tool {
+	.tool-groups {
 		display: flex;
 		flex-direction: column;
+		gap: 32rpx;
+	}
+
+	.tool-group {
+		border-radius: 40rpx 16rpx;
+		background: rgba(255, 255, 255, 0.6);
+		backdrop-filter: blur(15px);
+		border: 1rpx solid rgba(255, 255, 255, 0.45);
+		overflow: hidden;
+		box-shadow: 0 8rpx 32rpx rgba(10, 46, 36, 0.015);
+	}
+
+	.tool-group-head {
+		display: flex;
 		align-items: center;
-		gap: 10rpx;
-		padding: 6rpx 0;
+		justify-content: space-between;
+		padding: 28rpx 28rpx 16rpx;
+	}
+
+	.tool-group-title {
+		font-size: 26rpx;
+		font-weight: 900;
+		color: var(--primary);
+	}
+
+	.tool-group-count {
+		font-size: 21rpx;
+		color: var(--text-light);
+		font-weight: 700;
+	}
+
+	/* 工具行 */
+	.tool-row {
+		display: flex;
+		align-items: center;
+		gap: 20rpx;
+		min-height: 114rpx;
+		padding: 20rpx 28rpx;
+		border-bottom: 1rpx solid rgba(10, 46, 36, 0.03);
+		min-width: 0;
+		transition: var(--transition);
+	}
+
+	.tool-row:last-child {
+		border-bottom: 0;
+	}
+
+	.tool-row:active {
+		background: rgba(255, 255, 255, 0.4);
 	}
 
 	.tool-icon {
-		width: 76rpx;
-		height: 76rpx;
+		width: 62rpx;
+		height: 62rpx;
 		border-radius: 20rpx;
+		flex: 0 0 auto;
+		background-size: 38rpx 38rpx;
+		background-repeat: no-repeat;
+		background-position: center;
+		transition: var(--transition);
+	}
+
+	.tone-gold {
+		background: #fff8eb;
+		box-shadow: inset 0 0 10rpx rgba(224, 169, 60, 0.05);
+	}
+
+	.tone-teal {
+		background: #eef7f5;
+		box-shadow: inset 0 0 10rpx rgba(46, 186, 133, 0.05);
+	}
+
+	.tone-green {
+		background: #f0f5f1;
+		box-shadow: inset 0 0 10rpx rgba(16, 185, 129, 0.05);
+	}
+
+	.tool-copy {
+		flex: 1;
+		min-width: 0;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 29rpx;
-		font-weight: 900;
-		background: #eef3ed;
-		color: #243d36;
-		border: 1rpx solid rgba(16, 35, 31, 0.06);
-		box-sizing: border-box;
-	}
-
-	.tool-icon-1,
-	.tool-icon-2,
-	.tool-icon-5,
-	.tool-icon-9,
-	.tool-icon-11 {
-		background: #f8f0dc;
-		color: #90691c;
-	}
-
-	.tool-icon-3,
-	.tool-icon-4,
-	.tool-icon-7,
-	.tool-icon-10 {
-		background: #e7f0ed;
-		color: #1f636a;
-	}
-
-	.tool-icon-6,
-	.tool-icon-8 {
-		background: #edf1ea;
-		color: #243d36;
+		flex-direction: column;
+		gap: 6rpx;
 	}
 
 	.tool-name {
-		font-size: 22rpx;
-		color: #334942;
-		font-weight: 700;
-		line-height: 1.2;
+		font-size: 28rpx;
+		color: var(--text-main);
+		font-weight: 800;
+		line-height: 1.25;
+		white-space: nowrap;
 	}
 
+	.tool-desc {
+		font-size: 22rpx;
+		color: var(--text-muted);
+		line-height: 1.35;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-weight: 600;
+	}
+
+	.tool-arrow {
+		color: var(--text-light);
+		font-size: 32rpx;
+		font-weight: 700;
+		flex: 0 0 auto;
+	}
+
+	/* ---------------- 退出登录 ---------------- */
 	.logout {
-		margin: 24rpx 32rpx 0;
-		padding: 26rpx;
-		border-radius: 16rpx;
-		background: #ffffff;
-		border: 1rpx solid rgba(166, 91, 56, 0.16);
+		margin: 32rpx 32rpx 0;
+		padding: 30rpx;
+		border-radius: 99rpx;
+		background: rgba(239, 68, 68, 0.06);
+		border: 1rpx solid rgba(239, 68, 68, 0.16);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 12rpx;
-		box-shadow: 0 10rpx 28rpx rgba(16, 35, 31, 0.04);
+		gap: 14rpx;
+		box-shadow: 0 8rpx 24rpx rgba(239, 68, 68, 0.02);
+		transition: var(--transition);
+	}
+
+	.logout:active {
+		background: rgba(239, 68, 68, 0.1);
+		transform: scale(0.98);
 	}
 
 	.logout-icon {
-		width: 30rpx;
-		height: 30rpx;
-		border: 4rpx solid #a65b38;
-		border-left: 0;
-		border-radius: 4rpx;
-		position: relative;
+		display: inline-block;
+		width: 32rpx;
+		height: 32rpx;
+		background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGZpbGw9J25vbmUnIHZpZXdCb3g9JzAgMCAyNCAyNCcgc3Ryb2tlPScjZWY0NDQ0JyBzdHJva2Utd2lkdGg9JzIuNSc+PHBhdGggc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBkPSdNMTcgMTZsNC00bTAgMGwtNC00bTQgNEg3bTYgNHYxYTMgMyAwIDAxLTMgM0g2YTMgMyAwIDAxLTMtM1Y3YTMgMyAwIDAxMy0zaDRhMyAzIDAgMDEzIDN2MScvPjwvc3ZnPg==");
+		background-size: contain;
+		background-repeat: no-repeat;
+		background-position: center;
 		box-sizing: border-box;
-	}
-
-	.logout-icon::after {
-		content: '';
-		position: absolute;
-		width: 18rpx;
-		height: 4rpx;
-		background: #a65b38;
-		left: -12rpx;
-		top: 9rpx;
-		border-radius: 999rpx;
 	}
 
 	.logout-text {
 		font-size: 28rpx;
 		font-weight: 800;
-		color: #a65b38;
+		color: #ef4444;
 	}
 
 	.footer-text {
 		text-align: center;
-		color: #8b978f;
+		color: var(--text-light);
 		font-size: 22rpx;
-		margin: 40rpx 0 24rpx;
+		margin: 48rpx 0 24rpx;
 	}
 </style>

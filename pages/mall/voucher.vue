@@ -5,15 +5,13 @@
 			<text class="hero-no">订单号 {{ order.mallOrderNo }}</text>
 		</view>
 
-		<view class="card">
-			<text class="card-title">核销码</text>
-			<view class="code-box">
-				<view class="code-pattern">
-					<view v-for="n in 64" :key="n" class="code-cell" :class="{ filled: cells[n - 1] }"></view>
-				</view>
-				<text class="code-text">{{ order.redeemCode }}</text>
+		<view class="card use-card">
+			<text class="card-title">商品使用凭证</text>
+			<view class="ticket">
+				<text class="ticket-main">{{ ticketMain }}</text>
+				<text class="ticket-sub">{{ ticketSub }}</text>
 			</view>
-			<text class="code-tip">到店出示此核销码 / 编号给老板核销</text>
+			<text class="code-tip">已支付订单可直接到钓场吧台/小卖部领取，无需核销码。</text>
 		</view>
 
 		<view class="card">
@@ -22,7 +20,7 @@
 				<text class="line-cover">{{ it.cover }}</text>
 				<view class="line-info">
 					<text class="line-name">{{ it.name }}</text>
-					<text class="line-sub">{{ it.subtitle }} · ×{{ it.qty }}</text>
+					<text class="line-sub">{{ it.subtitle }} · x{{ it.qty }}</text>
 				</view>
 				<text class="line-price">¥{{ formatMoney(it.priceCents * it.qty) }}</text>
 			</view>
@@ -39,7 +37,7 @@
 		<view class="footer">
 			<button class="btn ghost" @click="goOrders">订单列表</button>
 			<button v-if="canRefund" class="btn warn" @click="goRefund">申请退款</button>
-			<button class="btn primary" @click="goMall">继续购物</button>
+			<button class="btn primary" @click="goMall">继续选购</button>
 		</view>
 	</view>
 </template>
@@ -52,38 +50,51 @@
 		data() {
 			return {
 				order: null,
+				refreshTimer: null,
 				statusLabel: {
-					[MALL_ORDER_STATUS.UNPAID]: '待支付',
-					[MALL_ORDER_STATUS.PAID]: '待核销',
-					[MALL_ORDER_STATUS.REDEEMED]: '已核销',
+					[MALL_ORDER_STATUS.UNPAID]: '支付处理中',
+					[MALL_ORDER_STATUS.PAID]: '可直接使用',
+					[MALL_ORDER_STATUS.REDEEMED]: '已领取',
 					[MALL_ORDER_STATUS.CANCELED]: '已取消'
 				}
 			}
 		},
 		computed: {
-			// 用核销码做种子生成 8x8 伪二维码格子，纯装饰
-			cells() {
-				const code = this.order ? String(this.order.redeemCode || '0') : '0'
-				const arr = []
-				for (let i = 0; i < 64; i++) {
-					const c = code.charCodeAt(i % code.length) || 0
-					arr.push(((c >> (i % 8)) & 1) === 1)
-				}
-				return arr
-			},
 			canRefund() {
 				return this.order && this.order.status === MALL_ORDER_STATUS.PAID
+			},
+			ticketMain() {
+				if (!this.order) return ''
+				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '等待支付确认'
+				if (this.order.status === MALL_ORDER_STATUS.CANCELED) return '订单已取消'
+				if (this.order.status === MALL_ORDER_STATUS.REDEEMED) return '商品已领取'
+				return '到店直接领取'
+			},
+			ticketSub() {
+				if (!this.order) return ''
+				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '支付回调确认后自动更新'
+				return '向工作人员展示订单号即可'
 			}
 		},
 		onLoad(query) {
-			fetchMallOrderDetail(query.mallOrderId).then((o) => {
-				if (!o) { uni.showToast({ title: '订单不存在', icon: 'none' }); return }
-				this.order = o
-			})
+			this.mallOrderId = query.mallOrderId
+			this.loadOrder(true)
+		},
+		onUnload() {
+			if (this.refreshTimer) clearTimeout(this.refreshTimer)
 		},
 		methods: {
 			formatMoney,
 			formatDatetime,
+			loadOrder(autoRefresh) {
+				fetchMallOrderDetail(this.mallOrderId).then((o) => {
+					if (!o) { uni.showToast({ title: '订单不存在', icon: 'none' }); return }
+					this.order = o
+					if (autoRefresh && o.status === MALL_ORDER_STATUS.UNPAID) {
+						this.refreshTimer = setTimeout(() => this.loadOrder(true), 1500)
+					}
+				})
+			},
 			goOrders() { uni.redirectTo({ url: '/pages/mall/orders' }) },
 			goMall() { uni.redirectTo({ url: '/pages/mall/index' }) },
 			goRefund() {
@@ -102,11 +113,10 @@
 	.card { margin: 20rpx 28rpx; padding: 28rpx; background: #fff; border-radius: 22rpx; box-shadow: 0 6rpx 20rpx rgba(26,32,48,.04); }
 	.card-title { display: block; font-size: 28rpx; font-weight: 800; color: #1a2030; margin-bottom: 18rpx; }
 
-	.code-box { display: flex; flex-direction: column; align-items: center; padding: 30rpx 0; background: #fafbfd; border-radius: 22rpx; }
-	.code-pattern { width: 320rpx; height: 320rpx; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); gap: 4rpx; padding: 12rpx; background: #fff; border: 6rpx solid #1a2030; border-radius: 18rpx; }
-	.code-cell { background: #fff; }
-	.code-cell.filled { background: #1a2030; border-radius: 4rpx; }
-	.code-text { margin-top: 24rpx; font-size: 56rpx; font-weight: 800; letter-spacing: 12rpx; color: #1a2030; font-variant-numeric: tabular-nums; }
+	.use-card { border: 2rpx solid #f5c23b; }
+	.ticket { display: flex; flex-direction: column; align-items: center; padding: 42rpx 20rpx; background: #fafbfd; border-radius: 22rpx; }
+	.ticket-main { color: #1a2030; font-size: 46rpx; font-weight: 900; }
+	.ticket-sub { color: #6b7280; font-size: 26rpx; margin-top: 12rpx; }
 	.code-tip { display: block; text-align: center; color: #9aa3b2; font-size: 24rpx; margin-top: 18rpx; }
 
 	.line { display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx dashed #eef0f5; }

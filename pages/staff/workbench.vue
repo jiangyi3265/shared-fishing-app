@@ -13,17 +13,17 @@
 				<view class="stats">
 					<view class="stat">
 						<text class="stat-num">{{ info.pendingCount || 0 }}</text>
-						<text class="stat-label">待核销</text>
+						<text class="stat-label">待领取</text>
 					</view>
 					<view class="stat-sep"></view>
 					<view class="stat">
 						<text class="stat-num">{{ todayRedeemed }}</text>
-						<text class="stat-label">今日已核销</text>
+						<text class="stat-label">今日已确认</text>
 					</view>
 					<view class="stat-sep"></view>
 					<view class="stat">
 						<text class="stat-num">¥{{ formatMoney(todayAmount) }}</text>
-						<text class="stat-label">今日营业</text>
+						<text class="stat-label">今日商品额</text>
 					</view>
 				</view>
 			</view>
@@ -32,26 +32,26 @@
 		<view class="scan-card" @click="scan">
 			<view class="scan-icon">📷</view>
 			<view class="scan-text">
-				<text class="scan-title">扫一扫核销</text>
-				<text class="scan-desc">扫顾客小程序里的核销码</text>
+				<text class="scan-title">扫订单号</text>
+				<text class="scan-desc">可扫用户订单页里的订单号，不需要核销码</text>
 			</view>
 			<text class="scan-arrow">›</text>
 		</view>
 
 		<view class="card">
-			<text class="card-title">手动输入核销码</text>
+			<text class="card-title">手动确认领取</text>
 			<view class="manual">
-				<input class="manual-input" v-model="manualCode" placeholder="订单号 或 8 位数字" maxlength="40" />
-				<button class="manual-btn" :disabled="redeeming || !manualCode" @click="doRedeem(manualCode)">{{ redeeming ? '处理中' : '核销' }}</button>
+				<input class="manual-input" v-model="manualCode" placeholder="输入订单号" maxlength="40" />
+				<button class="manual-btn" :disabled="redeeming || !manualCode" @click="doRedeem(manualCode)">{{ redeeming ? '处理中' : '确认' }}</button>
 			</view>
 		</view>
 
 		<view class="card">
 			<view class="card-title-row">
-				<text class="card-title">最近核销</text>
-				<text class="refresh" @click="load">刷新 ↻</text>
+				<text class="card-title">最近确认</text>
+				<text class="refresh" @click="load">刷新</text>
 			</view>
-			<view v-if="!recent.length" class="empty">暂无核销记录</view>
+			<view v-if="!recent.length" class="empty">暂无确认记录</view>
 			<view v-for="r in recent" :key="r.mallOrderId" class="rec">
 				<view class="rec-info">
 					<text class="rec-no">{{ r.mallOrderNo }}</text>
@@ -106,7 +106,7 @@
 			load() {
 				fetchStaffInfo().then((data) => {
 					if (!data || !data.isStaff) {
-						uni.showToast({ title: '无核销权限', icon: 'none' })
+						uni.showToast({ title: '无工作台权限', icon: 'none' })
 						setTimeout(() => uni.redirectTo({ url: '/pages/mine/mine' }), 800)
 						return
 					}
@@ -131,7 +131,7 @@
 				this.redeeming = true
 				staffRedeem(code).then((order) => {
 					uni.showModal({
-						title: '核销成功',
+						title: '已确认领取',
 						content: `订单 ${order.mallOrderNo}\n金额 ¥${formatMoney(order.totalCents)}`,
 						showCancel: false
 					})

@@ -1,4 +1,5 @@
 import { http } from './request.js'
+import { normalizePaymentError } from './fishingStore.js'
 
 // 后端 API 已接通；如需脱机演示改回 false
 export const MALL_API_ENABLED = true
@@ -191,15 +192,15 @@ export function submitMallOrder({ items, remark, useBalance }) {
 						package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
 						signType: data.pay.signType || 'RSA',
 						paySign: data.pay.paySign || '',
-						success: () => resolve(order),
-						fail: (err) => reject(err)
+						success: () => waitMallOrderPaid(order && order.mallOrderId).then(resolve).catch(() => resolve(order)),
+						fail: (err) => reject(normalizePaymentError(err))
 					})
 				})
 			}
 			return order
 		})
 	}
-	// mock 本地：伪造一单，直接置待核销
+	// mock 本地：伪造一单，直接置为可领取
 	const totalCents = cartTotalCents(items)
 	const now = Date.now()
 	const order = {
@@ -233,6 +234,15 @@ export function fetchMallOrderDetail(mallOrderId) {
 	if (MALL_API_ENABLED) return http.get('/app/mall/order/' + mallOrderId).then(normalizeMallOrder)
 	const found = readMallOrders().find((o) => String(o.mallOrderId) === String(mallOrderId))
 	return Promise.resolve(found || null)
+}
+
+function waitMallOrderPaid(mallOrderId, left = 6) {
+	if (!mallOrderId) return Promise.resolve(null)
+	return fetchMallOrderDetail(mallOrderId).then((order) => {
+		if (!order || order.status !== MALL_ORDER_STATUS.UNPAID || left <= 0) return order
+		return new Promise((resolve) => setTimeout(resolve, 800))
+			.then(() => waitMallOrderPaid(mallOrderId, left - 1))
+	})
 }
 
 export function applyMallRefund({ mallOrderId, applyAmountCents, reason }) {

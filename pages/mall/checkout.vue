@@ -6,7 +6,7 @@
 				<text class="line-cover">{{ it.cover }}</text>
 				<view class="line-info">
 					<text class="line-name">{{ it.name }}</text>
-					<text class="line-sub">{{ it.subtitle }} · ×{{ it.qty }}</text>
+					<text class="line-sub">{{ it.subtitle }} · x{{ it.qty }}</text>
 				</view>
 				<text class="line-price">¥{{ formatMoney(it.priceCents * it.qty) }}</text>
 			</view>
@@ -18,19 +18,19 @@
 				<view class="pickup-icon">📍</view>
 				<view class="pickup-info">
 					<text class="pickup-label">到店自取</text>
-					<text class="pickup-desc">付款后凭核销码到钓场吧台/小卖部领取</text>
+					<text class="pickup-desc">付款后可直接到钓场吧台/小卖部领取，无需核销码</text>
 				</view>
 			</view>
 		</view>
 
 		<view class="card">
 			<text class="card-title">备注</text>
-			<textarea class="remark" v-model="remark" placeholder="例如：要冰镇的、辣酱多放、留给老王 ..." maxlength="100" />
+			<textarea class="remark" v-model="remark" placeholder="例如：要冰镇的、辣酱多放、留给前台 ..." maxlength="100" />
 		</view>
 
 		<view v-if="walletBalance > 0" class="balance-card" @click="toggleBalance">
 			<view class="balance-left">
-				<view class="balance-icon">💰</view>
+				<view class="balance-icon">💳</view>
 				<view class="balance-text">
 					<text class="balance-title">储值余额抵扣</text>
 					<text class="balance-desc">当前余额 ¥{{ formatMoney(walletBalance) }}{{ useBalance && balanceUsed > 0 ? '，本单抵扣 ¥' + formatMoney(balanceUsed) : '' }}</text>
