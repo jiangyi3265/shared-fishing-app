@@ -14,7 +14,7 @@
 				<view class="hero-label">应付金额</view>
 				<view class="hero-amount">
 					<text class="hero-currency">¥</text>
-					<text class="hero-number">{{ formatMoney(order.amountCents) }}</text>
+					<text class="hero-number">{{ formatMoney(wxPayAmount) }}</text>
 				</view>
 				<view class="hero-chips">
 					<view class="hero-chip"><text class="hero-chip-label">计费时长</text><text class="hero-chip-value">{{ formatDuration(order.durationSeconds || 0) }}</text></view>
@@ -945,5 +945,39 @@
 
 	.dock-btn::after {
 		border: 0;
+	}
+
+	/* 支付页避开全局 hero-chip 浅色覆盖，保持深色头图内的可读性 */
+	.pay .hero-chips {
+		background: transparent !important;
+		border: 0 !important;
+		box-shadow: none !important;
+	}
+
+	.pay .hero-chip {
+		min-height: 96rpx;
+		padding: 20rpx 22rpx !important;
+		border-radius: 22rpx !important;
+		background: rgba(248, 251, 247, 0.13) !important;
+		border: 1rpx solid rgba(248, 251, 247, 0.2) !important;
+		box-shadow: none !important;
+		justify-content: center;
+	}
+
+	.pay .hero-chip-label {
+		display: block;
+		color: rgba(248, 251, 247, 0.7) !important;
+		font-size: 22rpx !important;
+		font-weight: 700 !important;
+		letter-spacing: 0 !important;
+	}
+
+	.pay .hero-chip-value {
+		display: block;
+		margin-top: 6rpx;
+		color: #f8fbf7 !important;
+		font-size: 28rpx !important;
+		font-weight: 900 !important;
+		line-height: 1.2;
 	}
 </style>
