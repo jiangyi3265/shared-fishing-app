@@ -20,6 +20,7 @@
 		</view>
 		<view class="ad-footer">
 			<view class="back-btn" @click="goBack">返回首页</view>
+			<button class="share-btn" open-type="share">转发给好友</button>
 		</view>
 	</view>
 </template>
@@ -30,12 +31,14 @@ import { fetchAdById, getUser, isLoggedIn, grantCoupon, fetchMyCoupons, formatMo
 export default {
 	data() {
 		return {
+			adId: '',
 			ad: {},
 			couponTemplate: null,
 			claimed: false
 		}
 	},
 	onLoad(option) {
+		this.adId = option.id || ''
 		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/adDetail/adDetail?id=' + option.id) }); return }
 		fetchAdById(option.id).then((ad) => {
 			if (!ad) {
@@ -67,6 +70,12 @@ export default {
 		},
 		goBack() {
 			uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/index/index' }) })
+		},
+		getShareConfig() {
+			return {
+				title: this.ad && this.ad.title ? this.ad.title : '共享钓场活动',
+				path: '/pages/adDetail/adDetail?id=' + (this.ad.adId || this.ad.id || this.adId)
+			}
 		},
 		formatMoney
 	}
@@ -158,14 +167,28 @@ export default {
 	padding: 40rpx 28rpx;
 	display: flex;
 	justify-content: center;
+	gap: 18rpx;
 }
 
-.back-btn {
+.back-btn,
+.share-btn {
 	background: #1a2030;
 	color: #ffffff;
 	padding: 20rpx 60rpx;
 	border-radius: 999rpx;
 	font-size: 28rpx;
 	font-weight: 700;
+	line-height: 1.4;
+	margin: 0;
+	border: 0;
+}
+
+.share-btn {
+	background: #f5c23b;
+	color: #1a1306;
+}
+
+.share-btn::after {
+	border: 0;
 }
 </style>

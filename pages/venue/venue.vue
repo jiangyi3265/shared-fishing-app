@@ -49,6 +49,10 @@
 				<text class="action-btn-icon">📞</text>
 				<text class="action-btn-text">联系钓场</text>
 			</view>
+			<button class="action-btn action-btn-share" open-type="share">
+				<text class="action-btn-icon">↗</text>
+				<text class="action-btn-text">转发给好友</text>
+			</button>
 		</view>
 	</view>
 </template>
@@ -102,6 +106,13 @@
 					return
 				}
 				uni.makePhoneCall({ phoneNumber: phone })
+			},
+			getShareConfig() {
+				const name = this.venue && this.venue.name ? this.venue.name : '共享钓场'
+				return {
+					title: `${name}钓场详情，地址、公告和计费规则都在这里`,
+					path: '/pages/venue/venue'
+				}
 			},
 			goHome() {
 				uni.redirectTo({ url: '/pages/index/index' })
@@ -234,10 +245,12 @@
 		margin: 40rpx 32rpx 0;
 		display: flex;
 		gap: 20rpx;
+		flex-wrap: wrap;
 	}
 
 	.action-btn {
 		flex: 1;
+		min-width: 200rpx;
 		height: 100rpx;
 		display: flex;
 		align-items: center;
@@ -247,6 +260,13 @@
 		border-radius: 22rpx;
 		box-shadow: var(--accent-glow);
 		transition: var(--transition);
+		border: 0;
+		margin: 0;
+		padding: 0;
+		line-height: 1;
+	}
+
+	.action-btn::after {
 		border: 0;
 	}
 
@@ -261,6 +281,12 @@
 		border: 1rpx solid rgba(10, 46, 36, 0.15);
 	}
 
+	.action-btn-share {
+		background: var(--primary-gradient);
+		color: #ffffff;
+		box-shadow: 0 12rpx 28rpx rgba(10, 46, 36, 0.16);
+	}
+
 	.action-btn-icon {
 		font-size: 32rpx;
 	}
@@ -273,6 +299,10 @@
 
 	.action-btn-ghost .action-btn-text {
 		color: var(--text-main);
+	}
+
+	.action-btn-share .action-btn-text {
+		color: #ffffff;
 	}
 
 </style>

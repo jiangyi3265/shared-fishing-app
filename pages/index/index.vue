@@ -6,9 +6,12 @@
 					<text class="hero-kicker">共享钓场</text>
 					<text class="hero-title">{{ venue.name }}</text>
 				</view>
-				<view class="hero-status">
-					<text class="hero-status-dot"></text>
-					<text>开放中</text>
+				<view class="hero-actions">
+					<view class="hero-status">
+						<text class="hero-status-dot"></text>
+						<text>开放中</text>
+					</view>
+					<button class="hero-share-btn" open-type="share">转发给好友</button>
 				</view>
 			</view>
 			<view class="hero-metrics">
@@ -321,6 +324,13 @@
 				const action = item && item.action
 				if (action && typeof this[action] === 'function') this[action]()
 			},
+			getShareConfig() {
+				const name = this.venue && this.venue.name ? this.venue.name : '共享钓场'
+				return {
+					title: `${name}，扫码入场、计时计费更省心`,
+					path: '/pages/index/index'
+				}
+			},
 			scanStart() {
 				if (!this.user) { this.goLogin('/pages/index/index?action=start'); return }
 				if (this.pendingOrder) {
@@ -472,6 +482,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8rpx;
+		min-width: 0;
 	}
 
 	.hero-kicker {
@@ -490,6 +501,14 @@
 		text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.25);
 	}
 
+	.hero-actions {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 12rpx;
+		flex-shrink: 0;
+	}
+
 	.hero-status {
 		height: 52rpx;
 		padding: 0 24rpx;
@@ -503,6 +522,24 @@
 		font-size: 22rpx;
 		font-weight: 800;
 		backdrop-filter: blur(5px);
+	}
+
+	.hero-share-btn {
+		height: 52rpx;
+		line-height: 52rpx;
+		margin: 0;
+		padding: 0 22rpx;
+		border-radius: 999rpx;
+		background: rgba(245, 210, 133, 0.16);
+		border: 1rpx solid rgba(245, 210, 133, 0.34);
+		color: #f5d285;
+		font-size: 22rpx;
+		font-weight: 800;
+		backdrop-filter: blur(5px);
+	}
+
+	.hero-share-btn::after {
+		border: 0;
 	}
 
 	.hero-status-dot {

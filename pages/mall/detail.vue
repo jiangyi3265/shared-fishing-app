@@ -10,6 +10,7 @@
 				<text class="price">¥{{ formatMoney(goods.priceCents) }}</text>
 				<text class="sales">已领用 {{ goods.sales }} · 库存 {{ goods.stock }}</text>
 			</view>
+			<button class="share-line" open-type="share">转发给好友</button>
 		</view>
 
 		<view class="card">
@@ -34,8 +35,9 @@
 	import { formatMoney } from '../../utils/fishingStore.js'
 
 	export default {
-		data() { return { goods: null, qty: 1 } },
+		data() { return { goods: null, qty: 1, goodsId: null } },
 		onLoad(query) {
+			this.goodsId = query.goodsId
 			fetchGoodsDetail(query.goodsId).then((g) => {
 				if (!g) { uni.showToast({ title: '补给不存在', icon: 'none' }); return }
 				this.goods = g
@@ -52,6 +54,13 @@
 			buyNow() {
 				addToCart(this.goods, this.qty)
 				uni.navigateTo({ url: '/pages/mall/checkout' })
+			},
+			getShareConfig() {
+				if (!this.goods) return { title: '共享钓场补给', path: '/pages/mall/index' }
+				return {
+					title: `${this.goods.name}，钓场补给可直接下单`,
+					path: '/pages/mall/detail?goodsId=' + (this.goods.goodsId || this.goodsId)
+				}
 			}
 		}
 	}
@@ -67,6 +76,8 @@
 	.meta { display: flex; justify-content: space-between; align-items: baseline; margin-top: 20rpx; }
 	.price { color: #b8860b; font-size: 52rpx; font-weight: 800; font-variant-numeric: tabular-nums; }
 	.sales { color: #9aa3b2; font-size: 22rpx; }
+	.share-line { margin: 24rpx 0 0; height: 68rpx; line-height: 68rpx; border-radius: 999rpx; background: #1a2030; color: #fff; font-size: 26rpx; font-weight: 800; border: 0; }
+	.share-line::after { border: 0; }
 
 	.card { margin: 20rpx 28rpx; padding: 28rpx; background: #fff; border-radius: 22rpx; box-shadow: 0 6rpx 20rpx rgba(26,32,48,.04); }
 	.card-title { display: block; font-size: 28rpx; font-weight: 800; color: #1a2030; margin-bottom: 14rpx; }
