@@ -117,7 +117,6 @@
 		fetchOrders,
 		isLoggedIn,
 		logout,
-		finishOrder,
 		fetchRunningOrder,
 		fetchPendingOrder,
 		fetchStaffInfo
@@ -219,7 +218,7 @@
 					if (p) { uni.redirectTo({ url: '/pages/pay/pay' }); return }
 					fetchRunningOrder(user.userId).then((r) => {
 						if (!r) { uni.showToast({ title: '未检测到进行中的订单', icon: 'none' }); return }
-						finishOrder(user.userId).then(() => uni.redirectTo({ url: '/pages/pay/pay' }))
+						uni.redirectTo({ url: '/pages/session/session' })
 					})
 				})
 			},

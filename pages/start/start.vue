@@ -83,14 +83,20 @@
 
 	export default {
 		data() {
-			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE }
+			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE, scanQrId: null, scanScene: '' }
 		},
 		computed: {
 			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) }
 		},
-		onLoad() {
+		onLoad(option = {}) {
+			this.applyScanOption(option)
 			if (!isLoggedIn()) {
-				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start') })
+				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildScanQuery()) })
+				return
+			}
+			if (!this.hasScanProof()) {
+				uni.showToast({ title: '请先扫描入口码', icon: 'none' })
+				setTimeout(() => this.backHome(), 500)
 				return
 			}
 			this.loadVenue()
@@ -109,16 +115,52 @@
 				if (data.venue) this.venue = data.venue
 				if (data.rule) this.rule = Object.assign({}, FALLBACK_RULE, data.rule, { name: data.rule.ruleName || FALLBACK_RULE.name })
 			},
+			applyScanOption(option = {}) {
+				const rawScene = option.scene
+					? decodeURIComponent(option.scene)
+					: (option.action && option.venueId ? 'action=' + option.action + '&venueId=' + option.venueId : '')
+				const sceneParams = this.parseScan(rawScene)
+				const qrId = Number(option.qrId || sceneParams.qrId || 0)
+				this.scanQrId = Number.isFinite(qrId) && qrId > 0 ? qrId : null
+				this.scanScene = this.scanQrId ? '' : rawScene
+			},
+			parseScan(raw) {
+				if (!raw || raw.indexOf('=') < 0) return {}
+				const out = {}
+				raw.split('&').forEach((pair) => {
+					const [k, v] = pair.split('=')
+					if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '')
+				})
+				return out
+			},
+			hasScanProof() {
+				return Boolean(this.scanQrId || this.scanScene)
+			},
+			currentScan() {
+				return this.scanQrId ? { qrId: this.scanQrId } : { scene: this.scanScene }
+			},
+			buildScanQuery() {
+				if (this.scanQrId) return '?qrId=' + encodeURIComponent(this.scanQrId)
+				if (this.scanScene) return '?scene=' + encodeURIComponent(this.scanScene)
+				return ''
+			},
 			startNow() {
 				const user = getUser()
-				if (!user) { uni.redirectTo({ url: '/pages/login/login' }); return }
+				if (!user) {
+					uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildScanQuery()) })
+					return
+				}
+				if (!this.hasScanProof()) {
+					uni.showToast({ title: '请先扫描入口码', icon: 'none' })
+					return
+				}
 				fetchPendingOrder(user.userId).then((pending) => {
 					if (pending) {
 						uni.showToast({ title: '请先支付未完成账单', icon: 'none' })
 						uni.redirectTo({ url: '/pages/pay/pay' })
 						return
 					}
-					startOrder(user.userId, this.venue.venueId).then(() => {
+					startOrder(user.userId, this.venue.venueId, this.currentScan()).then(() => {
 						uni.redirectTo({ url: '/pages/session/session' })
 					})
 				})

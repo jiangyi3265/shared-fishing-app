@@ -7,15 +7,15 @@
 
 		<view class="calendar">
 			<view class="cal-nav">
-				<text class="cal-arrow" @click="prevMonth">&lt;</text>
+				<text class="cal-arrow" @click="prevMonth">‹</text>
 				<text class="cal-month">{{ currentMonth }}</text>
-				<text class="cal-arrow" @click="nextMonth">&gt;</text>
+				<text class="cal-arrow" @click="nextMonth">›</text>
 			</view>
 			<view class="cal-weekdays">
 				<text v-for="w in weekdays" :key="w" class="cal-wd">{{ w }}</text>
 			</view>
 			<view class="cal-days">
-				<view v-for="(d, i) in calendarDays" :key="i" class="cal-day" :class="{checked: d.checked, today: d.isToday, empty: !d.day}">
+				<view v-for="(d, i) in calendarDays" :key="i" class="cal-day" :class="{checked: d.checked, today: d.isToday, 'cal-empty': !d.day}">
 					<text v-if="d.day">{{ d.day }}</text>
 					<view v-if="d.checked" class="cal-dot"></view>
 				</view>
@@ -117,25 +117,26 @@ export default {
 </script>
 
 <style scoped>
-.checkin-page { padding: 0 24rpx 40rpx; }
-.checkin-header { display: flex; justify-content: space-between; align-items: center; padding: 30rpx 0 20rpx; }
-.checkin-title { font-size: 36rpx; font-weight: bold; }
-.checkin-streak { font-size: 26rpx; color: #f5a623; }
-.calendar { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 24rpx; }
+.checkin-page { padding: 0 24rpx 180rpx !important; overflow: visible; box-sizing: border-box; }
+.checkin-header { display: flex; justify-content: space-between; align-items: center; gap: 20rpx; padding: 30rpx 0 20rpx; min-height: 104rpx; box-sizing: border-box; }
+.checkin-title { font-size: 36rpx; font-weight: bold; line-height: 1.25; color: #1a2030; }
+.checkin-streak { font-size: 26rpx; color: #f5a623; white-space: nowrap; }
+.calendar { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 24rpx; overflow: hidden; box-sizing: border-box; }
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
-.cal-arrow { font-size: 32rpx; padding: 10rpx 20rpx; color: #666; }
+.cal-arrow { width: 64rpx; height: 64rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 42rpx; line-height: 1; color: #666; background: #f7faf8; }
 .cal-month { font-size: 30rpx; font-weight: bold; }
-.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8rpx; }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; margin-bottom: 8rpx; }
 .cal-wd { font-size: 24rpx; color: #999; padding: 8rpx 0; }
-.cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4rpx; }
-.cal-day { text-align: center; padding: 14rpx 0; font-size: 26rpx; border-radius: 8rpx; position: relative; min-height: 60rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8rpx; }
+.cal-day { width: 100%; height: 68rpx; min-height: 68rpx; text-align: center; padding: 0; font-size: 26rpx; border-radius: 8rpx; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.cal-day.cal-empty { visibility: hidden; background: transparent; border: 0; box-shadow: none; }
 .cal-day.today { background: #f0f7ff; font-weight: bold; color: #3b82f6; }
 .cal-day.checked { background: #e8f5e9; color: #2e7d32; }
 .cal-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #4caf50; margin-top: 4rpx; }
 .rewards-section { margin-bottom: 24rpx; }
 .section-title { font-size: 30rpx; font-weight: bold; margin-bottom: 16rpx; }
-.reward-list { display: flex; gap: 12rpx; }
-.reward-item { flex: 1; background: #f5f5f5; border-radius: 12rpx; padding: 16rpx 8rpx; text-align: center; }
+.reward-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12rpx; }
+.reward-item { min-width: 0; background: #f5f5f5; border-radius: 12rpx; padding: 16rpx 6rpx; text-align: center; box-sizing: border-box; }
 .reward-item.achieved { background: #e8f5e9; border: 2rpx solid #4caf50; }
 .reward-days { font-size: 24rpx; color: #666; display: block; }
 .reward-pts { font-size: 22rpx; color: #4caf50; font-weight: bold; }

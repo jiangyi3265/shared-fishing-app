@@ -269,9 +269,9 @@
 				this.loadVenue()
 				this.refreshData()
 				this.startTimer()
-				if (option.action === 'start') this.scanStart()
+				if (option.qrId || option.scene || (option.action && option.venueId)) this.handleScanResult(this.optionToRawScan(option), null)
+				else if (option.action === 'start') this.scanStart()
 				else if (option.action === 'end') this.scanEnd()
-				else if (option.scene) this.handleMiniCodeScene(option.scene)
 			},
 			loadVenue() {
 				const cached = getCachedVenue()
@@ -343,17 +343,23 @@
 			},
 			scanEnd() {
 				if (!this.user) { this.goLogin('/pages/index/index?action=end'); return }
-				if (this.pendingOrder) { this.goPay(); return }
-				if (this.runningOrder) {
-					this.launchScan('end')
-					return
-				}
-				uni.showToast({ title: '未检测到进行中的订单', icon: 'none' })
+				fetchPendingOrder(this.user.userId).then((pending) => {
+					if (pending) { this.goPay(); return null }
+					return fetchRunningOrder(this.user.userId)
+				}).then((running) => {
+					if (running === null) return
+					if (running) {
+						this.runningOrder = running
+						this.launchScan('end')
+						return
+					}
+					uni.showToast({ title: '未检测到进行中的订单', icon: 'none' })
+				})
 			},
 			launchScan(expectedAction) {
 				// #ifdef MP-WEIXIN || APP-PLUS
 				uni.scanCode({
-					onlyFromCamera: false,
+					onlyFromCamera: true,
 					success: (res) => this.handleScanResult(res.result || '', expectedAction),
 					fail: () => this.fallbackScan(expectedAction)
 				})
@@ -363,39 +369,63 @@
 				// #endif
 			},
 			fallbackScan(expectedAction) {
-				if (expectedAction === 'start') { uni.redirectTo({ url: '/pages/start/start' }); return }
-				if (expectedAction === 'end') {
-					if (!this.user) { this.goLogin('/pages/index/index?action=end'); return }
-					finishOrder(this.user.userId).then(() => this.goPay())
-				}
+				uni.showToast({
+					title: expectedAction === 'start' ? '请扫描入口码' : '请扫描出口码',
+					icon: 'none'
+				})
 			},
 			handleScanResult(raw, expectedAction) {
 				const params = this.parseScan(raw)
-				if (!params || (params.action !== expectedAction && expectedAction)) {
-					uni.showToast({ title: '二维码与当前操作不匹配', icon: 'none' })
+				const scan = this.extractScanProof(params)
+				if (!scan) {
+					uni.showToast({ title: '请扫描钓场入口或出口二维码', icon: 'none' })
 					return
 				}
-				if (params.qrId) {
-					resolveQrcode({ qrId: params.qrId }).then((data) => {
-						if (!data) return
-						if (data.action === 'start') uni.redirectTo({ url: '/pages/start/start' })
-						else if (data.action === 'end' && this.user) finishOrder(this.user.userId).then(() => this.goPay())
-					}).catch(() => this.fallbackScan(expectedAction))
-				} else {
-					this.fallbackScan(expectedAction)
-				}
+				resolveQrcode(scan).then((data) => {
+					if (!data) return
+					if (expectedAction && data.action !== expectedAction) {
+						uni.showToast({ title: '二维码与当前操作不匹配', icon: 'none' })
+						return
+					}
+					if (data.action === 'start') {
+						uni.redirectTo({ url: '/pages/start/start' + this.buildScanQuery(scan) })
+						return
+					}
+					if (data.action === 'end') this.finishWithScan(scan)
+				}).catch(() => {
+					uni.showToast({ title: '二维码无效或已停用', icon: 'none' })
+				})
 			},
-			handleMiniCodeScene(scene) {
-				try {
-					this.handleScanResult(decodeURIComponent(scene), null)
-				} catch (e) {
-					this.handleScanResult(scene, null)
+			finishWithScan(scan) {
+				if (!this.user) {
+					this.goLogin('/pages/index/index' + this.buildScanQuery(scan))
+					return
 				}
+				fetchPendingOrder(this.user.userId).then((pending) => {
+					if (pending) {
+						this.goPay()
+						return null
+					}
+					return fetchRunningOrder(this.user.userId)
+				}).then((running) => {
+					if (running === null) return
+					if (!running) {
+						uni.showToast({ title: '未检测到进行中的订单', icon: 'none' })
+						return
+					}
+					finishOrder(this.user.userId, scan).then(() => this.goPay())
+				})
+			},
+			optionToRawScan(option = {}) {
+				if (option.qrId) return 'qrId=' + option.qrId
+				if (option.action && option.venueId) return 'action=' + option.action + '&venueId=' + option.venueId
+				return option.scene ? decodeURIComponent(option.scene) : ''
 			},
 			parseScan(raw) {
 				if (!raw) return null
 				const idx = raw.indexOf('?')
 				const qs = idx >= 0 ? raw.slice(idx + 1) : raw
+				if (qs.indexOf('=') < 0) return { scene: qs }
 				const out = {}
 				qs.split('&').forEach((pair) => {
 					const [k, v] = pair.split('=')
@@ -404,6 +434,22 @@
 				if (out.qrId) out.qrId = Number(out.qrId)
 				if (out.venueId) out.venueId = Number(out.venueId)
 				return out
+			},
+			extractScanProof(params) {
+				if (!params) return null
+				if (params.qrId) return { qrId: params.qrId }
+				if (params.scene) {
+					const nested = this.parseScan(params.scene)
+					if (nested && nested.qrId) return { qrId: nested.qrId }
+					return { scene: params.scene }
+				}
+				if (params.action && params.venueId) return { scene: 'action=' + params.action + '&venueId=' + params.venueId }
+				return null
+			},
+			buildScanQuery(scan) {
+				if (scan.qrId) return '?qrId=' + encodeURIComponent(scan.qrId)
+				if (scan.scene) return '?scene=' + encodeURIComponent(scan.scene)
+				return ''
 			},
 			goPay() { uni.redirectTo({ url: '/pages/pay/pay' }) },
 			goSession() { uni.redirectTo({ url: '/pages/session/session' }) },

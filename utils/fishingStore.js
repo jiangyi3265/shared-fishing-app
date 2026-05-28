@@ -116,12 +116,18 @@ export function fetchPendingOrder(userId) {
 	return http.get('/app/order/pending', { userId }).then((data) => data || null)
 }
 
-export function startOrder(userId, venueId) {
-	return http.post('/app/order/start', { userId, venueId })
+function attachScanPayload(payload, scan = {}) {
+	if (scan.qrId) payload.qrId = scan.qrId
+	if (scan.scene) payload.scene = scan.scene
+	return payload
 }
 
-export function finishOrder(userId) {
-	return http.post('/app/order/finish', { userId })
+export function startOrder(userId, venueId, scan = {}) {
+	return http.post('/app/order/start', attachScanPayload({ userId, venueId }, scan))
+}
+
+export function finishOrder(userId, scan = {}) {
+	return http.post('/app/order/finish', attachScanPayload({ userId }, scan))
 }
 
 export function payOrder(userId, orderId, couponId, mallOrderIds, useBalance) {

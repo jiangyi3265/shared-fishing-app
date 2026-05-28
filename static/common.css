@@ -3544,3 +3544,63 @@ textarea,
 		gap: 12rpx !important;
 	}
 }
+
+/* Secondary page layout guards. */
+.app {
+	overflow-x: hidden !important;
+	overflow-y: visible !important;
+	box-sizing: border-box !important;
+}
+
+.page-head,
+.checkin-header {
+	position: relative !important;
+	z-index: 2 !important;
+	box-sizing: border-box !important;
+}
+
+.page-head-title {
+	min-width: 0 !important;
+	max-width: 100% !important;
+	line-height: 1.25 !important;
+	word-break: break-word !important;
+	letter-spacing: 0 !important;
+}
+
+.cart,
+.checkout,
+.detail,
+.voucher,
+.recharge,
+.refund-apply,
+.activity-reg,
+.pay,
+.session,
+.start,
+.result,
+.login,
+.mall {
+	padding-bottom: calc(220rpx + env(safe-area-inset-bottom)) !important;
+}
+
+.footer,
+.reg-footer,
+.dock {
+	z-index: 60 !important;
+	box-sizing: border-box !important;
+}
+
+.group-meta,
+.comp-meta,
+.rental-prices,
+.stocking-info {
+	flex-wrap: wrap !important;
+}
+
+.group-title,
+.comp-title,
+.rental-info,
+.spot-name,
+.stocking-species {
+	min-width: 0 !important;
+}

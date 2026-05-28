@@ -85,6 +85,7 @@
 		getUser,
 		fetchRunningOrder,
 		finishOrder,
+		resolveQrcode,
 		getCachedVenue,
 		loadDefaultVenue,
 		isLoggedIn
@@ -153,13 +154,44 @@
 				})
 			},
 			finish() {
+				this.launchScan()
+			},
+			launchScan() {
+				// #ifdef MP-WEIXIN || APP-PLUS
+				uni.scanCode({
+					onlyFromCamera: true,
+					success: (res) => this.handleScanResult(res.result || ''),
+					fail: () => uni.showToast({ title: '请扫描出口码', icon: 'none' })
+				})
+				// #endif
+				// #ifndef MP-WEIXIN || APP-PLUS
+				uni.showToast({ title: '请扫描出口码', icon: 'none' })
+				// #endif
+			},
+			handleScanResult(raw) {
+				const scan = this.extractScanProof(this.parseScan(raw))
+				if (!scan) {
+					uni.showToast({ title: '请扫描出口码', icon: 'none' })
+					return
+				}
+				resolveQrcode(scan).then((data) => {
+					if (!data || data.action !== 'end') {
+						uni.showToast({ title: '请扫描出口码', icon: 'none' })
+						return
+					}
+					this.confirmFinish(scan)
+				}).catch(() => {
+					uni.showToast({ title: '二维码无效或已停用', icon: 'none' })
+				})
+			},
+			confirmFinish(scan) {
 				uni.showModal({
 					title: '结束本次计时',
 					content: '将记录结束时间并生成待支付订单',
 					success: (res) => {
 						if (!res.confirm) return
 						const user = getUser()
-						finishOrder(user.userId).then((result) => {
+						finishOrder(user.userId, scan).then((result) => {
 							if (!result) {
 								uni.showToast({ title: '未检测到进行中订单', icon: 'none' })
 								this.backHome()
@@ -169,6 +201,30 @@
 						})
 					}
 				})
+			},
+			parseScan(raw) {
+				if (!raw) return null
+				const idx = raw.indexOf('?')
+				const qs = idx >= 0 ? raw.slice(idx + 1) : raw
+				if (qs.indexOf('=') < 0) return { scene: qs }
+				const out = {}
+				qs.split('&').forEach((pair) => {
+					const [k, v] = pair.split('=')
+					if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '')
+				})
+				if (out.qrId) out.qrId = Number(out.qrId)
+				return out
+			},
+			extractScanProof(params) {
+				if (!params) return null
+				if (params.qrId) return { qrId: params.qrId }
+				if (params.scene) {
+					const nested = this.parseScan(params.scene)
+					if (nested && nested.qrId) return { qrId: nested.qrId }
+					return { scene: params.scene }
+				}
+				if (params.action && params.venueId) return { scene: 'action=' + params.action + '&venueId=' + params.venueId }
+				return null
 			},
 			backHome() { uni.redirectTo({ url: '/pages/index/index' }) },
 			startTimer() {
