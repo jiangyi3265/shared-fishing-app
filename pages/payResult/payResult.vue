@@ -80,7 +80,10 @@
 		},
 		methods: {
 			goHome() { uni.reLaunch({ url: '/pages/index/index' }) },
-			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
+			goOrders() {
+				// reLaunch 首页 + after 参数，由首页 onReady 跳订单页，保证订单页下方垫着首页（避免左滑退出小程序）
+				uni.reLaunch({ url: '/pages/index/index?after=' + encodeURIComponent('/pages/orders/orders') })
+			},
 			retry() { uni.redirectTo({ url: '/pages/pay/pay' }) },
 			formatMoney,
 			formatDuration,

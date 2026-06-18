@@ -58,7 +58,7 @@
 </template>
 
 <script>
-	import { formatMoney, loadDefaultVenue, getCachedVenue } from '../../utils/fishingStore.js'
+	import { formatMoney, loadDefaultVenue, getCachedVenue, goHomeSafely } from '../../utils/fishingStore.js'
 
 	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
 
@@ -115,7 +115,7 @@
 				}
 			},
 			goHome() {
-				uni.redirectTo({ url: '/pages/index/index' })
+				goHomeSafely()
 			}
 		}
 	}

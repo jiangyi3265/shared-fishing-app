@@ -75,7 +75,8 @@
 		fetchPendingOrder,
 		isLoggedIn,
 		loadDefaultVenue,
-		getCachedVenue
+		getCachedVenue,
+		goHomeSafely
 	} from '../../utils/fishingStore.js'
 
 	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
@@ -165,7 +166,7 @@
 					})
 				})
 			},
-			backHome() { uni.redirectTo({ url: '/pages/index/index' }) }
+			backHome() { goHomeSafely() }
 		}
 	}
 </script>

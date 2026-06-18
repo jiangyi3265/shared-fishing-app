@@ -88,7 +88,8 @@
 		resolveQrcode,
 		getCachedVenue,
 		loadDefaultVenue,
-		isLoggedIn
+		isLoggedIn,
+		goHomeSafely
 	} from '../../utils/fishingStore.js'
 
 	const DEFAULT_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
@@ -144,9 +145,9 @@
 			},
 			refresh() {
 				const user = getUser()
-				if (!user) { uni.redirectTo({ url: '/pages/index/index' }); return }
+				if (!user) { goHomeSafely(); return }
 				fetchRunningOrder(user.userId).then((running) => {
-					if (!running) { uni.redirectTo({ url: '/pages/index/index' }); return }
+					if (!running) { goHomeSafely(); return }
 					this.order = running
 					if (running.ruleSnapshot) {
 						try { this.rule = Object.assign({}, this.rule, JSON.parse(running.ruleSnapshot)) } catch (e) {}
@@ -226,7 +227,7 @@
 				if (params.action && params.venueId) return { scene: 'action=' + params.action + '&venueId=' + params.venueId }
 				return null
 			},
-			backHome() { uni.redirectTo({ url: '/pages/index/index' }) },
+			backHome() { goHomeSafely() },
 			startTimer() {
 				if (this.timer) return
 				this.timer = setInterval(() => { this.now = Date.now() }, 1000)

@@ -134,7 +134,8 @@
 		isLoggedIn,
 		fetchAvailableCoupons,
 		applyCouponToOrder,
-		COUPON_TYPE
+		COUPON_TYPE,
+		goHomeSafely
 	} from '../../utils/fishingStore.js'
 	import { fetchUnpaidMallOrders } from '../../utils/mallStore.js'
 	import { fetchWallet } from '../../utils/walletStore.js'
@@ -273,7 +274,7 @@
 						})
 					})
 			},
-			goHome() { uni.redirectTo({ url: '/pages/index/index' }) },
+			goHome() { goHomeSafely() },
 			formatMoney,
 			formatDuration,
 			formatDatetime

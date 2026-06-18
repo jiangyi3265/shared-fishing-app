@@ -36,7 +36,11 @@
 			<view class="search-btn" @click="onSearch">搜索</view>
 		</view>
 
-		<view class="home-scene-tabs">
+		<view
+			class="home-scene-tabs"
+			@touchstart="onSceneTouchStart"
+			@touchend="onSceneTouchEnd"
+		>
 			<view
 				v-for="tab in sceneTabs"
 				:key="tab.key"
@@ -46,6 +50,36 @@
 			>
 				<text class="scene-tab-name">{{ tab.name }}</text>
 				<text class="scene-tab-sub">{{ tab.sub }}</text>
+			</view>
+		</view>
+
+		<view
+			class="service-section"
+			@touchstart="onSceneTouchStart"
+			@touchend="onSceneTouchEnd"
+		>
+			<view class="service-head">
+				<view>
+					<text class="service-kicker">{{ activeScene.kicker }}</text>
+					<text class="service-title">{{ activeScene.panelTitle }}</text>
+				</view>
+				<text class="service-count">{{ displayServiceCards.length }} 项</text>
+			</view>
+			<view class="service-grid">
+				<view
+					v-for="item in displayServiceCards"
+					:key="item.name"
+					class="service-card"
+					:class="{ 'is-primary': item.primary }"
+					@click="handleService(item)"
+				>
+					<view class="service-icon" :class="[item.icon, item.tone]"></view>
+					<view class="service-copy">
+						<text class="service-name">{{ item.name }}</text>
+						<text class="service-desc">{{ item.desc }}</text>
+					</view>
+					<text class="service-arrow">›</text>
+				</view>
 			</view>
 		</view>
 
@@ -116,30 +150,17 @@
 			</view>
 		</view>
 
-		<view class="service-section">
-			<view class="service-head">
-				<view>
-					<text class="service-kicker">{{ activeScene.kicker }}</text>
-					<text class="service-title">{{ activeScene.panelTitle }}</text>
+		<view class="weigh-entry" @click="scanWeighFish">
+			<view class="weigh-entry-left">
+				<view class="weigh-entry-icon">
+					<text class="weigh-icon-text">秤</text>
 				</view>
-				<text class="service-count">{{ displayServiceCards.length }} 项</text>
-			</view>
-			<view class="service-grid">
-				<view
-					v-for="item in displayServiceCards"
-					:key="item.name"
-					class="service-card"
-					:class="{ 'is-primary': item.primary }"
-					@click="handleService(item)"
-				>
-					<view class="service-icon" :class="[item.icon, item.tone]"></view>
-					<view class="service-copy">
-						<text class="service-name">{{ item.name }}</text>
-						<text class="service-desc">{{ item.desc }}</text>
-					</view>
-					<text class="service-arrow">›</text>
+				<view class="weigh-entry-copy">
+					<text class="weigh-entry-title">称鱼结算</text>
+					<text class="weigh-entry-desc">将鱼放上电子秤 · 扫码录入重量 · 确认付款</text>
 				</view>
 			</view>
+			<text class="weigh-entry-arrow">›</text>
 		</view>
 
 		<view class="footer-text">技术支持 · 共享钓场</view>
@@ -195,6 +216,8 @@
 				pendingOrder: null,
 				now: Date.now(),
 				timer: null,
+				sceneTouchStartX: 0,
+				sceneTouchStartY: 0,
 				venue: FALLBACK_VENUE,
 				rule: FALLBACK_RULE,
 				keyword: '',
@@ -251,7 +274,17 @@
 			}
 		},
 		onLoad(option = {}) {
+			this.afterTarget = option.after || ''
 			this.bootstrap(option)
+		},
+		onReady() {
+			// 配合 reLaunch('/pages/index/index?after=目标页')：在首页确保就绪后再 push 目标页，
+			// 让目标页下方垫着首页（安卓左滑退回首页而非退出小程序），并避开 reLaunch 后立即跳转的时序失败。
+			if (this.afterTarget && this.afterTarget !== '/pages/index/index') {
+				const url = this.afterTarget
+				this.afterTarget = ''
+				uni.navigateTo({ url })
+			}
 		},
 		onShow() {
 			this.refreshData()
@@ -309,6 +342,29 @@
 			switchSceneTab(key) {
 				this.activeSceneTab = key
 			},
+			onSceneTouchStart(e) {
+				const t = e.touches && e.touches[0]
+				if (!t) return
+				this.sceneTouchStartX = t.clientX
+				this.sceneTouchStartY = t.clientY
+			},
+			onSceneTouchEnd(e) {
+				const t = e.changedTouches && e.changedTouches[0]
+				if (!t) return
+				const dx = t.clientX - this.sceneTouchStartX
+				const dy = t.clientY - this.sceneTouchStartY
+				// 仅识别明显的水平滑动，避免与上下滚动冲突
+				if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+				const keys = this.sceneTabs.map((tab) => tab.key)
+				const idx = keys.indexOf(this.activeSceneTab)
+				if (dx < 0) {
+					// 左滑：切换到下一个标签
+					if (idx < keys.length - 1) this.switchSceneTab(keys[idx + 1])
+				} else {
+					// 右滑：切换到上一个标签
+					if (idx > 0) this.switchSceneTab(keys[idx - 1])
+				}
+			},
 			onAdClick(ad) {
 				if (ad.type === 'fallback') {
 					this.goVenue()
@@ -330,6 +386,18 @@
 					title: `${name}，扫码入场、计时计费更省心`,
 					path: '/pages/index/index'
 				}
+			},
+			scanWeighFish() {
+				if (!this.user) { this.goLogin('/pages/index/index'); return }
+				uni.scanCode({
+					onlyFromCamera: true,
+					success: (res) => {
+						uni.navigateTo({ url: '/pages/weighFish/weighFish?scan=' + encodeURIComponent(res.result || '') })
+					},
+					fail: () => {
+						uni.navigateTo({ url: '/pages/weighFish/weighFish' })
+					}
+				})
 			},
 			scanStart() {
 				if (!this.user) { this.goLogin('/pages/index/index?action=start'); return }
@@ -388,7 +456,7 @@
 						return
 					}
 					if (data.action === 'start') {
-						uni.redirectTo({ url: '/pages/start/start' + this.buildScanQuery(scan) })
+						uni.navigateTo({ url: '/pages/start/start' + this.buildScanQuery(scan) })
 						return
 					}
 					if (data.action === 'end') this.finishWithScan(scan)
@@ -451,10 +519,10 @@
 				if (scan.scene) return '?scene=' + encodeURIComponent(scan.scene)
 				return ''
 			},
-			goPay() { uni.redirectTo({ url: '/pages/pay/pay' }) },
-			goSession() { uni.redirectTo({ url: '/pages/session/session' }) },
-			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
-			goMine() { uni.redirectTo({ url: '/pages/mine/mine' }) },
+			goPay() { uni.navigateTo({ url: '/pages/pay/pay' }) },
+			goSession() { uni.navigateTo({ url: '/pages/session/session' }) },
+			goOrders() { uni.navigateTo({ url: '/pages/orders/orders' }) },
+			goMine() { uni.navigateTo({ url: '/pages/mine/mine' }) },
 			goLogin(redirect) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent(redirect || '/pages/index/index') }) },
 			goVenue() { uni.navigateTo({ url: '/pages/venue/venue' }) },
 			goStocking() { uni.navigateTo({ url: '/pages/stocking/stocking' }) },
@@ -1118,6 +1186,79 @@
 		font-size: 28rpx;
 		color: var(--text-light);
 		font-weight: 700;
+	}
+
+	/* ---------------- 称鱼结算入口 ---------------- */
+	.weigh-entry {
+		margin: 0 28rpx 24rpx;
+		padding: 28rpx 24rpx;
+		background: var(--surface);
+		border: 1rpx solid var(--border-color);
+		border-radius: 22rpx;
+		box-shadow: var(--card-shadow);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		transition: var(--transition);
+	}
+
+	.weigh-entry:active {
+		transform: translateY(1rpx);
+		opacity: 0.88;
+	}
+
+	.weigh-entry-left {
+		display: flex;
+		align-items: center;
+		gap: 20rpx;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.weigh-entry-icon {
+		width: 88rpx;
+		height: 88rpx;
+		border-radius: 22rpx;
+		background: var(--accent-gradient);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.weigh-icon-text {
+		font-size: 42rpx;
+		font-weight: 900;
+		color: #ffffff;
+		line-height: 1;
+	}
+
+	.weigh-entry-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 8rpx;
+		min-width: 0;
+	}
+
+	.weigh-entry-title {
+		font-size: 31rpx;
+		font-weight: 850;
+		color: var(--text-main);
+	}
+
+	.weigh-entry-desc {
+		font-size: 23rpx;
+		color: var(--text-muted);
+		line-height: 1.4;
+		font-weight: 600;
+	}
+
+	.weigh-entry-arrow {
+		font-size: 36rpx;
+		color: var(--text-light);
+		font-weight: 700;
+		flex-shrink: 0;
+		margin-left: 12rpx;
 	}
 
 	.footer-text {

@@ -120,7 +120,13 @@
 			},
 			goNext() {
 				const target = this.redirect ? decodeURIComponent(this.redirect) : '/pages/index/index'
-				uni.reLaunch({ url: target })
+				if (target === '/pages/index/index') {
+					uni.reLaunch({ url: target })
+					return
+				}
+				// reLaunch 到首页并带 after 参数，由首页在 onReady 里 navigateTo 目标页：
+				// 既保证目标页下方垫着首页（左滑退回首页而非退出小程序），又避开 reLaunch 后立即跳转的时序失败。
+				uni.reLaunch({ url: '/pages/index/index?after=' + encodeURIComponent(target) })
 			}
 		}
 	}

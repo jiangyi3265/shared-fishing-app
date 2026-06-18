@@ -119,7 +119,8 @@
 		logout,
 		fetchRunningOrder,
 		fetchPendingOrder,
-		fetchStaffInfo
+		fetchStaffInfo,
+		goHomeSafely
 	} from '../../utils/fishingStore.js'
 
 	export default {
@@ -201,8 +202,8 @@
 					}
 				})
 			},
-			goHome() { uni.redirectTo({ url: '/pages/index/index' }) },
-			goOrders() { uni.redirectTo({ url: '/pages/orders/orders' }) },
+			goHome() { goHomeSafely() },
+			goOrders() { uni.navigateTo({ url: '/pages/orders/orders' }) },
 			goPay() {
 				const user = getUser()
 				if (!user) return

@@ -3,7 +3,8 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "共享钓场"
+				"navigationBarTitleText": "共享钓场",
+				"disableSwipeBack": true
 			}
 		},
 		{
@@ -238,6 +239,12 @@
 			"path": "pages/wallet/recharge",
 			"style": {
 				"navigationBarTitleText": "钱包充值"
+			}
+		},
+		{
+			"path": "pages/weighFish/weighFish",
+			"style": {
+				"navigationBarTitleText": "称鱼结算"
 			}
 		}
 	],

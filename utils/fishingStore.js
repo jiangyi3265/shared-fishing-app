@@ -21,6 +21,31 @@ export function formatMoney(cents) {
 	return (Number(cents || 0) / 100).toFixed(2)
 }
 
+/**
+ * 安全返回首页：若首页在页面栈底则逐级返回（不新建页面），
+ * 否则用 reLaunch 重置到首页。避免堆叠重复首页，也保证滑动返回能回到首页。
+ */
+export function goHomeSafely() {
+	const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : []
+	if (pages && pages.length > 1) {
+		uni.navigateBack({ delta: pages.length - 1 })
+	} else {
+		uni.reLaunch({ url: '/pages/index/index' })
+	}
+}
+
+/**
+ * 若当前页是页面栈底唯一页（冷启动/扫码/分享直达），用 reLaunch 首页并带 after 参数把当前页
+ * 重新垫到首页之上，避免安卓返回手势/返回键直接退出小程序。返回 true 表示已触发重定向，调用方应立即 return。
+ */
+export function seedHomeIfAlone(currentRoute) {
+	const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : []
+	if (!pages || pages.length !== 1) return false
+	if (!currentRoute || currentRoute === '/pages/index/index') return false
+	uni.reLaunch({ url: '/pages/index/index?after=' + encodeURIComponent(currentRoute) })
+	return true
+}
+
 export function formatDuration(secondsValue) {
 	const total = Number(secondsValue || 0)
 	const h = Math.floor(total / 3600)
@@ -414,6 +439,39 @@ export function quitGroup(groupId) {
 }
 export function cancelGroup(groupId) {
 	return http.post('/app/group/cancel/' + groupId)
+}
+
+// ===== 称鱼结算 =====
+export function submitFishWeigh({ userId, venueId, weightGrams, scan }) {
+	const payload = { userId, venueId, weightGrams }
+	if (scan) attachScanPayload(payload, scan)
+	return http.post('/app/fish-weigh/submit', payload)
+}
+
+export function payFishWeigh(fishWeighId, useBalance) {
+	return http.post('/app/fish-weigh/pay', { fishWeighId, useBalance: !!useBalance }).then((data) => {
+		if (!data) return null
+		if (data.needWxPay && data.pay && !data.pay.mock) {
+			return new Promise((resolve, reject) => {
+				uni.requestPayment({
+					provider: 'wxpay',
+					timeStamp: String(data.pay.timeStamp || ''),
+					nonceStr: data.pay.nonceStr || '',
+					package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
+					signType: data.pay.signType || 'RSA',
+					paySign: data.pay.paySign || '',
+					success: () => resolve(data.order || data),
+					fail: (err) => reject(normalizePaymentError(err))
+				})
+			})
+		}
+		return data.order || data
+	})
+}
+
+export function fetchFishPrice(venueId) {
+	const params = venueId ? { venueId } : {}
+	return http.get('/app/fish-weigh/price', params)
 }
 
 // ===== 装备租赁 =====

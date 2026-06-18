@@ -85,7 +85,8 @@
 		formatDatetime,
 		getUser,
 		fetchOrders,
-		isLoggedIn
+		isLoggedIn,
+		seedHomeIfAlone
 	} from '../../utils/fishingStore.js'
 
 	export default {
@@ -130,6 +131,8 @@
 				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/orders/orders') })
 				return
 			}
+			// 订单页若是栈底唯一页（如已登录冷启动直达），先垫一层首页，避免安卓左滑退出小程序
+			if (seedHomeIfAlone('/pages/orders/orders')) return
 			const user = getUser()
 			if (!user) return
 			fetchOrders(user.userId, 20).then((list) => { this.orders = list }).catch(() => {})
