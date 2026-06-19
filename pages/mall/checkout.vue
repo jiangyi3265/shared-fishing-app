@@ -28,6 +28,17 @@
 			<textarea class="remark" v-model="remark" placeholder="例如：要冰镇的、辣酱多放、留给前台 ..." maxlength="100" />
 		</view>
 
+		<view v-if="myPoints > 0" class="balance-card" @click="togglePoints">
+			<view class="balance-left">
+				<view class="balance-icon">🎯</view>
+				<view class="balance-text">
+					<text class="balance-title">积分抵扣</text>
+					<text class="balance-desc">可用 {{ myPoints }} 积分（100积分=1元）{{ usePoints && pointsDeduct > 0 ? '，本单抵 ¥' + formatMoney(pointsDeduct) : '' }}</text>
+				</view>
+			</view>
+			<view class="balance-switch" :class="{ on: usePoints }"><view class="balance-dot"></view></view>
+		</view>
+
 		<view v-if="walletBalance > 0" class="balance-card" @click="toggleBalance">
 			<view class="balance-left">
 				<view class="balance-icon">💳</view>
@@ -42,6 +53,7 @@
 		<view class="card summary">
 			<view class="sum-row"><text>商品合计</text><text>¥{{ formatMoney(totalCents) }}</text></view>
 			<view class="sum-row"><text>包装/服务费</text><text>¥0.00</text></view>
+			<view v-if="pointsDeduct > 0" class="sum-row"><text>积分抵扣</text><text style="color:#e85d04;">-¥{{ formatMoney(pointsDeduct) }}</text></view>
 			<view v-if="balanceUsed > 0" class="sum-row"><text>余额抵扣</text><text style="color:#e85d04;">-¥{{ formatMoney(balanceUsed) }}</text></view>
 			<view class="sum-row big"><text>应付</text><text class="sum-amount">¥{{ formatMoney(wxPayAmount) }}</text></view>
 		</view>
@@ -52,7 +64,7 @@
 				<text class="footer-amount">¥{{ formatMoney(wxPayAmount) }}</text>
 			</view>
 			<button class="pay-btn" :disabled="submitting || !items.length" @click="submit">
-				{{ submitting ? '提交中...' : (wxPayAmount === 0 ? (balanceUsed > 0 ? '余额支付' : '提交订单') : '微信支付') }}
+				{{ submitting ? '提交中...' : (wxPayAmount === 0 ? ((pointsDeduct > 0 || balanceUsed > 0) ? '确认支付' : '提交订单') : '微信支付') }}
 			</button>
 		</view>
 	</view>
@@ -65,34 +77,41 @@
 		submitMallOrder,
 		clearCart
 	} from '../../utils/mallStore.js'
-	import { formatMoney } from '../../utils/fishingStore.js'
+	import { formatMoney, fetchMyPoints } from '../../utils/fishingStore.js'
 	import { fetchWallet } from '../../utils/walletStore.js'
 
 	export default {
 		data() {
-			return { items: [], remark: '', submitting: false, walletBalance: 0, useBalance: false }
+			return { items: [], remark: '', submitting: false, walletBalance: 0, useBalance: false, myPoints: 0, usePoints: false }
 		},
 		computed: {
 			totalCents() { return cartTotalCents(this.items) },
 			totalQty() { return this.items.reduce((acc, i) => acc + (i.qty || 0), 0) },
+			pointsDeduct() {
+				// 积分抵现：100 积分 = 1 元（1 积分 = 1 分），可全额抵，最多抵到订单总额
+				if (!this.usePoints) return 0
+				return Math.min(this.myPoints || 0, this.totalCents)
+			},
 			balanceUsed() {
 				if (!this.useBalance) return 0
-				return Math.min(this.walletBalance || 0, this.totalCents)
+				return Math.min(this.walletBalance || 0, Math.max(0, this.totalCents - this.pointsDeduct))
 			},
-			wxPayAmount() { return Math.max(0, this.totalCents - this.balanceUsed) }
+			wxPayAmount() { return Math.max(0, this.totalCents - this.pointsDeduct - this.balanceUsed) }
 		},
 		onShow() {
 			this.items = readCart()
 			fetchWallet().then((d) => { this.walletBalance = (d && d.balance && d.balance.balanceCents) || 0 }).catch(() => {})
+			fetchMyPoints().then((d) => { this.myPoints = (d && d.points) || 0 }).catch(() => {})
 		},
 		methods: {
 			formatMoney,
 			toggleBalance() { this.useBalance = !this.useBalance },
+			togglePoints() { this.usePoints = !this.usePoints },
 			submit() {
 				if (this.submitting) return
 				if (!this.items.length) { uni.showToast({ title: '购物车为空', icon: 'none' }); return }
 				this.submitting = true
-				submitMallOrder({ items: this.items, remark: this.remark, useBalance: this.useBalance })
+				submitMallOrder({ items: this.items, remark: this.remark, useBalance: this.useBalance, pointsToUse: this.pointsDeduct })
 					.then((order) => {
 						clearCart()
 						uni.showToast({ title: '下单成功', icon: 'success' })

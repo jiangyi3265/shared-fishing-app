@@ -158,6 +158,8 @@ function normalizeMallOrder(o) {
 		totalCents: o.totalCents == null ? o.total_cents : o.totalCents,
 		amountPaid: o.amountPaid,
 		balanceCents: o.balanceCents == null ? o.balance_cents : o.balanceCents,
+		pointsUsed: o.pointsUsed == null ? o.points_used : o.pointsUsed,
+		pointsDeductCents: o.pointsDeductCents == null ? o.points_deduct_cents : o.pointsDeductCents,
 		status: o.status,
 		remark: o.remark2 || o.remark || '',
 		redeemCode: o.redeemCode || o.redeem_code,
@@ -174,12 +176,13 @@ function normalizeMallOrder(o) {
 	}
 }
 
-export function submitMallOrder({ items, remark, useBalance }) {
+export function submitMallOrder({ items, remark, useBalance, pointsToUse }) {
 	if (MALL_API_ENABLED) {
 		return http.post('/app/mall/order/submit', {
 			items: items.map((i) => ({ goodsId: i.goodsId, qty: i.qty })),
 			remark,
-			useBalance: !!useBalance
+			useBalance: !!useBalance,
+			pointsToUse: pointsToUse || 0
 		}).then((data) => {
 			if (!data) return null
 			const order = normalizeMallOrder(data.order)
