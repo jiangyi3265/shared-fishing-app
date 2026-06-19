@@ -36,53 +36,6 @@
 			<view class="search-btn" @click="onSearch">搜索</view>
 		</view>
 
-		<view
-			class="home-scene-tabs"
-			@touchstart="onSceneTouchStart"
-			@touchend="onSceneTouchEnd"
-		>
-			<view
-				v-for="tab in sceneTabs"
-				:key="tab.key"
-				class="home-scene-tab"
-				:class="{ active: activeSceneTab === tab.key }"
-				@click="switchSceneTab(tab.key)"
-			>
-				<text class="scene-tab-name">{{ tab.name }}</text>
-				<text class="scene-tab-sub">{{ tab.sub }}</text>
-			</view>
-		</view>
-
-		<view
-			class="service-section"
-			@touchstart="onSceneTouchStart"
-			@touchend="onSceneTouchEnd"
-		>
-			<view class="service-head">
-				<view>
-					<text class="service-kicker">{{ activeScene.kicker }}</text>
-					<text class="service-title">{{ activeScene.panelTitle }}</text>
-				</view>
-				<text class="service-count">{{ displayServiceCards.length }} 项</text>
-			</view>
-			<view class="service-grid">
-				<view
-					v-for="item in displayServiceCards"
-					:key="item.name"
-					class="service-card"
-					:class="{ 'is-primary': item.primary }"
-					@click="handleService(item)"
-				>
-					<view class="service-icon" :class="[item.icon, item.tone]"></view>
-					<view class="service-copy">
-						<text class="service-name">{{ item.name }}</text>
-						<text class="service-desc">{{ item.desc }}</text>
-					</view>
-					<text class="service-arrow">›</text>
-				</view>
-			</view>
-		</view>
-
 		<swiper class="banner" autoplay circular indicator-dots indicator-active-color="#c79a39" indicator-color="rgba(16,35,31,0.22)">
 			<swiper-item v-for="ad in bannerAds" :key="ad.id" @click="onAdClick(ad)">
 				<view class="banner-slide" :style="{ background: ad.bgColor || '#e9e2d3' }">
@@ -163,6 +116,82 @@
 			<text class="weigh-entry-arrow">›</text>
 		</view>
 
+		<view class="service-section">
+			<view class="service-head">
+				<view>
+					<text class="service-kicker">SUPPLY</text>
+					<text class="service-title">补给与权益</text>
+				</view>
+			</view>
+			<view class="service-grid">
+				<view class="service-card is-primary" @click="goMall">
+					<view class="service-icon icon-shop tone-gold"></view>
+					<view class="service-copy">
+						<text class="service-name">钓场补给</text>
+						<text class="service-desc">饮品零食 · 可用积分抵现</text>
+					</view>
+					<text class="service-arrow">›</text>
+				</view>
+				<view class="service-card" @click="goPoints">
+					<view class="service-icon icon-order tone-teal"></view>
+					<view class="service-copy">
+						<text class="service-name">积分兑换</text>
+						<text class="service-desc">积分换好礼 · 每日签到得分</text>
+					</view>
+					<text class="service-arrow">›</text>
+				</view>
+				<view class="service-card" @click="goRental">
+					<view class="service-icon icon-member tone-green"></view>
+					<view class="service-copy">
+						<text class="service-name">钓具租赁</text>
+						<text class="service-desc">钓竿 · 鱼护 · 配套装备</text>
+					</view>
+					<text class="service-arrow">›</text>
+				</view>
+			</view>
+		</view>
+
+		<view class="service-section">
+			<view class="service-head">
+				<view>
+					<text class="service-kicker">VENUE</text>
+					<text class="service-title">钓场详情</text>
+				</view>
+				<text class="service-count" @click="goVenue">公告详情 ›</text>
+			</view>
+			<view style="display:flex; gap:12rpx;">
+				<view style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10rpx; padding:8rpx 0;" @click="openNavigation">
+					<view style="width:76rpx; height:76rpx; border-radius:24rpx; display:flex; align-items:center; justify-content:center; font-size:26rpx; font-weight:800; color:#fff; background:#2f6fb3;">导航</view>
+					<text style="font-size:22rpx; color:#7a857f; font-weight:600;">地址导航</text>
+				</view>
+				<view style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10rpx; padding:8rpx 0;" @click="callVenue">
+					<view style="width:76rpx; height:76rpx; border-radius:24rpx; display:flex; align-items:center; justify-content:center; font-size:26rpx; font-weight:800; color:#fff; background:#1d9e75;">电话</view>
+					<text style="font-size:22rpx; color:#7a857f; font-weight:600;">联系电话</text>
+				</view>
+				<view style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10rpx; padding:8rpx 0;" @click="goContact">
+					<view style="width:76rpx; height:76rpx; border-radius:24rpx; display:flex; align-items:center; justify-content:center; font-size:26rpx; font-weight:800; color:#fff; background:#6a5acd;">客服</view>
+					<text style="font-size:22rpx; color:#7a857f; font-weight:600;">在线客服</text>
+				</view>
+				<view style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10rpx; padding:8rpx 0;" @click="goReserve">
+					<view style="width:76rpx; height:76rpx; border-radius:24rpx; display:flex; align-items:center; justify-content:center; font-size:26rpx; font-weight:800; color:#fff; background:#c79a39;">订位</view>
+					<text style="font-size:22rpx; color:#7a857f; font-weight:600;">钓位预订</text>
+				</view>
+			</view>
+		</view>
+
+		<view class="weigh-entry" @click="goRateInfo">
+			<view class="weigh-entry-left">
+				<view class="weigh-entry-icon">
+					<text class="weigh-icon-text">规</text>
+				</view>
+				<view class="weigh-entry-copy">
+					<text class="weigh-entry-title">计费规则说明</text>
+					<text class="weigh-entry-desc">起步价 · 阶梯计费 · 封顶规则，一看就懂</text>
+				</view>
+			</view>
+			<text class="weigh-entry-arrow">›</text>
+		</view>
+
 		<view class="footer-text">技术支持 · 共享钓场</view>
 
 		<view class="tabbar">
@@ -216,27 +245,11 @@
 				pendingOrder: null,
 				now: Date.now(),
 				timer: null,
-				sceneTouchStartX: 0,
-				sceneTouchStartY: 0,
 				venue: FALLBACK_VENUE,
 				rule: FALLBACK_RULE,
 				keyword: '',
 				ads: [],
-				weather: null,
-				activeSceneTab: 'entry',
-				sceneTabs: [
-					{ key: 'entry', name: '入场', sub: '扫码计时', kicker: 'ARRIVAL', panelTitle: '入场与计时' },
-					{ key: 'service', name: '服务', sub: '钓位补给', kicker: 'SERVICE', panelTitle: '钓场服务' },
-					{ key: 'member', name: '我的', sub: '订单权益', kicker: 'ACCOUNT', panelTitle: '订单与权益' }
-				],
-				serviceCards: [
-					{ name: '我的订单', desc: '查看计时与消费记录', icon: 'icon-order', tone: 'tone-gold', action: 'goOrders', primary: true },
-					{ name: '钓场详情', desc: '查看地址、公告与计费规则', icon: 'icon-shop', tone: 'tone-gold', action: 'goVenue', primary: true },
-					{ name: '钓位预订', desc: '提前锁定合适钓位', icon: 'icon-pin', tone: 'tone-green', action: 'goReserve' },
-					{ name: '放鱼动态', desc: '查看钓场鱼情更新', icon: 'icon-fish', tone: 'tone-teal', action: 'goStocking' },
-					{ name: '钓具租赁', desc: '租用钓竿、鱼护与配套装备', icon: 'icon-member', tone: 'tone-green', action: 'goRental' },
-					{ name: '联系客服', desc: '咨询营业与入场问题', icon: 'icon-group', tone: 'tone-teal', action: 'goContact' }
-				]
+				weather: null
 			}
 		},
 		computed: {
@@ -259,18 +272,6 @@
 			},
 			bannerAds() {
 				return this.ads.length ? this.ads : FALLBACK_ADS
-			},
-			activeScene() {
-				return this.sceneTabs.find((tab) => tab.key === this.activeSceneTab) || this.sceneTabs[0]
-			},
-			displayServiceCards() {
-				const groups = {
-					entry: ['goOrders', 'goVenue', 'goReserve'],
-					service: ['goRental', 'goStocking', 'goContact'],
-					member: ['goOrders', 'goReserve', 'goContact']
-				}
-				const actions = groups[this.activeSceneTab] || groups.entry
-				return this.serviceCards.filter((item) => actions.includes(item.action))
 			}
 		},
 		onLoad(option = {}) {
@@ -339,32 +340,6 @@
 				if (!this.keyword) return
 				uni.navigateTo({ url: '/pages/promotions/promotions?keyword=' + encodeURIComponent(this.keyword) })
 			},
-			switchSceneTab(key) {
-				this.activeSceneTab = key
-			},
-			onSceneTouchStart(e) {
-				const t = e.touches && e.touches[0]
-				if (!t) return
-				this.sceneTouchStartX = t.clientX
-				this.sceneTouchStartY = t.clientY
-			},
-			onSceneTouchEnd(e) {
-				const t = e.changedTouches && e.changedTouches[0]
-				if (!t) return
-				const dx = t.clientX - this.sceneTouchStartX
-				const dy = t.clientY - this.sceneTouchStartY
-				// 仅识别明显的水平滑动，避免与上下滚动冲突
-				if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
-				const keys = this.sceneTabs.map((tab) => tab.key)
-				const idx = keys.indexOf(this.activeSceneTab)
-				if (dx < 0) {
-					// 左滑：切换到下一个标签
-					if (idx < keys.length - 1) this.switchSceneTab(keys[idx + 1])
-				} else {
-					// 右滑：切换到上一个标签
-					if (idx > 0) this.switchSceneTab(keys[idx - 1])
-				}
-			},
 			onAdClick(ad) {
 				if (ad.type === 'fallback') {
 					this.goVenue()
@@ -375,10 +350,6 @@
 				} else {
 					uni.navigateTo({ url: '/pages/adDetail/adDetail?id=' + ad.id })
 				}
-			},
-			handleService(item) {
-				const action = item && item.action
-				if (action && typeof this[action] === 'function') this[action]()
 			},
 			getShareConfig() {
 				const name = this.venue && this.venue.name ? this.venue.name : '共享钓场'
@@ -533,6 +504,26 @@
 			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
 			goRental() { uni.navigateTo({ url: '/pages/rental/rental' }) },
 			goContact() { uni.navigateTo({ url: '/pages/contact/contact' }) },
+			goMall() { uni.navigateTo({ url: '/pages/mall/index' }) },
+			goRateInfo() { uni.navigateTo({ url: '/pages/rateInfo/rateInfo' }) },
+			openNavigation() {
+				const v = this.venue || {}
+				if (v.latitude && v.longitude) {
+					uni.openLocation({
+						latitude: Number(v.latitude),
+						longitude: Number(v.longitude),
+						name: v.name || '共享钓场',
+						address: v.address || ''
+					})
+				} else {
+					this.goVenue()
+				}
+			},
+			callVenue() {
+				const phone = this.venue && (this.venue.phone || this.venue.tel || this.venue.contactPhone)
+				if (phone) uni.makePhoneCall({ phoneNumber: String(phone) })
+				else this.goVenue()
+			},
 			formatMoney,
 			formatDuration
 		}

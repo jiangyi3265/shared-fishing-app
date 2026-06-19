@@ -48,6 +48,19 @@
 				<button class="dock-primary" @click="retry">重新支付</button>
 			</block>
 		</view>
+
+		<view v-if="showPoints" class="pts-mask">
+			<view class="pts-card">
+				<view class="pts-coin"><text class="pts-coin-text">分</text></view>
+				<text class="pts-title">结算成功</text>
+				<text class="pts-sub">本次消费 ¥{{ formatMoney(order ? (order.amountCents || 0) : 0) }}</text>
+				<view class="pts-gain">
+					<text class="pts-gain-label">获得积分</text>
+					<text class="pts-gain-num">+{{ earnedPoints }}</text>
+				</view>
+				<view class="pts-btn" @click="closePoints">笑纳</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -64,21 +77,32 @@
 
 	export default {
 		data() {
-			return { success: true, order: null }
+			return { success: true, order: null, showPoints: false, earnedPoints: 0 }
 		},
 		onLoad(option = {}) {
 			this.success = option.success !== '0'
 			const user = getUser()
 			if (!user) return
 			if (option.orderId) {
-				fetchOrderDetail(option.orderId).then((o) => { this.order = o })
+				fetchOrderDetail(option.orderId).then((o) => { this.order = o; this.preparePointsPopup() })
 			} else if (this.success) {
 				fetchOrders(user.userId, 5).then((list) => {
 					this.order = list.find((item) => item.status === ORDER_STATUS.PAID) || null
+					this.preparePointsPopup()
 				})
 			}
 		},
 		methods: {
+			preparePointsPopup() {
+				if (!this.success || !this.order) return
+				// 积分基数与后端一致：实付现金 + 余额抵扣（1 元 = 1 积分，向下取整）
+				let base
+				if (this.order.amountPaid != null) base = (this.order.amountPaid || 0) + (this.order.balanceCents || 0)
+				else base = this.order.amountCents || 0
+				const pts = Math.floor(base / 100)
+				if (pts > 0) { this.earnedPoints = pts; this.showPoints = true }
+			},
+			closePoints() { this.showPoints = false },
 			goHome() { uni.reLaunch({ url: '/pages/index/index' }) },
 			goOrders() {
 				// reLaunch 首页 + after 参数，由首页 onReady 跳订单页，保证订单页下方垫着首页（避免左滑退出小程序）
@@ -300,5 +324,93 @@
 
 	.dock-primary::after {
 		border: 0;
+	}
+
+	.pts-mask {
+		position: fixed;
+		left: 0;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.45);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 999;
+	}
+
+	.pts-card {
+		width: 540rpx;
+		background: #ffffff;
+		border-radius: 32rpx;
+		padding: 48rpx 40rpx 40rpx;
+		text-align: center;
+	}
+
+	.pts-coin {
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 50%;
+		background: #fbeccb;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 24rpx;
+	}
+
+	.pts-coin-text {
+		font-size: 56rpx;
+		font-weight: 800;
+		color: #b8860b;
+	}
+
+	.pts-title {
+		display: block;
+		font-size: 38rpx;
+		font-weight: 800;
+		color: #1a2030;
+	}
+
+	.pts-sub {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 26rpx;
+		color: #8a93a0;
+	}
+
+	.pts-gain {
+		margin: 28rpx 0 0;
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 12rpx;
+		background: #fff8e8;
+		border-radius: 18rpx;
+		padding: 22rpx;
+	}
+
+	.pts-gain-label {
+		font-size: 26rpx;
+		color: #9a7b2e;
+		font-weight: 700;
+	}
+
+	.pts-gain-num {
+		font-size: 56rpx;
+		font-weight: 900;
+		color: #c79a39;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.pts-btn {
+		margin-top: 32rpx;
+		height: 92rpx;
+		line-height: 92rpx;
+		border-radius: 999rpx;
+		background: #185f48;
+		color: #ffffff;
+		font-size: 32rpx;
+		font-weight: 800;
+		letter-spacing: 4rpx;
 	}
 </style>
