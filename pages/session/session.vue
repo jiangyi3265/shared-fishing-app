@@ -161,7 +161,7 @@
 				// #ifdef MP-WEIXIN || APP-PLUS
 				uni.scanCode({
 					onlyFromCamera: true,
-					success: (res) => this.handleScanResult(res.result || ''),
+					success: (res) => this.handleScanResult((res && (res.path || res.result)) || ''),
 					fail: () => uni.showToast({ title: '请扫描出口码', icon: 'none' })
 				})
 				// #endif

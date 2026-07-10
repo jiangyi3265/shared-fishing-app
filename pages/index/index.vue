@@ -399,7 +399,7 @@
 				// #ifdef MP-WEIXIN || APP-PLUS
 				uni.scanCode({
 					onlyFromCamera: true,
-					success: (res) => this.handleScanResult(res.result || '', expectedAction),
+					success: (res) => this.handleScanResult((res && (res.path || res.result)) || '', expectedAction),
 					fail: () => this.fallbackScan(expectedAction)
 				})
 				// #endif
