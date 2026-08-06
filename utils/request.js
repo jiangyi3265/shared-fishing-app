@@ -32,7 +32,7 @@ export function request(options) {
 	const baseUrl = resolveBaseUrl()
 	if (!options.url.startsWith('http') && !isValidBaseUrl(baseUrl)) {
 		const err = { msg: '小程序正式接口域名未配置' }
-		uni.showToast({ title: err.msg, icon: 'none' })
+		if (options.showError !== false) uni.showToast({ title: err.msg, icon: 'none' })
 		return Promise.reject(err)
 	}
 	const url = options.url.startsWith('http') ? options.url : baseUrl + options.url
@@ -56,7 +56,7 @@ export function request(options) {
 				}
 				if (res.statusCode < 200 || res.statusCode >= 300) {
 					const err = { msg: (body && body.msg) || `接口异常(${res.statusCode})`, statusCode: res.statusCode, data: body }
-					uni.showToast({ title: err.msg, icon: 'none' })
+					if (options.showError !== false) uni.showToast({ title: err.msg, icon: 'none' })
 					reject(err)
 					return
 				}
@@ -64,7 +64,7 @@ export function request(options) {
 					if (body.code === 200) {
 						resolve(body.data !== undefined ? body.data : body.rows)
 					} else {
-						uni.showToast({ title: body.msg || '请求失败', icon: 'none' })
+						if (options.showError !== false) uni.showToast({ title: body.msg || '请求失败', icon: 'none' })
 						reject(body)
 					}
 				} else {
@@ -73,7 +73,7 @@ export function request(options) {
 			},
 			fail: (err) => {
 				const normalized = Object.assign({}, err, { msg: '网络异常，请检查接口地址或后端服务' })
-				uni.showToast({ title: normalized.msg, icon: 'none' })
+				if (options.showError !== false) uni.showToast({ title: normalized.msg, icon: 'none' })
 				reject(normalized)
 			}
 		})

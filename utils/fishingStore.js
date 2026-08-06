@@ -589,8 +589,8 @@ export function fetchCompetitionDetail(compId) {
 export function fetchCompetitionRanking(compId) {
 	return http.get('/app/competition/ranking/' + compId).then(rows => rows || [])
 }
-export function enterCompetition(compId, data) {
-	return http.post('/app/competition/enter/' + compId, data)
+export function enterCompetition(compId, data, options = {}) {
+	return http.post('/app/competition/enter/' + compId, data, options)
 }
 
 // ===== 排行榜（钓王榜 / 积分榜）=====

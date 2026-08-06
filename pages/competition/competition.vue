@@ -100,9 +100,41 @@ export default {
 		showRank(c) {
 			fetchCompetitionRanking(c.compId).then(rows => { this.ranking = rows; this.showRanking = true })
 		},
+		getErrorMessage(error) {
+			return (error && (error.msg || error.message || error.errMsg)) || '报名失败，请稍后再试'
+		},
+		isBalanceInsufficient(error) {
+			const message = this.getErrorMessage(error)
+			return message.includes('余额不足') || message.includes('储值余额不足')
+		},
+		showRechargePrompt(c) {
+			const fee = Number(c && c.entryFeeCents) || 0
+			const feeText = fee > 0 ? `本次报名费为 ¥${(fee / 100).toFixed(2)}，` : ''
+			uni.showModal({
+				title: '余额不足',
+				content: `${feeText}当前账户余额不足，请先充值后再报名。`,
+				cancelText: '暂不充值',
+				confirmText: '去充值',
+				success: res => {
+					if (res.confirm) uni.navigateTo({ url: '/pages/wallet/recharge' })
+				}
+			})
+		},
 		doEnter(c) {
 			uni.showModal({ title: '报名比赛', content: `确认报名「${c.title}」？${c.entryFeeCents?'报名费¥'+(c.entryFeeCents/100).toFixed(2):'免费'}`, success: res => {
-				if (res.confirm) enterCompetition(c.compId, {}).then(() => { uni.showToast({title:'报名成功'}); this.loadData() }).catch(e => uni.showToast({title:e.message||'失败',icon:'none'}))
+				if (!res.confirm) return
+				enterCompetition(c.compId, {}, { showError: false })
+					.then(() => {
+						uni.showToast({ title: '报名成功', icon: 'success' })
+						this.loadData()
+					})
+					.catch(error => {
+						if (this.isBalanceInsufficient(error)) {
+							this.showRechargePrompt(c)
+							return
+						}
+						uni.showToast({ title: this.getErrorMessage(error), icon: 'none' })
+					})
 			}})
 		}
 	}
