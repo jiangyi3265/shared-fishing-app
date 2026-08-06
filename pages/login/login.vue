@@ -1,67 +1,55 @@
 <template>
 	<view class="app login">
-		<view class="hero">
-			<view class="hero-bg"></view>
-			<view class="hero-content">
-				<view class="hero-brand">
-					<view class="hero-logo">
-						<text class="hero-logo-line"></text>
+		<view class="login-visual">
+			<image class="login-photo" src="/static/hero-fishing-v2.jpg" mode="aspectFill"></image>
+			<view class="login-scrim"></view>
+			<view class="login-back" :style="{ top: (statusBarHeight + 8) + 'px' }" role="button" aria-label="返回上一页" hover-class="login-back-pressed" @click="goBack">
+				<view class="login-back-icon"></view>
+			</view>
+			<view class="brand-row" :style="{ top: (statusBarHeight + 18) + 'px' }">
+				<image class="brand-logo" src="/static/logo-mark.svg" mode="aspectFit"></image>
+				<text class="brand-name">共享钓场</text>
+			</view>
+			<view class="hero-copy">
+				<text class="hero-title">下竿有时，收竿有数</text>
+				<text class="hero-sub">扫码计时 · 收竿结算 · 会员积分</text>
+			</view>
+		</view>
+
+		<view class="login-panel">
+			<view class="login-content">
+				<view class="panel-head">
+					<view class="login-emblem"><view class="emblem-check"></view></view>
+					<view class="panel-copy">
+						<text class="panel-kicker">欢迎来到共享钓场</text>
+						<text class="panel-title">微信一键登录</text>
 					</view>
-					<text class="hero-brand-text">SHARED FISHING</text>
 				</view>
-				<text class="hero-title">共享钓场</text>
-				<text class="hero-sub">扫码入场 · 按时计费 · 离场付款</text>
-			</view>
-		</view>
+				<text class="panel-sub">无需填写头像和昵称，登录后自动创建钓友账号，并返回刚才访问的页面。</text>
 
-		<view class="steps">
-			<view class="step">
-				<view class="step-index">01</view>
-				<view class="step-text">
-					<text class="step-title">扫入口码开始计时</text>
-					<text class="step-desc">进入钓位后扫码，以服务端时间为准</text>
+				<view class="account-assurance">
+					<view><text class="assurance-value">免注册</text><text class="assurance-label">微信身份直连</text></view>
+					<view class="assurance-divider"></view>
+					<view><text class="assurance-value">自动同步</text><text class="assurance-label">订单与积分</text></view>
+					<view class="assurance-divider"></view>
+					<view><text class="assurance-value">安全识别</text><text class="assurance-label">不强制取头像</text></view>
 				</view>
-			</view>
-			<view class="step">
-				<view class="step-index">02</view>
-				<view class="step-text">
-					<text class="step-title">离场扫出口码结算</text>
-					<text class="step-desc">费用自动计算，支持微信支付</text>
-				</view>
-			</view>
-			<view class="step">
-				<view class="step-index">03</view>
-				<view class="step-text">
-					<text class="step-title">待支付订单优先</text>
-					<text class="step-desc">存在未结清订单时需先完成支付</text>
+
+				<view class="login-actions">
+					<button class="login-primary" :disabled="loggingIn" @click="doLogin">
+						<text class="wx-icon"></text>
+						<text>{{ loggingIn ? '正在登录…' : '微信一键登录' }}</text>
+					</button>
+					<checkbox-group class="login-agreement" @change="onAgreeChange">
+						<label class="agreement-toggle"><checkbox class="agreement-checkbox" value="agree" :checked="agreed" color="#079f9d" /><text>我已阅读并同意</text></label>
+						<view class="agreement-links">
+							<text class="agreement-link" @click.stop="openUserAgreement">《用户服务协议》</text>
+							<text class="agreement-link" @click.stop="openPrivacyPolicy">《隐私政策》</text>
+						</view>
+					</checkbox-group>
+					<button class="login-secondary" @click="skip">暂不登录，先逛逛</button>
 				</view>
 			</view>
-		</view>
-
-		<view class="privacy">
-			<view class="privacy-icon"></view>
-			<view class="privacy-text">
-				<text class="privacy-title">登录用于保存订单</text>
-				<text class="privacy-desc">仅在你主动登录后获取微信身份标识，不在首页强制授权</text>
-			</view>
-		</view>
-
-		<view class="spacer"></view>
-
-		<view class="dock">
-			<checkbox-group class="agree-row" @change="onAgreeChange">
-				<label class="agree-label">
-					<checkbox value="agree" :checked="agreed" color="#0f7a54" />
-					<text>我已阅读并同意</text>
-				</label>
-				<text class="agree-link" @click.stop="openUserAgreement">《用户服务协议》</text>
-				<text class="agree-link" @click.stop="openPrivacyPolicy">《隐私政策》</text>
-			</checkbox-group>
-			<button class="dock-primary" :disabled="!agreed" @click="doLogin">
-				<text class="wx-icon"></text>
-				微信一键登录
-			</button>
-			<button class="dock-ghost" @click="skip">稍后再说</button>
 		</view>
 	</view>
 </template>
@@ -70,34 +58,50 @@
 	import { loginWithCode, isLoggedIn } from '../../utils/fishingStore.js'
 
 	export default {
-		data() { return { redirect: '', agreed: false } },
+		data() {
+			return { statusBarHeight: 20, redirect: '', agreed: false, loggingIn: false, leaving: false }
+		},
 		onLoad(option = {}) {
+			this.initChrome()
 			this.redirect = option.redirect || ''
 			if (isLoggedIn()) this.goNext()
 		},
 		methods: {
+			goBack() {
+				const pages = getCurrentPages()
+				if (pages.length > 1) uni.navigateBack()
+				else uni.reLaunch({ url: '/pages/index/index' })
+			},
+			initChrome() {
+				const system = uni.getSystemInfoSync()
+				this.statusBarHeight = Number(system.statusBarHeight || 20)
+			},
 			doLogin() {
+				if (this.loggingIn) return
 				if (!this.agreed) {
-					uni.showToast({ title: '请先阅读并勾选协议', icon: 'none' })
+					uni.showToast({ title: '请先阅读并勾选用户协议', icon: 'none' })
 					return
 				}
+				this.loggingIn = true
 				uni.showLoading({ title: '登录中' })
-				const finish = () => {
-					uni.hideLoading()
-					uni.showToast({ title: '登录成功', icon: 'success' })
-					this.goNext()
-				}
 				const fail = (err) => {
+					this.loggingIn = false
 					uni.hideLoading()
-					const msg = (err && (err.msg || err.message || err.errMsg)) || '登录失败'
-					uni.showToast({ title: msg, icon: 'none' })
+					uni.showToast({ title: (err && (err.msg || err.message || err.errMsg)) || '登录失败，请重试', icon: 'none' })
+				}
+				const finish = () => {
+					this.loggingIn = false
+					uni.hideLoading()
+					if (!isLoggedIn()) return fail({ msg: '登录信息保存失败，请重试' })
+					uni.showToast({ title: '登录成功', icon: 'success' })
+					setTimeout(() => this.goNext(), 180)
 				}
 				// #ifdef MP-WEIXIN
 				uni.login({
 					provider: 'weixin',
 					success: (res) => {
 						if (!res.code) return fail({ msg: '微信登录未返回 code' })
-						loginWithCode(res.code, {}).then(finish).catch(fail)
+						loginWithCode(res.code).then(finish).catch(fail)
 					},
 					fail: (err) => fail({ msg: (err && err.errMsg) || '微信登录失败，请重试' })
 				})
@@ -106,345 +110,63 @@
 				fail({ msg: '请在微信小程序环境登录' })
 				// #endif
 			},
-			skip() {
-				uni.reLaunch({ url: '/pages/index/index' })
-			},
-			onAgreeChange(e) {
-				this.agreed = (e.detail.value || []).includes('agree')
-			},
-			openUserAgreement() {
-				uni.navigateTo({ url: '/pages/protocol/user' })
-			},
-			openPrivacyPolicy() {
-				uni.navigateTo({ url: '/pages/protocol/privacy' })
+			skip() { uni.reLaunch({ url: '/pages/index/index' }) },
+			onAgreeChange(e) { this.agreed = (e.detail.value || []).includes('agree') },
+			openUserAgreement() { uni.navigateTo({ url: '/pages/protocol/user' }) },
+			openPrivacyPolicy() { uni.navigateTo({ url: '/pages/protocol/privacy' }) },
+			decodeRedirect(value) {
+				if (!value) return '/pages/index/index'
+				try { return decodeURIComponent(value) } catch (e) { return value }
 			},
 			goNext() {
-				const target = this.redirect ? decodeURIComponent(this.redirect) : '/pages/index/index'
+				if (this.leaving) return
+				this.leaving = true
+				let target = this.decodeRedirect(this.redirect)
+				if (!target.startsWith('/pages/') || target.startsWith('/pages/login/login')) target = '/pages/index/index'
 				if (target === '/pages/index/index') {
-					uni.reLaunch({ url: target })
+					uni.reLaunch({ url: target, fail: () => { this.leaving = false } })
 					return
 				}
-				// reLaunch 到首页并带 after 参数，由首页在 onReady 里 navigateTo 目标页：
-				// 既保证目标页下方垫着首页（左滑退回首页而非退出小程序），又避开 reLaunch 后立即跳转的时序失败。
-				uni.reLaunch({ url: '/pages/index/index?after=' + encodeURIComponent(target) })
+				uni.reLaunch({
+					url: '/pages/index/index?after=' + encodeURIComponent(target),
+					fail: () => { this.leaving = false }
+				})
 			}
 		}
 	}
 </script>
 
 <style>
-	.login {
-		padding-bottom: 340rpx;
-		min-height: 100vh;
-		background: var(--bg);
-	}
-
-	/* ---------------- 头部英雄区 ---------------- */
-	.hero {
-		position: relative;
-		margin: 0;
-		padding: 96rpx 44rpx 84rpx;
-		border-bottom-left-radius: 40rpx;
-		border-bottom-right-radius: 40rpx;
-		overflow: hidden;
-		box-shadow: 0 16rpx 48rpx rgba(10, 46, 36, 0.16);
-	}
-
-	.hero-bg {
-		position: absolute;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		background: linear-gradient(135deg, #0d382c 0%, #06221a 70%, #031410 100%);
-	}
-
-	.hero-bg::after {
-		content: '';
-		position: absolute;
-		right: -60rpx;
-		top: -80rpx;
-		width: 260rpx;
-		height: 260rpx;
-		border-radius: 50%;
-		background: radial-gradient(circle, rgba(199, 154, 57, 0.12) 0%, rgba(199, 154, 57, 0) 70%);
-		filter: blur(15px);
-	}
-
-	.hero-content {
-		position: relative;
-		z-index: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.hero-brand {
-		display: flex;
-		align-items: center;
-		gap: 20rpx;
-		margin-bottom: 32rpx;
-	}
-
-	.hero-logo {
-		width: 100rpx;
-		height: 100rpx;
-		border-radius: 30rpx;
-		background: var(--accent-gradient);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: var(--accent-glow);
-		position: relative;
-		transition: var(--transition);
-	}
-
-	.hero-logo::after {
-		content: '';
-		display: block;
-		width: 44rpx;
-		height: 44rpx;
-		background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGZpbGw9J25vbmUnIHZpZXdCb3g9JzAgMCAyNCAyNCcgc3Ryb2tlPScjMGEyZTI0JyBzdHJva2Utd2lkdGg9JzMnPjxwYXRoIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcgZD0nTTE0Ljc1MiAxMS4xNjhsLTMuMTk3LTIuMTMyQTEgMSAwIDAwMTAgOS44N3Y0LjI2M2ExIDEgMCAwMDEuNTU1LjgzMmwzLjE5Ny0yLjEzMmExIDEgMCAwMDAtMS42NjR6Jy8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBkPSdNMjEgMTJhOSA5IDAgMTEtMTggMCA5IDkgMCAwMTE4IDB6Jy8+PC9zdmc+");
-		background-size: contain;
-		background-repeat: no-repeat;
-		background-position: center;
-	}
-
-	.hero-brand-text {
-		color: #f5d285;
-		font-size: 24rpx;
-		font-weight: 800;
-		letter-spacing: 6rpx;
-	}
-
-	.hero-title {
-		color: #ffffff;
-		font-size: 60rpx;
-		font-weight: 900;
-		letter-spacing: 1rpx;
-		text-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
-	}
-
-	.hero-sub {
-		color: rgba(255, 255, 255, 0.7);
-		font-size: 24rpx;
-		margin-top: 18rpx;
-		font-weight: 600;
-	}
-
-	/* ---------------- 步骤引导 ---------------- */
-	.steps {
-		margin: -36rpx 32rpx 0;
-		padding: 32rpx 28rpx;
-		border-radius: 28rpx;
-		background: #ffffff;
-		border: 1rpx solid var(--border-color);
-		box-shadow: var(--card-shadow);
-		position: relative;
-		z-index: 10;
-	}
-
-	.step {
-		display: flex;
-		align-items: flex-start;
-		gap: 24rpx;
-		padding: 24rpx 0;
-		border-bottom: 1rpx solid rgba(10, 46, 36, 0.04);
-	}
-
-	.step:last-child {
-		border-bottom: 0;
-	}
-
-	.step-index {
-		width: 60rpx;
-		height: 60rpx;
-		border-radius: 18rpx;
-		background: #fff8eb;
-		color: var(--accent);
-		font-size: 24rpx;
-		font-weight: 800;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1rpx solid rgba(199, 154, 57, 0.12);
-	}
-
-	.step-text {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 8rpx;
-	}
-
-	.step-title {
-		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
-	}
-
-	.step-desc {
-		font-size: 24rpx;
-		color: var(--text-muted);
-		line-height: 1.5;
-	}
-
-	/* ---------------- 隐私获取说明 ---------------- */
-	.privacy {
-		margin: 28rpx 32rpx 0;
-		padding: 24rpx 28rpx;
-		border-radius: 20rpx;
-		background: #ffffff;
-		border: 1rpx solid var(--border-color);
-		display: flex;
-		align-items: center;
-		gap: 20rpx;
-		box-shadow: var(--card-shadow);
-	}
-
-	.privacy-icon {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 50%;
-		background: #eef7f5;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex: 0 0 auto;
-		border: 1rpx solid rgba(46, 186, 133, 0.1);
-	}
-
-	.privacy-icon::after {
-		content: '';
-		display: block;
-		width: 36rpx;
-		height: 36rpx;
-		background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGZpbGw9J25vbmUnIHZpZXdCb3g9JzAgMCAyNCAyNCcgc3Ryb2tlPScjMmViYjg1JyBzdHJva2Utd2lkdGg9JzIuMic+PHBhdGggc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBkPSdNMTIgMTV2Mm0tNiA0aDEyYTIgMiAwIDAwMi0ydi02YTIgMiAwIDAwLTItMkg2YTIgMiAwIDAwLTIgMnY2YTIgMiAwIDAwMiAyem0xMC0xMFY3YTQgNCAwIDAwLTggMHY0aDh6Jy8+PC9zdmc+");
-		background-size: contain;
-		background-repeat: no-repeat;
-		background-position: center;
-	}
-
-	.privacy-text {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 6rpx;
-	}
-
-	.privacy-title {
-		font-size: 26rpx;
-		font-weight: 800;
-		color: var(--primary);
-	}
-
-	.privacy-desc {
-		font-size: 22rpx;
-		color: var(--text-muted);
-	}
-
-	.spacer {
-		height: 40rpx;
-	}
-
-	/* ---------------- 底部登录板 ---------------- */
-	.dock {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		padding: 32rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-		background: rgba(255, 255, 255, 0.95);
-		box-shadow: 0 -12rpx 40rpx rgba(10, 46, 36, 0.08);
-		backdrop-filter: blur(15px);
-		border-top: 1rpx solid rgba(10, 46, 36, 0.04);
-		z-index: 99;
-	}
-
-	.agree-row {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: 8rpx;
-		color: var(--text-light);
-		font-size: 22rpx;
-		margin-bottom: 24rpx;
-		font-weight: 600;
-	}
-
-	.agree-label {
-		display: flex;
-		align-items: center;
-		gap: 6rpx;
-	}
-
-	.agree-link {
-		color: #0f7a54;
-	}
-
-	.dock-primary {
-		width: 100%;
-		height: 104rpx;
-		line-height: 104rpx;
-		border-radius: 20rpx;
-		background: #07c160; /* 经典微信绿 */
-		font-size: 32rpx;
-		font-weight: 800;
-		letter-spacing: 1rpx;
-		box-shadow: 0 12rpx 32rpx rgba(7, 193, 96, 0.25);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 16rpx;
-		color: #ffffff;
-		border: 0;
-		transition: var(--transition);
-	}
-
-	.dock-primary:active {
-		transform: scale(0.97);
-		opacity: 0.95;
-	}
-
-	.dock-primary[disabled] {
-		background: #b8c7c1;
-		color: rgba(255, 255, 255, 0.82);
-	}
-
-	.dock-primary::after {
-		border: 0;
-	}
-
-	.wx-icon {
-		width: 40rpx;
-		height: 40rpx;
-		background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nI2ZmZmZmZic+PHBhdGggZD0nTTguNSAxMy41YTEuMjUgMS4yNSAwIDEgMS0yLjUgMCAxLjI1IDEuMjUgMCAwIDEgMi41IDB6bTkuNSAwYTEuMjUgMS4yNSAwIDEgMS0yLjUgMCAxLjI1IDEuMjUgMCAwIDEgMi41IDB6bS04LjgtNWMwLTMuMyAzLjYtNiA4LTZzOCAyLjcgOCA2LTMuNiA2LTggNmMtLjkgMC0xLjctLjEtMi41LS40TDEwIDE5di0zLjdDNi42IDE0LjUgNC42IDExLjcgNC42IDguNXptMy44IDYuOWMuNC4yLjguMyAxLjIuMyAzLjYgMCA2LjYtMi4yIDYuNi00LjlzLTMtNC45LTYuNi00LjktNi42IDIuMi02LjYgNC45YzAgMS41IDEgMi44IDIuNSAzLjdWMTdsMi45LTEuNnonLz48L3N2Zz4=");
-		background-size: contain;
-		background-repeat: no-repeat;
-		background-position: center;
-		display: inline-block;
-	}
-
-	.dock-ghost {
-		width: 100%;
-		height: 84rpx;
-		line-height: 84rpx;
-		border-radius: 20rpx;
-		background: transparent;
-		color: var(--text-muted);
-		border: 0;
-		font-size: 26rpx;
-		margin-top: 14rpx;
-		font-weight: 700;
-		transition: var(--transition);
-	}
-
-	.dock-ghost:active {
-		background: rgba(10, 46, 36, 0.04);
-	}
-
-	.dock-ghost::after {
-		border: 0;
-	}
+	page{background:#f8fcfb}
+	.login{min-height:100vh;display:flex;flex-direction:column;padding-bottom:0;background:#f8fcfb;color:#0b3134}
+	.login-visual{position:relative;z-index:1;flex:0 0 570rpx;height:570rpx;overflow:hidden;background:#0b6669}
+	.login-photo,.login-scrim{position:absolute;inset:0;width:100%;height:100%}
+	.login-scrim{background:linear-gradient(180deg,rgba(2,60,64,.08),rgba(2,52,55,.08) 45%,rgba(1,39,42,.55))}
+	.login-back{position:absolute;z-index:4;left:12rpx;width:88rpx;height:88rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#f8fffe}
+	.login-back::before{content:'';position:absolute;inset:8rpx;border:1rpx solid rgba(248,255,254,.48);border-radius:50%;background:rgba(4,55,58,.28)}
+	.login-back-icon{position:relative;z-index:1;width:22rpx;height:22rpx;border-left:4rpx solid currentColor;border-bottom:4rpx solid currentColor;transform:translateX(4rpx) rotate(45deg)}
+	.login-back-pressed{opacity:.68;background:rgba(4,55,58,.46)}
+	.brand-row{position:absolute;z-index:2;left:112rpx;display:flex;align-items:center;gap:16rpx;color:#f8fffe}
+	.brand-logo{width:68rpx;height:68rpx;border:1rpx solid rgba(248,255,254,.72);border-radius:15rpx;background:#f8fffe}
+	.brand-name{font-size:34rpx;font-weight:900;letter-spacing:-1rpx}
+	.hero-copy{position:absolute;z-index:2;left:36rpx;right:32rpx;bottom:62rpx;color:#f8fffe}
+	.hero-title,.hero-sub{display:block}.hero-title{font-size:52rpx;line-height:1.12;font-weight:900;letter-spacing:-2rpx}.hero-sub{margin-top:17rpx;font-size:24rpx;font-weight:700}
+	.login-panel{position:relative;z-index:3;flex:1;min-height:560rpx;margin-top:-28rpx;padding:36rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));display:flex;align-items:center;border-radius:28rpx 28rpx 0 0;background:#f8fcfb;box-shadow:0 -10rpx 30rpx rgba(3,75,77,.08)}
+	.login-content{width:100%;max-width:690rpx;margin:0 auto}
+	.panel-head{display:flex;align-items:center;gap:18rpx}
+	.login-emblem{width:76rpx;height:76rpx;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:22rpx;background:#e2f6f4;color:#079f9d}
+	.emblem-check{width:29rpx;height:15rpx;border-left:5rpx solid currentColor;border-bottom:5rpx solid currentColor;transform:translateY(-3rpx) rotate(-45deg)}
+	.panel-copy{flex:1;min-width:0}.panel-kicker,.panel-title,.panel-sub{display:block}.panel-kicker{color:#6e8587;font-size:19rpx;font-weight:700}.panel-title{margin-top:2rpx;font-size:38rpx;font-weight:900;letter-spacing:-1rpx}.panel-sub{max-width:620rpx;margin-top:17rpx;color:#6e8385;font-size:22rpx;line-height:1.65}
+	.account-assurance{height:104rpx;margin-top:24rpx;padding:0 12rpx;display:flex;align-items:center;border-top:1rpx solid #dfeae9;border-bottom:1rpx solid #dfeae9}
+	.account-assurance>view:not(.assurance-divider){flex:1;display:flex;flex-direction:column;align-items:center;gap:5rpx}.assurance-value{color:#123e41;font-size:22rpx;font-weight:900}.assurance-label{color:#839496;font-size:17rpx}.assurance-divider{width:1rpx;height:46rpx;background:#dce8e7}
+	.login-actions{position:static;width:100%;margin-top:28rpx;padding:0;background:transparent;border:0}
+	.login-primary{position:relative;width:100%;height:92rpx;margin:0;padding:0;display:flex;align-items:center;justify-content:center;gap:15rpx;border:0;border-radius:16rpx;background:#08aaa6;color:#f8fffe;font-size:29rpx;font-weight:900;line-height:1;box-shadow:0 13rpx 28rpx rgba(6,133,133,.22)}
+	.login-primary:after,.login-secondary:after{border:0}.login-primary[disabled]{opacity:.62;box-shadow:none}
+	.login-primary:active{transform:scale(.985);opacity:.94}
+	.wx-icon{width:34rpx;height:27rpx;border-radius:50%;background:currentColor;position:relative;color:#f8fffe;flex-shrink:0}.wx-icon:after{content:'';position:absolute;right:-10rpx;bottom:-5rpx;width:21rpx;height:18rpx;border:4rpx solid #f8fffe;border-radius:50%}
+	.login-agreement{width:100%;margin-top:20rpx;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;column-gap:4rpx;color:#667d7f;font-size:19rpx;line-height:1.6;text-align:center}
+	.agreement-toggle{display:flex;align-items:center;flex-shrink:0}.agreement-checkbox{transform:scale(.78);transform-origin:center}.agreement-links{display:flex;align-items:center;justify-content:center;gap:2rpx}.agreement-link{color:#078f91;font-weight:800}
+	.login-secondary{width:100%;height:62rpx;margin:4rpx 0 0;padding:0;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:#507477;font-size:21rpx;font-weight:700;line-height:1}
+	@media (max-width:360px){.login-visual{flex-basis:520rpx;height:520rpx}.brand-row{left:104rpx}.brand-logo{width:60rpx;height:60rpx}.brand-name{font-size:30rpx}.hero-copy{bottom:50rpx}.hero-title{font-size:45rpx}.login-panel{padding-left:24rpx;padding-right:24rpx}.panel-title{font-size:34rpx}.account-assurance{padding:0}.assurance-label{font-size:16rpx}.login-primary{height:88rpx}}
+	@media (max-height:720px){.login-visual{flex-basis:440rpx;height:440rpx}.hero-copy{bottom:36rpx}.hero-title{font-size:41rpx}.hero-sub{margin-top:9rpx;font-size:20rpx}.login-panel{min-height:520rpx;padding-top:25rpx}.panel-sub{margin-top:12rpx}.account-assurance{height:86rpx;margin-top:16rpx}.login-actions{margin-top:20rpx}.login-primary{height:80rpx}.login-agreement{margin-top:14rpx}.login-secondary{height:52rpx}}
 </style>

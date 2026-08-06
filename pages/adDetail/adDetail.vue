@@ -1,6 +1,8 @@
 <template>
-	<view class="app ad-detail">
-		<view class="ad-header" :style="{ background: ad.bgColor || '#f4f5f7' }">
+	<view class="app ad-detail has-brand-header">
+		<brand-header title="活动详情" theme="teal" layout="stacked" :back-on-title="true" />
+		<image class="detail-photo" src="/static/hero-fishing-v2.jpg" mode="aspectFill" />
+		<view class="ad-header" :style="{ background: ad.bgColor || '#eef8f7' }">
 			<text class="ad-title">{{ ad.title }}</text>
 			<text class="ad-desc">{{ ad.description || ad.desc }}</text>
 		</view>
@@ -85,7 +87,7 @@ export default {
 <style>
 .ad-detail {
 	min-height: 100vh;
-	background: #f4f5f7;
+	background: var(--surface-2);
 }
 
 .ad-header {
@@ -98,33 +100,33 @@ export default {
 
 .ad-title {
 	font-size: 44rpx;
-	font-weight: 800;
-	color: #1a2030;
+	font-weight: 600;
+	color: var(--ink);
 }
 
 .ad-desc {
 	font-size: 26rpx;
-	color: #4a5567;
+	color: var(--ink-2);
 }
 
 .ad-body {
 	margin: 32rpx 28rpx;
-	background: #ffffff;
-	border-radius: 20rpx;
+	background: var(--surface);
+	border-radius: var(--r);
 	padding: 36rpx 32rpx;
 }
 
 .ad-content {
 	font-size: 28rpx;
-	color: #3a4355;
+	color: var(--ink);
 	line-height: 1.8;
 	white-space: pre-wrap;
 }
 
 .coupon-section {
 	margin: 0 28rpx;
-	background: #ffffff;
-	border-radius: 20rpx;
+	background: var(--surface);
+	border-radius: var(--r);
 	padding: 30rpx 32rpx;
 	display: flex;
 	align-items: center;
@@ -139,27 +141,27 @@ export default {
 
 .coupon-value {
 	font-size: 36rpx;
-	font-weight: 800;
-	color: #e85d04;
+	font-weight: 600;
+	color: var(--gold);
 }
 
 .coupon-title {
 	font-size: 24rpx;
-	color: #6b7280;
+	color: var(--ink-2);
 }
 
 .claim-btn {
-	background: #f5c23b;
-	color: #1a1306;
+	background: var(--g-600);
+	color: #fff;
 	padding: 16rpx 32rpx;
-	border-radius: 999rpx;
+	border-radius: var(--r-pill);
 	font-size: 26rpx;
-	font-weight: 700;
+	font-weight: 500;
 }
 
 .claimed-text {
 	font-size: 26rpx;
-	color: #4fb38a;
+	color: var(--jade);
 	font-weight: 600;
 }
 
@@ -172,23 +174,32 @@ export default {
 
 .back-btn,
 .share-btn {
-	background: #1a2030;
+	background: var(--g-900);
 	color: #ffffff;
 	padding: 20rpx 60rpx;
-	border-radius: 999rpx;
+	border-radius: var(--r-pill);
 	font-size: 28rpx;
-	font-weight: 700;
+	font-weight: 500;
 	line-height: 1.4;
 	margin: 0;
 	border: 0;
 }
 
 .share-btn {
-	background: #f5c23b;
-	color: #1a1306;
+	background: var(--g-600);
+	color: #fff;
 }
 
 .share-btn::after {
 	border: 0;
 }
+</style>
+
+<style>
+.ad-detail{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))!important}
+@media (max-width:360px){.ad-detail .ad-header{margin-left:16rpx;margin-right:16rpx;padding-left:20rpx;padding-right:20rpx}.ad-detail .ad-body{margin-left:16rpx;margin-right:16rpx;padding-left:20rpx;padding-right:20rpx}.ad-detail .ad-footer{flex-wrap:wrap}.ad-detail .back-btn,.ad-detail .share-btn{min-width:240rpx}}
+</style>
+
+<style>
+.ad-detail{padding-bottom:40rpx;background:#f7fbfb}.detail-photo{width:100%;height:310rpx;display:block}.ad-detail .ad-header{margin:-22rpx 20rpx 0;padding:28rpx 24rpx;position:relative;z-index:2;align-items:flex-start;border-radius:20rpx 20rpx 0 0;background:#fff!important}.ad-detail .ad-title{font-size:36rpx;color:#133f42}.ad-detail .ad-desc{font-size:22rpx}.ad-detail .ad-body{margin:0 20rpx;padding:22rpx 24rpx;border-radius:0 0 14rpx 14rpx;border-top:1rpx solid #dce7e6}.ad-detail .ad-content{font-size:23rpx;line-height:1.75;color:#536e70}.ad-detail .coupon-section{margin:14rpx 20rpx;border:1rpx solid #d8e6e5;border-radius:13rpx}.ad-detail .claim-btn{border-radius:9rpx;background:#0aa9a5}.ad-detail .ad-footer{padding:18rpx 20rpx}.ad-detail .back-btn,.ad-detail .share-btn{flex:1;padding:18rpx 0;border-radius:10rpx;text-align:center}.ad-detail .back-btn{border:1rpx solid #0aa6a3;background:#fff;color:#0a9694}.ad-detail .share-btn{background:#0aa9a5}
 </style>

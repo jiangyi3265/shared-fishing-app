@@ -1,6 +1,7 @@
 import { API_BASE_URL_STORAGE_KEY, API_BASE_URLS } from './config.js'
 
 const LOGIN_KEY = 'fishpond_login'
+let authRedirecting = false
 
 function resolveBaseUrl() {
 	try {
@@ -13,6 +14,18 @@ function resolveBaseUrl() {
 
 export function setBaseUrl(url) {
 	uni.setStorageSync(API_BASE_URL_STORAGE_KEY, url)
+}
+
+/** 将后台上传接口返回的相对资源路径补全为小程序可加载的 HTTPS 地址。 */
+export function resolveAssetUrl(path) {
+	if (path === undefined || path === null) return ''
+	const value = String(path).trim()
+	if (!value) return ''
+	if (/^(https?:|data:|wxfile:|blob:)/i.test(value) || value.startsWith('/static/')) return value
+	if (value.startsWith('//')) return 'https:' + value
+	const baseUrl = String(resolveBaseUrl() || '').replace(/\/$/, '')
+	if (!baseUrl) return value
+	return baseUrl + '/' + value.replace(/^\/+/, '')
 }
 
 export function request(options) {
@@ -35,6 +48,12 @@ export function request(options) {
 			timeout: 15000,
 			success: (res) => {
 				const body = res.data
+				if (res.statusCode === 401 || (body && typeof body === 'object' && Number(body.code) === 401)) {
+					handleUnauthorized(token, options)
+					const detail = body && typeof body === 'object' ? body : {}
+					reject(Object.assign({}, detail, { code: 401, statusCode: 401, msg: detail.msg || '登录状态已过期' }))
+					return
+				}
 				if (res.statusCode < 200 || res.statusCode >= 300) {
 					const err = { msg: (body && body.msg) || `接口异常(${res.statusCode})`, statusCode: res.statusCode, data: body }
 					uni.showToast({ title: err.msg, icon: 'none' })
@@ -44,11 +63,6 @@ export function request(options) {
 				if (body && typeof body === 'object' && 'code' in body) {
 					if (body.code === 200) {
 						resolve(body.data !== undefined ? body.data : body.rows)
-					} else if (body.code === 401) {
-						uni.removeStorageSync('fishpond_login')
-						uni.removeStorageSync('fishpond_user')
-						uni.navigateTo({ url: '/pages/login/login' })
-						reject(body)
 					} else {
 						uni.showToast({ title: body.msg || '请求失败', icon: 'none' })
 						reject(body)
@@ -67,10 +81,10 @@ export function request(options) {
 }
 
 export const http = {
-	get: (url, params) => request({ url: url + (params ? buildQuery(params) : ''), method: 'GET' }),
-	post: (url, data) => request({ url, method: 'POST', data }),
-	put: (url, data) => request({ url, method: 'PUT', data }),
-	del: (url) => request({ url, method: 'DELETE' })
+	get: (url, params, options = {}) => request({ ...options, url: url + (params ? buildQuery(params) : ''), method: 'GET' }),
+	post: (url, data, options = {}) => request({ ...options, url, method: 'POST', data }),
+	put: (url, data, options = {}) => request({ ...options, url, method: 'PUT', data }),
+	del: (url, options = {}) => request({ ...options, url, method: 'DELETE' })
 }
 
 function buildQuery(params) {
@@ -95,6 +109,39 @@ function getToken() {
 	}
 }
 
+function currentPageUrl() {
+	try {
+		const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+		const page = pages && pages.length ? pages[pages.length - 1] : null
+		if (!page || !page.route) return '/pages/index/index'
+		const route = '/' + String(page.route).replace(/^\/+/, '')
+		const options = page.options || (page.$page && page.$page.options) || {}
+		const query = buildQuery(options)
+		return route + query
+	} catch (e) {
+		return '/pages/index/index'
+	}
+}
+
+function handleUnauthorized(failedToken, options = {}) {
+	const activeToken = getToken()
+	// 旧请求的 401 不得清除刚刚登录后写入的新 token，也不能把用户重新踢回登录页。
+	const belongsToActiveSession = failedToken ? activeToken === failedToken : !activeToken
+	if (!belongsToActiveSession) return
+	if (failedToken && activeToken === failedToken) {
+		uni.removeStorageSync('fishpond_login')
+		uni.removeStorageSync('fishpond_user')
+	}
+	if (options.redirectOnUnauthorized === false || authRedirecting) return
+	const redirect = currentPageUrl()
+	if (redirect.startsWith('/pages/login/login')) return
+	authRedirecting = true
+	uni.redirectTo({
+		url: '/pages/login/login?redirect=' + encodeURIComponent(redirect),
+		complete: () => setTimeout(() => { authRedirecting = false }, 600)
+	})
+}
+
 function getMiniProgramEnv() {
 	try {
 		const info = uni.getAccountInfoSync && uni.getAccountInfoSync()
@@ -113,20 +160,25 @@ function isValidBaseUrl(baseUrl) {
 	return /^https?:\/\//.test(baseUrl)
 }
 
-export function uploadFile(filePath) {
+function uploadTo(filePath, path) {
 	return new Promise((resolve, reject) => {
 		const baseUrl = resolveBaseUrl()
 		const token = getToken()
 		uni.uploadFile({
-			url: baseUrl + '/common/upload',
+			url: baseUrl + path,
 			filePath,
 			name: 'file',
 			header: token ? { Authorization: 'Bearer ' + token } : {},
 			success: (res) => {
 				try {
 					const data = JSON.parse(res.data)
+					if (res.statusCode === 401 || Number(data.code) === 401) {
+						handleUnauthorized(token)
+						reject({ code: 401, statusCode: 401, msg: data.msg || '登录状态已过期' })
+						return
+					}
 					if (data.code === 200) {
-						resolve(data.fileName)
+						resolve(data.data || data)
 					} else {
 						reject({ msg: data.msg || '上传失败' })
 					}
@@ -137,4 +189,12 @@ export function uploadFile(filePath) {
 			fail: (err) => reject({ msg: '上传失败' })
 		})
 	})
+}
+
+export function uploadFile(filePath) {
+	return uploadTo(filePath, '/app/media/upload').then(data => resolveAssetUrl(data.fileName))
+}
+
+export function uploadProfileAvatar(filePath) {
+	return uploadTo(filePath, '/app/profile/avatar')
 }

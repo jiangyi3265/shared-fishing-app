@@ -1,21 +1,7 @@
 <template>
-	<view class="app settings">
-		<view class="section-title">通用设置</view>
-
-		<view class="card">
-			<view class="cell" @click="clearCache">
-				<text class="cell-label">清除缓存</text>
-				<text class="cell-value">{{ cacheSize }}</text>
-				<text class="cell-arrow">›</text>
-			</view>
-			<view class="cell">
-				<text class="cell-label">当前版本</text>
-				<text class="cell-value">v1.0.0</text>
-			</view>
-		</view>
-
+	<view class="app settings has-account-tabbar has-brand-header">
+		<brand-header title="设置" theme="light" layout="compact" :back="true" />
 		<view class="section-title">账号</view>
-
 		<view class="card">
 			<view class="cell">
 				<text class="cell-label">用户ID</text>
@@ -26,8 +12,12 @@
 				<text class="cell-value">{{ user ? (user.nickname || user.name || '--') : '--' }}</text>
 			</view>
 		</view>
+		<view class="section-title">通用设置</view>
+		<view class="card"><view class="cell"><text class="cell-label">消息通知</text><text class="cell-arrow">›</text></view><view class="cell"><text class="cell-label">隐私设置</text><text class="cell-arrow">›</text></view><view class="cell"><text class="cell-label">支付设置</text><text class="cell-arrow">›</text></view></view>
+		<view class="card misc-card"><view class="cell" @click="clearCache"><text class="cell-label">清除缓存</text><text class="cell-value">{{ cacheSize }}</text><text class="cell-arrow">›</text></view><view class="cell"><text class="cell-label">当前版本</text><text class="cell-value">v1.0.0</text><text class="cell-arrow">›</text></view></view>
 
 		<view class="logout-btn" @click="doLogout">退出登录</view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -43,7 +33,7 @@
 		},
 		onShow() {
 			if (!isLoggedIn()) {
-				uni.redirectTo({ url: '/pages/login/login' })
+				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/settings/settings') })
 				return
 			}
 			this.user = getUser()
@@ -100,46 +90,50 @@
 	}
 
 	.section-title {
-		padding: 32rpx 28rpx 16rpx;
-		font-size: 26rpx;
-		color: #9aa3b2;
-		font-weight: 600;
+		padding: 34rpx 28rpx 14rpx;
+		font-size: 25rpx;
+		color: var(--text-light);
+		font-weight: 500;
 	}
 
 	.card {
 		margin: 0 28rpx;
-		background: #ffffff;
-		border-radius: 22rpx;
+		background: var(--surface);
+		border-radius: var(--r);
 		overflow: hidden;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
 	}
 
 	.cell {
 		display: flex;
 		align-items: center;
 		padding: 30rpx 28rpx;
-		border-bottom: 1rpx solid #f4f5f7;
+		border-bottom: 1rpx solid var(--border-color);
 	}
 
 	.cell:last-child {
 		border-bottom: none;
 	}
 
+	.cell:active {
+		background: var(--surface-soft);
+	}
+
 	.cell-label {
 		flex: 1;
 		font-size: 28rpx;
-		color: #1a2030;
+		color: var(--text-main);
+		font-weight: 600;
 	}
 
 	.cell-value {
 		font-size: 26rpx;
-		color: #9aa3b2;
+		color: var(--text-muted);
 		margin-right: 8rpx;
 	}
 
 	.cell-arrow {
-		font-size: 28rpx;
-		color: #c8cdd5;
+		font-size: 30rpx;
+		color: var(--text-light);
 	}
 
 	.logout-btn {
@@ -147,11 +141,19 @@
 		height: 96rpx;
 		line-height: 96rpx;
 		text-align: center;
-		background: #ffffff;
-		border-radius: 22rpx;
+		background: var(--surface);
+		border: 1rpx solid var(--border-color);
+		border-radius: var(--r);
 		font-size: 30rpx;
-		font-weight: 700;
-		color: #e86a4b;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
+		font-weight: 500;
+		color: var(--danger);
 	}
+
+	.logout-btn:active {
+		background: var(--danger-bg);
+	}
+</style>
+
+<style>
+.settings{min-height:100vh;padding:14rpx 20rpx calc(122rpx + env(safe-area-inset-bottom));background:#f7fbfb}.settings .section-title{margin:0 0 8rpx;padding:0 2rpx;font-size:22rpx}.settings .card{margin:0 0 14rpx;padding:0 20rpx;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff}.settings .cell{height:72rpx;padding:0;border-bottom:1rpx solid #dfe9e8}.settings .cell-label{font-size:22rpx}.settings .cell-value{font-size:20rpx}.settings .cell-arrow{font-size:30rpx}.settings .misc-card{margin-top:18rpx}.settings .logout-btn{height:76rpx;margin-top:16rpx;display:flex;align-items:center;justify-content:center;border:1rpx solid #d7e5e4;border-radius:12rpx;background:#fff;color:#ed4343;font-size:23rpx}
 </style>

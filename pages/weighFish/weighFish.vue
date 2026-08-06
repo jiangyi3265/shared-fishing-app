@@ -1,7 +1,7 @@
 <template>
-	<view class="app weigh-fish">
+	<view class="app weigh-fish has-brand-header">
+		<brand-header title="称鱼结算" theme="light" layout="compact" :back="true" />
 		<view class="wf-hero">
-			<text class="wf-hero-kicker">FISH WEIGH</text>
 			<text class="wf-hero-title">称鱼结算</text>
 			<text class="wf-hero-sub">将鱼放在电子秤上（已去皮），输入显示重量后确认付款</text>
 		</view>
@@ -35,10 +35,12 @@
 							placeholder="0.0"
 							placeholder-class="wf-input-ph"
 							@input="onWeightInput"
+							disabled
 						/>
 						<text class="wf-unit">斤</text>
 					</view>
 					<text class="wf-input-hint">请确保电子秤已去皮，鱼获完整放置</text>
+					<view class="wf-keypad"><text v-for="key in ['1','2','3','4','5','6','7','8','9']" :key="key" @click="tapKey(key)">{{ key }}</text><text class="key-zero" @click="tapKey('0')">0</text><text @click="backspace">⌫</text><text @click="clearWeight">清零</text><text @click="tapKey('.')">.</text></view>
 				</view>
 
 				<view class="wf-price-info">
@@ -183,6 +185,14 @@
 			this.loadPriceAndMember()
 		},
 		methods: {
+			tapKey(key) {
+				let next = String(this.weightInput || '')
+				if (key === '.' && next.includes('.')) return
+				if (next.includes('.') && next.split('.')[1].length >= 1) return
+				this.weightInput = (next + key).replace(/^0+(?=\d)/, '')
+			},
+			backspace() { this.weightInput = String(this.weightInput || '').slice(0, -1) },
+			clearWeight() { this.weightInput = '' },
 			loadPriceAndMember() {
 				const cached = getCachedVenue()
 				if (cached && cached.venue) this.venueId = cached.venue.venueId
@@ -265,17 +275,10 @@
 		gap: 8rpx;
 	}
 
-	.wf-hero-kicker {
-		font-size: 22rpx;
-		font-weight: 700;
-		color: rgba(248, 251, 247, 0.68);
-		letter-spacing: 1rpx;
-	}
-
 	.wf-hero-title {
 		font-size: 48rpx;
-		font-weight: 850;
-		color: #f8fbf7;
+		font-weight: 600;
+		color: #fff;
 		line-height: 1.12;
 	}
 
@@ -295,8 +298,7 @@
 	.wf-card {
 		background: var(--surface);
 		border: 1rpx solid var(--border-color);
-		border-radius: 22rpx;
-		box-shadow: var(--card-shadow);
+		border-radius: var(--r);
 		padding: 30rpx 28rpx;
 	}
 
@@ -328,7 +330,7 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 22rpx;
-		font-weight: 800;
+		font-weight: 600;
 		color: var(--text-light);
 		transition: var(--transition);
 	}
@@ -336,7 +338,7 @@
 	.wf-step.active .wf-step-dot {
 		background: var(--primary);
 		border-color: var(--primary);
-		color: #f8fbf7;
+		color: #fff;
 	}
 
 	.wf-step.done .wf-step-dot {
@@ -352,8 +354,8 @@
 	}
 
 	.wf-step.active .wf-step-label {
-		color: var(--primary);
-		font-weight: 800;
+		color: var(--jade);
+		font-weight: 600;
 	}
 
 	.wf-step.done .wf-step-label {
@@ -380,7 +382,7 @@
 	.wf-input-label {
 		display: block;
 		font-size: 28rpx;
-		font-weight: 800;
+		font-weight: 600;
 		color: var(--text-main);
 		margin-bottom: 20rpx;
 	}
@@ -392,7 +394,7 @@
 		padding: 20rpx 24rpx;
 		background: var(--surface-strong);
 		border: 2rpx solid var(--border-color);
-		border-radius: 18rpx;
+		border-radius: var(--r-sm);
 		transition: var(--transition);
 	}
 
@@ -403,7 +405,7 @@
 	.wf-weight-input {
 		flex: 1;
 		font-size: 56rpx;
-		font-weight: 900;
+		font-weight: 600;
 		color: var(--text-main);
 		text-align: center;
 		font-variant-numeric: tabular-nums;
@@ -418,7 +420,7 @@
 
 	.wf-unit {
 		font-size: 32rpx;
-		font-weight: 800;
+		font-weight: 600;
 		color: var(--text-muted);
 		flex-shrink: 0;
 	}
@@ -437,7 +439,7 @@
 		padding: 20rpx 24rpx;
 		background: var(--accent-soft);
 		border: 1rpx solid rgba(184, 111, 49, 0.14);
-		border-radius: 16rpx;
+		border-radius: var(--r-sm);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -457,17 +459,17 @@
 
 	.wf-price-value {
 		font-size: 28rpx;
-		font-weight: 850;
+		font-weight: 600;
 		color: var(--accent);
 	}
 
 	.wf-member-tag {
 		padding: 6rpx 16rpx;
-		border-radius: 999rpx;
+		border-radius: var(--r-pill);
 		background: var(--primary);
-		color: #f8fbf7;
+		color: #fff;
 		font-size: 20rpx;
-		font-weight: 700;
+		font-weight: 500;
 	}
 
 	/* Dock */
@@ -479,13 +481,12 @@
 		width: 100%;
 		height: 92rpx;
 		line-height: 92rpx;
-		border-radius: 16rpx;
+		border-radius: var(--r-sm);
 		background: var(--primary);
-		color: #f8fbf7;
+		color: #fff;
 		font-size: 30rpx;
-		font-weight: 800;
+		font-weight: 600;
 		border: 0;
-		box-shadow: 0 10rpx 24rpx rgba(24, 95, 72, 0.18);
 		transition: var(--transition);
 	}
 
@@ -499,7 +500,7 @@
 	}
 
 	.wf-dock-btn[disabled] {
-		background: #b9c9c3;
+		background: var(--g-200);
 		box-shadow: none;
 	}
 
@@ -518,14 +519,14 @@
 
 	.wf-summary-currency {
 		font-size: 38rpx;
-		font-weight: 800;
+		font-weight: 600;
 		color: var(--text-main);
 		margin-right: 4rpx;
 	}
 
 	.wf-summary-number {
 		font-size: 88rpx;
-		font-weight: 900;
+		font-weight: 600;
 		color: var(--text-main);
 		font-variant-numeric: tabular-nums;
 		line-height: 1;
@@ -534,7 +535,7 @@
 	.wf-summary-details {
 		background: var(--surface-strong);
 		border: 1rpx solid var(--border-color);
-		border-radius: 16rpx;
+		border-radius: var(--r-sm);
 		padding: 20rpx 24rpx;
 	}
 
@@ -560,13 +561,13 @@
 	.wf-detail-val {
 		font-size: 26rpx;
 		color: var(--text-main);
-		font-weight: 700;
+		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 	}
 
 	.wf-detail-highlight {
 		font-size: 30rpx;
-		font-weight: 850;
+		font-weight: 600;
 		color: var(--accent);
 	}
 
@@ -581,12 +582,12 @@
 		flex: 1;
 		height: 92rpx;
 		line-height: 92rpx;
-		border-radius: 16rpx;
+		border-radius: var(--r-sm);
 		background: var(--surface-strong);
 		color: var(--text-main);
 		border: 1rpx solid var(--border-color);
 		font-size: 28rpx;
-		font-weight: 800;
+		font-weight: 600;
 		box-shadow: none;
 	}
 
@@ -598,13 +599,12 @@
 		flex: 2;
 		height: 92rpx;
 		line-height: 92rpx;
-		border-radius: 16rpx;
-		background: var(--accent-gradient);
+		border-radius: var(--r-sm);
+		background: var(--g-600);
 		color: #ffffff;
 		font-size: 30rpx;
-		font-weight: 800;
+		font-weight: 600;
 		border: 0;
-		box-shadow: 0 10rpx 24rpx rgba(184, 111, 49, 0.22);
 		transition: var(--transition);
 	}
 
@@ -634,7 +634,7 @@
 		background: var(--success);
 		color: #ffffff;
 		font-size: 48rpx;
-		font-weight: 900;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -644,7 +644,7 @@
 	.wf-done-title {
 		display: block;
 		font-size: 34rpx;
-		font-weight: 850;
+		font-weight: 600;
 		color: var(--text-main);
 	}
 
@@ -661,16 +661,24 @@
 		width: 60%;
 		height: 88rpx;
 		line-height: 88rpx;
-		border-radius: 16rpx;
+		border-radius: var(--r-sm);
 		background: var(--primary);
-		color: #f8fbf7;
+		color: #fff;
 		font-size: 28rpx;
-		font-weight: 800;
+		font-weight: 600;
 		border: 0;
-		box-shadow: 0 10rpx 24rpx rgba(24, 95, 72, 0.18);
 	}
 
 	.wf-done-btn::after {
 		border: 0;
 	}
+</style>
+
+<style>
+.weigh-fish{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))!important}
+@media (max-width:360px){.weigh-fish{padding-left:16rpx!important;padding-right:16rpx!important}.wf-card{padding:16rpx}.wf-input-row{height:102rpx}.wf-weight-input{font-size:58rpx}.wf-keypad{gap:8rpx}.wf-keypad text{height:60rpx}}
+</style>
+
+<style>
+.weigh-fish{min-height:100vh;padding:0 20rpx 40rpx;background:#f7fbfb}.wf-hero{display:none}.wf-body{padding:14rpx 0}.wf-card{padding:20rpx;border:1rpx solid #d7e5e4;border-radius:14rpx;background:#fff}.wf-steps-bar{margin-bottom:20rpx}.wf-step-dot{width:48rpx;height:48rpx}.wf-input-section{padding:18rpx 0}.wf-input-label{font-size:25rpx}.wf-input-row{height:112rpx;margin-top:13rpx;border:2rpx solid #0aa6a3;border-radius:10rpx}.wf-weight-input{font-size:68rpx;color:#078e8c;text-align:right}.wf-unit{font-size:29rpx}.wf-input-hint{position:absolute;right:42rpx;margin-top:-164rpx;font-size:17rpx}.wf-keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:10rpx;margin-top:14rpx}.wf-keypad text{height:64rpx;display:flex;align-items:center;justify-content:center;border:1rpx solid #d6e4e3;border-radius:8rpx;background:#fff;color:#153f42;font-size:27rpx}.wf-keypad .key-zero{grid-column:1/3}.wf-price-info{margin-top:16rpx;padding:17rpx 0;border-top:1rpx solid #dce7e6}.wf-price-label{font-size:22rpx}.wf-price-value{color:#ef8c00}.wf-dock{position:static;margin-top:16rpx;padding:0}.wf-dock-btn{height:76rpx;border-radius:10rpx;background:#0aa9a5}.wf-actions{margin-top:20rpx}.wf-btn-pay{background:#0aa9a5}
 </style>

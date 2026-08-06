@@ -1,67 +1,37 @@
 <template>
-	<view class="app start">
-		<view class="hero">
-			<view class="hero-bg"></view>
-			<view class="hero-content">
-				<view class="hero-badge">SCAN · ENTRANCE</view>
-				<text class="hero-title">准备开始</text>
-				<text class="hero-sub">扫码已核验，确认后即可计时</text>
-			</view>
-			<view class="hero-ill">🎣</view>
-		</view>
-
-		<view class="venue">
-			<view class="venue-top">
-				<text class="venue-name">{{ venue.name }}</text>
-				<view class="venue-chip venue-chip-ok">可开始</view>
-			</view>
-			<view class="venue-addr">
-				<text class="venue-addr-icon">📍</text>
-				<text class="venue-addr-text">{{ venue.address }}</text>
-			</view>
-			<text class="venue-notice">{{ venue.notice }}</text>
-		</view>
-
-		<view class="amount">
-			<view class="amount-label">当前应付</view>
-			<view class="amount-row">
-				<text class="money-currency">¥</text>
-				<text class="money-number">0.00</text>
-			</view>
-			<text class="amount-tip">开始计时后按服务端时间累计</text>
-		</view>
-
-		<view class="rule">
-			<view class="rule-title">
-				<text>计费规则</text>
-				<text class="rule-tag">{{ rule.name }}</text>
-			</view>
-			<view class="rule-grid">
-				<view class="rule-cell">
-					<text class="rule-cell-label">计费单位</text>
-					<text class="rule-cell-value">{{ rule.stepMinutes }} 分钟</text>
+	<view class="app start dc-start has-brand-header">
+		<brand-header title="准备开始" theme="light" layout="compact" :back="true" />
+		<view class="dc-start-content">
+			<view class="dc-start-venue">
+				<view class="dc-start-venue-head">
+					<view class="dc-start-pin hic-nav"></view>
+					<view class="dc-start-venue-copy">
+						<text class="dc-start-name">{{ venue.name }}</text>
+						<text class="dc-start-address">{{ venue.address }}</text>
+					</view>
 				</view>
-				<view class="rule-cell">
-					<text class="rule-cell-label">单位价格</text>
-					<text class="rule-cell-value rule-cell-highlight">¥{{ stepPriceYuan }}</text>
-				</view>
-				<view class="rule-cell">
-					<text class="rule-cell-label">起步时长</text>
-					<text class="rule-cell-value">{{ rule.minDurationMinutes }} 分钟</text>
-				</view>
-				<view class="rule-cell">
-					<text class="rule-cell-label">进位方式</text>
-					<text class="rule-cell-value">向上取整</text>
+				<view class="dc-start-status">可开始</view>
+				<text class="dc-start-notice">{{ venue.notice || '下竿后开始计时，实时计费' }}</text>
+				<view v-if="spot" class="dc-start-spot">
+					<view class="dc-start-spot-no">{{ spotNumber }}</view>
+					<view class="dc-start-spot-copy">
+						<text class="dc-start-spot-name">{{ spot.spotName }}</text>
+						<text class="dc-start-spot-desc">{{ spot.description || '二维码已匹配当前钓位' }}</text>
+					</view>
+					<text class="dc-start-spot-state">已匹配</text>
 				</view>
 			</view>
-			<text class="rule-tip">{{ rule.summary }}</text>
-		</view>
 
-		<view class="spacer"></view>
+			<view class="dc-start-rule">
+				<view class="dc-start-row"><text>计费单位</text><text>{{ rule.stepMinutes }} 分钟</text></view>
+				<view class="dc-start-row"><text>单位价格</text><text>¥{{ stepPriceYuan }}</text></view>
+				<view class="dc-start-row"><text>起步时长</text><text>{{ rule.minDurationMinutes }} 分钟</text></view>
+				<view class="dc-start-row"><text>向上取整</text><text>是</text></view>
+			</view>
 
-		<view class="dock">
-			<button class="dock-ghost" @click="backHome">返回</button>
-			<button class="dock-primary" @click="startNow">开始计时</button>
+			<text class="dc-start-summary">{{ rule.summary }}</text>
+			<button class="dc-start-primary" :disabled="starting" @click="startNow">{{ primaryButtonText }}</button>
+			<button class="dc-start-back" @click="backHome">返回</button>
 		</view>
 	</view>
 </template>
@@ -73,40 +43,61 @@
 		getUser,
 		fetchRunningOrder,
 		fetchPendingOrder,
+		resolveQrcode,
 		isLoggedIn,
 		loadDefaultVenue,
 		getCachedVenue,
 		goHomeSafely
 	} from '../../utils/fishingStore.js'
+	import { safeDecode, parseScanParams, extractScanProof } from '../../utils/scan.js'
 
 	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
 	const FALLBACK_RULE = { name: '标准计费', stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0, summary: '起步 30 分钟起计' }
 
 	export default {
 		data() {
-			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE, scanQrId: null, scanScene: '' }
+			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE, spot: null, scanQrId: null, scanScene: '', directEntry: false, starting: false }
 		},
 		computed: {
-			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) }
+			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) },
+			spotNumber() {
+				const match = String(this.spot && this.spot.spotName || '').match(/\d+/)
+				return match ? match[0].padStart(2, '0') : '位'
+			},
+			primaryButtonText() {
+				if (this.starting) return '正在开始…'
+				return this.spot ? `确认 ${this.spot.spotName} 并开始计时` : '开始计时'
+			}
 		},
 		onLoad(option = {}) {
 			this.applyScanOption(option)
+			this.directEntry = String(option.direct || '') === '1'
 			if (!isLoggedIn()) {
-				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildScanQuery()) })
+				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildEntryQuery()) })
 				return
 			}
-			if (!this.hasScanProof()) {
-				uni.showToast({ title: '请先扫描入口码', icon: 'none' })
+			if (!this.hasScanProof() && !this.directEntry) {
+				uni.showToast({ title: '请从首页点击下竿计时，或扫描钓场二维码', icon: 'none' })
 				setTimeout(() => this.backHome(), 500)
 				return
 			}
 			this.loadVenue()
+			if (this.hasScanProof()) this.loadScanInfo()
 			const user = getUser()
 			if (!user) return
 			fetchPendingOrder(user.userId).then((p) => { if (p) uni.redirectTo({ url: '/pages/pay/pay' }) })
-			fetchRunningOrder(user.userId).then((r) => { if (r) uni.redirectTo({ url: '/pages/session/session' }) })
+			fetchRunningOrder(user.userId).then((r) => {
+				if (r) uni.redirectTo({
+					url: '/pages/session/session' + (this.hasScanProof() ? this.buildEntryQuery({ settle: 1 }) : '')
+				})
+			})
 		},
 		methods: {
+			loadScanInfo() {
+				resolveQrcode(this.currentScan(), { redirectOnUnauthorized: false }).then((data) => {
+					this.spot = data && data.spot ? data.spot : null
+				}).catch(() => { this.spot = null })
+			},
 			loadVenue() {
 				const cached = getCachedVenue()
 				if (cached && cached.venue) { this.applyVenue(cached) }
@@ -118,53 +109,60 @@
 			},
 			applyScanOption(option = {}) {
 				const rawScene = option.scene
-					? decodeURIComponent(option.scene)
+					? safeDecode(option.scene)
 					: (option.action && option.venueId ? 'action=' + option.action + '&venueId=' + option.venueId : '')
-				const sceneParams = this.parseScan(rawScene)
-				const qrId = Number(option.qrId || sceneParams.qrId || 0)
-				this.scanQrId = Number.isFinite(qrId) && qrId > 0 ? qrId : null
-				this.scanScene = this.scanQrId ? '' : rawScene
-			},
-			parseScan(raw) {
-				if (!raw || raw.indexOf('=') < 0) return {}
-				const out = {}
-				raw.split('&').forEach((pair) => {
-					const [k, v] = pair.split('=')
-					if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '')
-				})
-				return out
+				const proof = extractScanProof(parseScanParams(rawScene))
+				const qrId = Number(option.qrId || (proof && proof.qrId) || 0)
+				this.scanQrId = Number.isSafeInteger(qrId) && qrId > 0 ? qrId : null
+				this.scanScene = this.scanQrId ? '' : ((proof && proof.scene) || rawScene)
 			},
 			hasScanProof() {
 				return Boolean(this.scanQrId || this.scanScene)
 			},
 			currentScan() {
-				return this.scanQrId ? { qrId: this.scanQrId } : { scene: this.scanScene }
+				if (this.scanQrId) return { qrId: this.scanQrId }
+				if (this.scanScene) return { scene: this.scanScene }
+				return {}
 			},
-			buildScanQuery() {
-				if (this.scanQrId) return '?qrId=' + encodeURIComponent(this.scanQrId)
-				if (this.scanScene) return '?scene=' + encodeURIComponent(this.scanScene)
-				return ''
+			buildEntryQuery(extra = {}) {
+				const parts = []
+				if (this.scanQrId) parts.push('qrId=' + encodeURIComponent(this.scanQrId))
+				else if (this.scanScene) parts.push('scene=' + encodeURIComponent(this.scanScene))
+				if (this.directEntry) parts.push('direct=1')
+				Object.keys(extra).forEach((key) => {
+					if (extra[key] !== undefined && extra[key] !== null && extra[key] !== '') {
+						parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(extra[key]))
+					}
+				})
+				return parts.length ? '?' + parts.join('&') : ''
 			},
 			startNow() {
+				if (this.starting) return
 				const user = getUser()
 				if (!user) {
-					uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildScanQuery()) })
+					uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildEntryQuery()) })
 					return
 				}
-				if (!this.hasScanProof()) {
-					uni.showToast({ title: '请先扫描入口码', icon: 'none' })
+				if (!this.hasScanProof() && !this.directEntry) {
+					uni.showToast({ title: '请从首页点击下竿计时，或扫描钓场二维码', icon: 'none' })
 					return
 				}
+				if (this.directEntry && (!Number.isSafeInteger(Number(this.venue.venueId)) || Number(this.venue.venueId) <= 0)) {
+					uni.showToast({ title: '钓场信息尚未加载完成，请稍后重试', icon: 'none' })
+					return
+				}
+				this.starting = true
 				fetchPendingOrder(user.userId).then((pending) => {
 					if (pending) {
 						uni.showToast({ title: '请先支付未完成账单', icon: 'none' })
 						uni.redirectTo({ url: '/pages/pay/pay' })
 						return
 					}
-					startOrder(user.userId, this.venue.venueId, this.currentScan()).then(() => {
+					const venueId = this.hasScanProof() ? null : Number(this.venue.venueId)
+					return startOrder(user.userId, venueId, this.currentScan()).then(() => {
 						uni.redirectTo({ url: '/pages/session/session' })
 					})
-				})
+				}).catch(() => {}).finally(() => { this.starting = false })
 			},
 			backHome() { goHomeSafely() }
 		}
@@ -172,293 +170,230 @@
 </script>
 
 <style>
-	.start {
-		padding-bottom: 200rpx;
+/* v18：严格对齐核心入场设计稿 */
+	.dc-start.start {
+		min-height: 100vh;
+		padding: 28rpx 0 calc(48rpx + env(safe-area-inset-bottom)) !important;
+		background: #f7fbfa;
 	}
 
-	.hero {
-		position: relative;
-		margin: 20rpx 28rpx 0;
-		padding: 40rpx 32rpx;
-		border-radius: 28rpx;
-		overflow: hidden;
-		display: flex;
-		align-items: center;
-		gap: 24rpx;
-		box-shadow: 0 12rpx 30rpx rgba(26, 32, 48, 0.08);
+	.dc-start-content {
+		padding: 0 28rpx;
 	}
 
-	.hero-bg {
-		position: absolute;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
-	}
-
-	.hero-content {
-		position: relative;
-		z-index: 1;
-		flex: 1;
-		color: #ffffff;
-	}
-
-	.hero-badge {
-		display: inline-block;
-		padding: 6rpx 16rpx;
-		border-radius: 999rpx;
-		background: rgba(245, 194, 59, 0.2);
-		color: #f5c23b;
-		font-size: 20rpx;
-		font-weight: 700;
-		letter-spacing: 3rpx;
-	}
-
-	.hero-title {
-		display: block;
-		margin-top: 14rpx;
-		font-size: 48rpx;
-		font-weight: 800;
-		color: #ffffff;
-	}
-
-	.hero-sub {
-		display: block;
-		margin-top: 10rpx;
-		font-size: 24rpx;
-		color: #d8d8d8;
-	}
-
-	.hero-ill {
-		position: relative;
-		z-index: 1;
-		width: 140rpx;
-		height: 140rpx;
-		border-radius: 50%;
-		background: #f5c23b;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 64rpx;
-		box-shadow: 0 14rpx 30rpx rgba(245, 194, 59, 0.4);
-	}
-
-	.venue {
-		margin: 24rpx 28rpx 0;
-		padding: 28rpx;
+	.dc-start-venue,
+	.dc-start-rule {
+		border: 1rpx solid var(--line);
 		border-radius: 22rpx;
-		background: #ffffff;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
+		background: var(--surface-strong);
 	}
 
-	.venue-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.venue-name {
-		font-size: 32rpx;
-		font-weight: 800;
-		color: #1a2030;
-	}
-
-	.venue-chip {
-		padding: 6rpx 18rpx;
-		border-radius: 999rpx;
-		font-size: 22rpx;
-		font-weight: 700;
-	}
-
-	.venue-chip-ok {
-		background: rgba(79, 179, 138, 0.14);
-		color: #2fa273;
-	}
-
-	.venue-addr {
-		margin-top: 16rpx;
-		display: flex;
-		align-items: center;
-		gap: 10rpx;
-	}
-
-	.venue-addr-icon {
-		font-size: 28rpx;
-	}
-
-	.venue-addr-text {
-		font-size: 26rpx;
-		color: #4a5567;
-	}
-
-	.venue-notice {
-		display: block;
-		margin-top: 14rpx;
-		padding: 16rpx 18rpx;
-		border-radius: 14rpx;
-		background: #f7f8fb;
-		color: #6b7280;
-		font-size: 24rpx;
-		line-height: 1.6;
-	}
-
-	.amount {
-		margin: 24rpx 28rpx 0;
-		padding: 40rpx 32rpx;
-		border-radius: 24rpx;
-		background: linear-gradient(135deg, #fff7df 0%, #ffeab0 100%);
+	.dc-start-venue {
+		padding: 32rpx 30rpx 28rpx;
 		text-align: center;
-		box-shadow: 0 10rpx 28rpx rgba(245, 194, 59, 0.22);
 	}
 
-	.amount-label {
-		color: #b8860b;
-		font-size: 22rpx;
-		letter-spacing: 6rpx;
-		font-weight: 700;
-	}
-
-	.amount-row {
+	.dc-start-venue-head {
 		display: flex;
-		align-items: baseline;
-		justify-content: center;
-		margin-top: 14rpx;
-		color: #1a1306;
+		align-items: flex-start;
+		gap: 18rpx;
+		text-align: left;
 	}
 
-	.amount-row .money-currency {
-		color: #1a1306;
-		font-size: 34rpx;
+	.dc-start-pin {
+		width: 46rpx;
+		height: 46rpx;
+		margin-top: 3rpx;
+		background-size: contain;
+		flex-shrink: 0;
 	}
 
-	.amount-row .money-number {
-		color: #1a1306;
-		font-size: 104rpx;
-	}
-
-	.amount-tip {
-		display: block;
-		margin-top: 10rpx;
-		color: #8a6914;
-		font-size: 24rpx;
-	}
-
-	.rule {
-		margin: 24rpx 28rpx 0;
-		padding: 28rpx;
-		border-radius: 22rpx;
-		background: #ffffff;
-		box-shadow: 0 6rpx 20rpx rgba(26, 32, 48, 0.04);
-	}
-
-	.rule-title {
+	.dc-start-venue-copy {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 28rpx;
-		font-weight: 700;
-		color: #1a2030;
-	}
-
-	.rule-tag {
-		padding: 4rpx 16rpx;
-		border-radius: 999rpx;
-		background: rgba(245, 194, 59, 0.18);
-		color: #b8860b;
-		font-size: 22rpx;
-		font-weight: 700;
-	}
-
-	.rule-grid {
-		margin-top: 18rpx;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 14rpx;
-	}
-
-	.rule-cell {
-		padding: 20rpx;
-		border-radius: 16rpx;
-		background: #f7f8fb;
-		display: flex;
+		flex: 1;
 		flex-direction: column;
-		gap: 6rpx;
+		min-width: 0;
 	}
 
-	.rule-cell-label {
+	.dc-start-name {
+		overflow: hidden;
+		color: var(--ink);
+		font-size: 34rpx;
+		font-weight: 800;
+		line-height: 1.25;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dc-start-address {
+		margin-top: 8rpx;
+		overflow: hidden;
+		color: var(--ink-3);
+		font-size: 25rpx;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dc-start-status {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 180rpx;
+		height: 64rpx;
+		margin-top: 26rpx;
+		padding: 0 30rpx;
+		border: 2rpx solid var(--g-600);
+		border-radius: 18rpx;
+		color: var(--g-800);
+		font-size: 29rpx;
+		font-weight: 800;
+	}
+
+	.dc-start-notice {
+		display: block;
+		margin-top: 16rpx;
+		color: var(--ink-3);
+		font-size: 23rpx;
+	}
+
+	.dc-start-spot {
+		display: flex;
+		align-items: center;
+		gap: 18rpx;
+		margin-top: 28rpx;
+		padding-top: 24rpx;
+		border-top: 1rpx solid var(--line);
+		text-align: left;
+	}
+
+	.dc-start-spot-no {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 64rpx;
+		height: 64rpx;
+		border-radius: 18rpx;
+		background: var(--g-100);
+		color: var(--g-800);
+		font-size: 27rpx;
+		font-weight: 900;
+		font-variant-numeric: tabular-nums;
+		flex-shrink: 0;
+	}
+
+	.dc-start-spot-copy {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.dc-start-spot-name {
+		color: var(--ink);
+		font-size: 28rpx;
+		font-weight: 800;
+	}
+
+	.dc-start-spot-desc {
+		margin-top: 5rpx;
+		overflow: hidden;
+		color: var(--ink-3);
 		font-size: 22rpx;
-		color: #9aa3b2;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.rule-cell-value {
-		font-size: 30rpx;
+	.dc-start-spot-state {
+		color: var(--g-700);
+		font-size: 23rpx;
+		font-weight: 800;
+		flex-shrink: 0;
+	}
+
+	.dc-start-rule {
+		margin-top: 24rpx;
+		padding: 0 28rpx;
+	}
+
+	.dc-start-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24rpx;
+		min-height: 88rpx;
+		border-bottom: 1rpx solid var(--line);
+		color: var(--ink);
+		font-size: 27rpx;
+	}
+
+	.dc-start-row:last-child {
+		border-bottom: 0;
+	}
+
+	.dc-start-row text:first-child {
 		font-weight: 700;
-		color: #1a2030;
+	}
+
+	.dc-start-row text:last-child {
+		color: var(--ink-2);
 		font-variant-numeric: tabular-nums;
 	}
 
-	.rule-cell-highlight {
-		color: #b8860b;
-	}
-
-	.rule-tip {
+	.dc-start-summary {
 		display: block;
-		margin-top: 16rpx;
-		padding: 16rpx;
-		border-radius: 14rpx;
-		background: #fff7df;
-		color: #8a6914;
-		font-size: 24rpx;
-		line-height: 1.6;
+		margin: 18rpx 6rpx 0;
+		color: var(--ink-3);
+		font-size: 22rpx;
+		text-align: center;
 	}
 
-	.spacer {
-		height: 40rpx;
-	}
-
-	.dock {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
-		background: rgba(244, 245, 247, 0.96);
+	.dc-start-primary,
+	.dc-start-back {
 		display: flex;
-		gap: 16rpx;
-		box-shadow: 0 -8rpx 20rpx rgba(26, 32, 48, 0.06);
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		margin: 0;
+		line-height: 1.2;
 	}
 
-	.dock-ghost {
-		flex: 0 0 220rpx;
+	.dc-start-primary {
 		height: 96rpx;
-		line-height: 96rpx;
+		margin-top: 36rpx;
 		border-radius: 20rpx;
-		background: #ffffff;
-		color: #3a4355;
-		border: 1rpx solid #e4e7ee;
-		font-size: 30rpx;
+		background: var(--g-600);
+		box-shadow: 0 9rpx 22rpx rgba(8,142,141,.16);
+		color: #f8fffe;
+		font-size: 31rpx;
+		font-weight: 800;
+	}
+
+	.dc-start-primary:active {
+		background: var(--g-800);
+		transform: scale(.985);
+	}
+
+	.dc-start-back {
+		height: 76rpx;
+		margin-top: 8rpx;
+		background: transparent;
+		color: var(--g-800);
+		font-size: 28rpx;
 		font-weight: 700;
 	}
 
-	.dock-ghost::after {
-		border: 0;
-	}
+	@media (max-width: 360px) {
+		.dc-start-content {
+			padding: 0 22rpx;
+		}
 
-	.dock-primary {
-		flex: 1;
-		height: 96rpx;
-		line-height: 96rpx;
-		border-radius: 20rpx;
-		background: #f5c23b;
-		color: #1a1306;
-		font-size: 32rpx;
-		font-weight: 800;
-		letter-spacing: 2rpx;
-		box-shadow: 0 12rpx 24rpx rgba(245, 194, 59, 0.3);
-	}
+		.dc-start-venue {
+			padding-left: 24rpx;
+			padding-right: 24rpx;
+		}
 
-	.dock-primary::after {
-		border: 0;
+		.dc-start-name {
+			font-size: 31rpx;
+		}
 	}
 </style>

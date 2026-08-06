@@ -1,4 +1,5 @@
-import { http } from './request.js'
+import { http, resolveAssetUrl } from './request.js'
+import { uploadProfileAvatar } from './request.js'
 
 const USER_KEY = 'fishpond_user'
 const LOGIN_KEY = 'fishpond_login'
@@ -46,6 +47,14 @@ export function seedHomeIfAlone(currentRoute) {
 	return true
 }
 
+// ---- 启动加载动画（每次冷启动仅展示一次）----
+let __splashSeen = false
+export function shouldShowSplash() {
+	if (__splashSeen) return false
+	__splashSeen = true
+	return true
+}
+
 export function formatDuration(secondsValue) {
 	const total = Number(secondsValue || 0)
 	const h = Math.floor(total / 3600)
@@ -70,7 +79,21 @@ function readStorage(key) {
 
 function saveJson(key, value) { uni.setStorageSync(key, value) }
 
-export function isLoggedIn() { return Boolean(readStorage(LOGIN_KEY)) }
+function readLoginSession() {
+	const raw = readStorage(LOGIN_KEY)
+	if (!raw) return null
+	if (typeof raw === 'object') return raw
+	try { return JSON.parse(raw) } catch (e) { return null }
+}
+
+export function isLoggedIn() {
+	const session = readLoginSession()
+	const user = getUser()
+	if (!session || !session.token || !user) return false
+	const sessionUserId = session.userId === undefined || session.userId === null ? '' : String(session.userId)
+	const userId = user.userId === undefined || user.userId === null ? '' : String(user.userId)
+	return !sessionUserId || !userId || sessionUserId === userId
+}
 
 export function getUser() {
 	const raw = readStorage(USER_KEY)
@@ -79,7 +102,11 @@ export function getUser() {
 	try { return JSON.parse(raw) } catch (e) { return null }
 }
 
-export function setUser(user) { saveJson(USER_KEY, user) }
+export function setUser(user) {
+	if (!user) return
+	const normalized = { ...user, avatar: resolveAssetUrl(user.avatar || '') }
+	saveJson(USER_KEY, normalized)
+}
 
 export function logout() {
 	uni.removeStorageSync(LOGIN_KEY)
@@ -108,7 +135,10 @@ export function loginRequest({ code, nickname, avatar } = {}) {
 	return http.post('/app/login', payload).then((data) => {
 		if (!data || !data.user || !data.token) throw { msg: '登录响应异常' }
 		setUser(data.user)
-		saveJson(LOGIN_KEY, { at: Date.now(), token: data.token, userId: data.userId })
+		data.user = getUser()
+		const userId = data.userId !== undefined && data.userId !== null ? data.userId : data.user.userId
+		saveJson(LOGIN_KEY, { at: Date.now(), token: String(data.token), userId })
+		if (!isLoggedIn()) throw { msg: '登录信息保存失败' }
 		return data
 	})
 }
@@ -117,11 +147,20 @@ export function loginWithCode(code, profile = {}) {
 	return loginRequest({ code, nickname: profile.nickName, avatar: profile.avatarUrl })
 }
 
-export function resolveQrcode({ qrId, scene } = {}) {
+export function saveChosenAvatar(filePath) {
+	if (!filePath) return Promise.resolve(getUser())
+	return uploadProfileAvatar(filePath).then((data) => {
+		const user = data && data.user ? data.user : getUser()
+		if (user) setUser(user)
+		return getUser()
+	})
+}
+
+export function resolveQrcode({ qrId, scene } = {}, requestOptions) {
 	const params = {}
 	if (qrId) params.qrId = qrId
 	if (scene) params.scene = scene
-	return http.get('/app/qrcode/resolve', params)
+	return http.get('/app/qrcode/resolve', params, requestOptions)
 }
 
 export function loadDefaultVenue() {
@@ -131,14 +170,14 @@ export function loadDefaultVenue() {
 	})
 }
 
-export function fetchRunningOrder(userId) {
+export function fetchRunningOrder(userId, requestOptions) {
 	if (!userId) return Promise.resolve(null)
-	return http.get('/app/order/running', { userId }).then((data) => data || null)
+	return http.get('/app/order/running', { userId }, requestOptions).then((data) => data || null)
 }
 
-export function fetchPendingOrder(userId) {
+export function fetchPendingOrder(userId, requestOptions) {
 	if (!userId) return Promise.resolve(null)
-	return http.get('/app/order/pending', { userId }).then((data) => data || null)
+	return http.get('/app/order/pending', { userId }, requestOptions).then((data) => data || null)
 }
 
 function attachScanPayload(payload, scan = {}) {
@@ -236,12 +275,30 @@ export function staffRedeem(code) {
 }
 
 export function fetchAds() {
-	return http.get('/app/ad/list').then((rows) => (rows || []).map(mapAdForView))
+	return http.get('/app/ad/list').then((result) => normalizeListResult(result).map(mapAdForView))
 }
 
 export function fetchStockingList(venueId) {
-	const params = venueId ? { venueId } : {}
-	return http.get('/app/stocking/list', params).then(rows => rows || [])
+	const normalizedVenueId = Number(venueId)
+	if (!Number.isInteger(normalizedVenueId) || normalizedVenueId <= 0) {
+		return Promise.reject({ msg: '未获取到有效的钓场信息' })
+	}
+	return http.get('/app/stocking/list', { venueId: normalizedVenueId })
+		.then(rows => (rows || []).map(mapStockingForView))
+}
+
+function mapStockingForView(record) {
+	if (!record || typeof record !== 'object') return record
+	const rawImages = [record.images, record.image]
+	const images = []
+	rawImages.forEach((raw) => {
+		const values = Array.isArray(raw) ? raw : String(raw || '').split(',')
+		values.forEach((value) => {
+			const url = resolveAssetUrl(value)
+			if (url && !images.includes(url)) images.push(url)
+		})
+	})
+	return { ...record, image: images[0] || '', images }
 }
 
 export function fetchAdById(adId) {
@@ -250,12 +307,23 @@ export function fetchAdById(adId) {
 
 function mapAdForView(ad) {
 	if (!ad) return ad
+	const id = ad.adId !== undefined && ad.adId !== null ? ad.adId : ad.id
+	const rawType = ad.adType !== undefined && ad.adType !== null ? ad.adType : ad.type
+	const type = String(rawType || 'ad').toLowerCase()
+	const rawImage = ad.image || ad.imageUrl || ad.coverUrl || ad.cover || ''
+	const image = Array.isArray(rawImage) ? rawImage[0] : String(rawImage).split(',')[0]
 	return {
 		...ad,
-		id: ad.adId,
-		type: ad.adType,
-		desc: ad.description,
-		activityInfo: ad.adType === 'activity' ? {
+		adId: id,
+		id,
+		adType: type,
+		type,
+		title: ad.title || ad.name || '钓场活动',
+		description: ad.description || ad.desc || ad.subtitle || '',
+		desc: ad.description || ad.desc || ad.subtitle || '',
+		image: resolveAssetUrl(image),
+		bgColor: ad.bgColor || ad.backgroundColor || '#e9e2d3',
+		activityInfo: type === 'activity' ? {
 			name: ad.activityName,
 			date: ad.activityDate,
 			location: ad.activityLocation,
@@ -264,6 +332,13 @@ function mapAdForView(ad) {
 			rules: ad.activityRules
 		} : null
 	}
+}
+
+function normalizeListResult(result) {
+	if (Array.isArray(result)) return result
+	if (result && Array.isArray(result.rows)) return result.rows
+	if (result && Array.isArray(result.list)) return result.list
+	return []
 }
 
 export function submitRegistration(adId, userId, info) {
@@ -417,6 +492,24 @@ export function exchangePoints(goodsId) {
 	return http.post('/app/points/exchange/' + goodsId)
 }
 
+export function fetchConsumePointsReward(sourceNo) {
+	if (!sourceNo) return Promise.resolve(null)
+	return http.get('/app/points/reward/' + encodeURIComponent(sourceNo))
+}
+
+export function claimConsumePointsReward(sourceNo) {
+	return http.post('/app/points/reward/' + encodeURIComponent(sourceNo) + '/claim')
+}
+
+// ===== 极智鱼鉴 · 电子鱼卡 =====
+export function fetchFishCardGame() {
+	return http.get('/app/fish-card/my')
+}
+
+export function submitFishCard(speciesId, videoUrl) {
+	return http.post('/app/fish-card/submit', { speciesId, videoUrl })
+}
+
 // ===== 拼场约钓 =====
 export function fetchGroupList(venueId) {
 	const params = venueId ? { venueId } : {}
@@ -498,4 +591,42 @@ export function fetchCompetitionRanking(compId) {
 }
 export function enterCompetition(compId, data) {
 	return http.post('/app/competition/enter/' + compId, data)
+}
+
+// ===== 排行榜（钓王榜 / 积分榜）=====
+// 无后端 /app/rank/list 时回退到演示数据，保证界面完整（与首页广告的 FALLBACK 模式一致）。
+const RANK_DEMO = {
+	weight: [
+		{ userId: 901, nickname: '空军克星', weightGram: 34250, catchCount: 27 },
+		{ userId: 902, nickname: '鲫鱼杀手', weightGram: 30600, catchCount: 22 },
+		{ userId: 903, nickname: '夜钓之王', weightGram: 28900, catchCount: 19 },
+		{ userId: 904, nickname: '爆护达人', weightGram: 24550, catchCount: 18 },
+		{ userId: 905, nickname: '溪流听风', weightGram: 20850, catchCount: 15 },
+		{ userId: 906, nickname: '一杆惊鱼', weightGram: 19450, catchCount: 14 },
+		{ userId: 907, nickname: '静水深流', weightGram: 17600, catchCount: 12 },
+		{ userId: 908, nickname: '老李头', weightGram: 15300, catchCount: 11 },
+		{ userId: 909, nickname: '守钓人', weightGram: 13950, catchCount: 9 },
+		{ userId: 910, nickname: '愿者上钩', weightGram: 11200, catchCount: 8 }
+	],
+	points: [
+		{ userId: 811, nickname: '钓场常客', points: 12860, level: 6 },
+		{ userId: 812, nickname: '天天签到', points: 10540, level: 6 },
+		{ userId: 813, nickname: '积分猎人', points: 9320, level: 5 },
+		{ userId: 814, nickname: '连杆不断', points: 8150, level: 5 },
+		{ userId: 815, nickname: '晨钓晚归', points: 6980, level: 4 },
+		{ userId: 816, nickname: '愿者上钩', points: 5640, level: 4 },
+		{ userId: 817, nickname: '水边小坐', points: 4870, level: 3 },
+		{ userId: 818, nickname: '浮漂微动', points: 3960, level: 3 },
+		{ userId: 819, nickname: '一鱼一世界', points: 3120, level: 2 },
+		{ userId: 820, nickname: '新手上路', points: 2380, level: 2 }
+	]
+}
+
+export function fetchLeaderboard(type = 'weight', venueId) {
+	const kind = type === 'points' ? 'points' : 'weight'
+	const params = { type: kind }
+	if (venueId) params.venueId = venueId
+	return http.get('/app/rank/list', params)
+		.then((rows) => (rows && rows.length ? rows : RANK_DEMO[kind]))
+		.catch(() => RANK_DEMO[kind])
 }

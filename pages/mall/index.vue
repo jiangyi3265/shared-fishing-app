@@ -1,10 +1,13 @@
 <template>
-	<view class="app mall">
+	<view class="app mall has-brand-header">
+		<brand-header title="钓场补给" theme="teal" layout="compact" :back="true" />
 		<view class="hero">
+			<image class="mall-hero-photo" src="/static/hero-fishing-v2.jpg" mode="aspectFill" />
 			<view class="hero-bg"></view>
 			<view class="hero-content">
 				<text class="hero-title">钓场补给</text>
-				<text class="hero-sub">FISHING · SUPPLIES</text>
+				<text class="hero-subtitle">精选好物 · 便捷补给</text>
+				<text class="hero-trust">✓ 正品保障　 ✓ 即到即用　 ✓ 售后无忧</text>
 				<view class="hero-search">
 					<text class="hero-search-icon"></text>
 					<input class="hero-search-input" v-model="keyword" placeholder="搜索鱼饵 / 钓具 / 饮品补给" confirm-type="search" />
@@ -12,7 +15,8 @@
 			</view>
 		</view>
 
-		<scroll-view class="cats" scroll-x>
+		<view class="mall-catalog">
+		<scroll-view class="cats" scroll-y>
 			<view v-for="c in categories" :key="c.catId" class="cat" :class="{ active: c.catId === activeCat }" @click="switchCat(c.catId)">
 				<text class="cat-icon">{{ c.icon }}</text>
 				<text class="cat-name">{{ c.name }}</text>
@@ -27,7 +31,7 @@
 		<view class="goods-grid">
 			<view v-for="g in filteredGoods" :key="g.goodsId" class="goods" @click="goDetail(g)">
 				<view class="goods-cover">
-					<text class="goods-cover-emoji">{{ g.cover }}</text>
+					<product-thumb :name="g.name" :goods-id="g.goodsId" />
 					<view v-if="g.stock < 10" class="goods-tag">仅剩 {{ g.stock }}</view>
 				</view>
 				<text class="goods-name">{{ g.name }}</text>
@@ -38,6 +42,7 @@
 				</view>
 				<text class="goods-sales">已领用 {{ g.sales }}</text>
 			</view>
+		</view>
 		</view>
 
 		<view class="cart-fab" @click="goCart">
@@ -52,6 +57,7 @@
 			</view>
 			<view class="cart-bar-btn">去结算</view>
 		</view>
+		<mall-tabbar active="mall" />
 	</view>
 </template>
 
@@ -123,10 +129,7 @@
 	.hero {
 		position: relative;
 		padding: 60rpx 32rpx 96rpx;
-		border-bottom-left-radius: 64rpx;
-		border-bottom-right-radius: 64rpx;
 		overflow: hidden;
-		box-shadow: 0 24rpx 56rpx rgba(10, 46, 36, 0.2);
 	}
 
 	.hero-bg {
@@ -135,18 +138,11 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: linear-gradient(135deg, #071f18 0%, #0c352a 50%, #031410 100%);
+		background: linear-gradient(135deg, var(--g-950) 0%, var(--g-900) 50%, var(--g-950) 100%);
 	}
 
 	.hero-bg::after {
-		content: '';
-		position: absolute;
-		right: -96rpx;
-		top: -112rpx;
-		width: 320rpx;
-		height: 320rpx;
-		border-radius: 50%;
-		border: 52rpx solid rgba(199, 154, 57, 0.1);
+		display: none;
 	}
 
 	.hero-content {
@@ -158,9 +154,8 @@
 	.hero-title {
 		display: block;
 		font-size: 48rpx;
-		font-weight: 900;
+		font-weight: 600;
 		letter-spacing: 1rpx;
-		text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 	}
 
 	.hero-sub {
@@ -169,8 +164,7 @@
 		font-size: 22rpx;
 		letter-spacing: 4rpx;
 		margin-top: 8rpx;
-		font-weight: 800;
-		text-transform: uppercase;
+		font-weight: 600;
 	}
 
 	.hero-search {
@@ -183,7 +177,6 @@
 		align-items: center;
 		padding: 0 28rpx;
 		gap: 18rpx;
-		box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 	}
 
 	.hero-search-icon {
@@ -200,11 +193,11 @@
 		position: absolute;
 		width: 12rpx;
 		height: 4rpx;
-		background: rgba(255, 255, 255, 0.6);
+		background: var(--surface);
 		right: -10rpx;
 		bottom: -6rpx;
 		transform: rotate(45deg);
-		border-radius: 999rpx;
+		border-radius: var(--r-pill);
 	}
 
 	.hero-search-input {
@@ -213,69 +206,62 @@
 		font-size: 26rpx;
 	}
 
+	/* 旧版是压在 hero 上的白色悬浮大药丸 + 每项还带副标题，占掉半屏。
+	   改成规矩的横向 tab 条，紧跟 hero 下方，不再重叠。 */
 	.cats {
 		white-space: nowrap;
-		margin: -40rpx 44rpx 0;
-		padding: 14rpx 16rpx;
-		background: rgba(255, 255, 255, 0.85);
-		border-radius: 999rpx;
-		border: 1rpx solid rgba(255, 255, 255, 0.6);
-		box-shadow: 0 20rpx 48rpx rgba(10, 46, 36, 0.08);
+		margin: 0;
+		padding: 12rpx var(--gut);
+		background: var(--surface);
+		border-bottom: 1rpx solid var(--line);
 		position: relative;
 		z-index: 10;
-		backdrop-filter: blur(20px);
 	}
 
 	.cat {
 		display: inline-flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 8rpx;
-		min-width: 118rpx;
-		padding: 16rpx 24rpx;
-		border-radius: 999rpx;
-		margin-right: 14rpx;
-		background: rgba(10, 46, 36, 0.03);
-		border: 1rpx solid transparent;
+		gap: 10rpx;
+		padding: 12rpx 26rpx;
+		border-radius: var(--r-pill);
+		margin-right: 12rpx;
+		background: transparent;
 		transition: var(--transition);
 	}
 
 	.cat.active {
-		background: var(--primary-gradient);
-		border-color: rgba(245, 210, 133, 0.2);
-		box-shadow: 0 8rpx 20rpx rgba(10, 46, 36, 0.15);
+		background: var(--g-50);
 	}
 
 	.cat-icon {
-		font-size: 36rpx;
+		font-size: 28rpx;
 	}
 
 	.cat-name {
-		font-size: 22rpx;
-		color: var(--text-muted);
-		font-weight: 800;
+		font-size: var(--t-sm);
+		color: var(--ink-3);
+		font-weight: 400;
 	}
 
 	.cat.active .cat-name {
-		color: #ffffff;
+		color: var(--jade);
+		font-weight: 600;
 	}
 
 	.empty {
-		margin: 80rpx 32rpx;
+		margin: 64rpx 32rpx;
 		padding: 80rpx 40rpx;
-		background: rgba(255, 255, 255, 0.65);
-		backdrop-filter: blur(15px);
-		border-radius: 48rpx 16rpx;
-		border: 1rpx solid rgba(255, 255, 255, 0.45);
-		box-shadow: var(--card-shadow);
+		background: var(--surface);
+		border-radius: var(--r);
+		border: 1rpx solid rgba(17, 49, 40, 0.05);
 		text-align: center;
 	}
 
 	.empty-mark {
 		width: 96rpx;
 		height: 96rpx;
-		border-radius: 32rpx;
-		background: #edf3f0;
+		border-radius: var(--r-lg);
+		background: var(--g-50);
 		margin: 0 auto 18rpx;
 		position: relative;
 		border: 1rpx solid rgba(10, 46, 36, 0.04);
@@ -289,7 +275,7 @@
 		top: 30rpx;
 		bottom: 22rpx;
 		border: 6rpx solid var(--text-light);
-		border-radius: 10rpx;
+		border-radius: var(--r-xs);
 	}
 
 	.empty-mark::after {
@@ -301,14 +287,14 @@
 		height: 14rpx;
 		border-radius: 10rpx 10rpx 0 0;
 		background: var(--accent);
-		border-radius: 999rpx;
+		border-radius: var(--r-pill);
 	}
 
 	.empty-title {
 		display: block;
 		font-size: 30rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.goods-grid {
@@ -319,12 +305,10 @@
 	}
 
 	.goods {
-		background: rgba(255, 255, 255, 0.78);
-		backdrop-filter: blur(20px);
-		border-radius: 48rpx 16rpx;
-		padding: 24rpx 20rpx;
-		border: 1rpx solid rgba(255, 255, 255, 0.45);
-		box-shadow: var(--card-shadow);
+		background: var(--surface);
+		border-radius: var(--r);
+		padding: 20rpx 18rpx;
+		border: 1rpx solid rgba(17, 49, 40, 0.05);
 		position: relative;
 		transition: var(--transition);
 	}
@@ -336,14 +320,14 @@
 
 	.goods-cover {
 		height: 200rpx;
-		border-radius: 32rpx 12rpx;
-		background: linear-gradient(135deg, #eef3f0 0%, #f7f1e1 100%);
+		border-radius: var(--r-sm);
+		/* 米黄渐变看着像图没加载完 —— 换成中性占位 */
+		background: var(--surface-2);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
-		border: 1rpx solid rgba(10, 46, 36, 0.03);
 	}
 
 	.goods-cover-emoji {
@@ -355,30 +339,28 @@
 		top: 12rpx;
 		right: 12rpx;
 		padding: 6rpx 16rpx;
-		border-radius: 999rpx;
-		background: rgba(239, 68, 68, 0.08);
-		color: #ef4444;
-		border: 1rpx solid rgba(239, 68, 68, 0.15);
+		border-radius: var(--r-pill);
+		background: var(--danger-bg);
+		color: var(--danger);
 		font-size: 20rpx;
-		font-weight: 800;
+		font-weight: 500;
 	}
 
 	.goods-name {
 		display: block;
 		margin-top: 18rpx;
-		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-size: var(--t-body);
+		font-weight: 500;
+		color: var(--ink);
 		line-height: 1.35;
 	}
 
 	.goods-subtitle {
 		display: block;
-		color: var(--text-muted);
-		font-size: 22rpx;
+		color: var(--ink-3);
+		font-size: var(--t-xs);
 		margin-top: 6rpx;
 		line-height: 1.35;
-		font-weight: 600;
 	}
 
 	.goods-foot {
@@ -388,25 +370,26 @@
 		margin-top: 14rpx;
 	}
 
+	/* 价格是唯一该用金色的地方 */
 	.goods-price {
-		color: #c79a39;
+		color: var(--gold-ink);
 		font-size: 32rpx;
-		font-weight: 900;
+		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* 加购按钮回归品牌绿，金色不当装饰 */
 	.goods-add {
 		width: 52rpx;
 		height: 52rpx;
-		border-radius: 20rpx;
-		background: var(--accent-gradient);
-		color: var(--primary);
+		border-radius: var(--r-sm);
+		background: var(--g-600);
+		color: #fff;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 36rpx;
-		font-weight: 800;
-		box-shadow: var(--accent-glow);
+		font-size: 34rpx;
+		font-weight: 400;
 		transition: var(--transition);
 	}
 
@@ -417,82 +400,28 @@
 	.goods-sales {
 		display: block;
 		margin-top: 8rpx;
-		color: var(--text-light);
+		color: var(--ink-4);
 		font-size: 20rpx;
-		font-weight: 600;
 	}
 
+	/* 悬浮购物车和底部结算条功能重复、还会互相压住。
+	   底部条已经常驻显示件数和金额，去掉这颗会闪会浮的金色 FAB。 */
 	.cart-fab {
-		position: fixed;
-		right: 32rpx;
-		bottom: 220rpx;
-		width: 104rpx;
-		height: 104rpx;
-		border-radius: 36rpx;
-		background: var(--accent-gradient);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: var(--accent-glow);
-		animation: pulse-gold 2.5s infinite, float-gentle 4s infinite ease-in-out;
-		z-index: 98;
-		border: 6rpx solid #ffffff;
-	}
-
-	.cart-fab-icon {
-		width: 44rpx;
-		height: 34rpx;
-		border: 5rpx solid var(--primary);
-		border-top: 0;
-		border-radius: 0 0 12rpx 12rpx;
-		position: relative;
-	}
-
-	.cart-fab-icon::before {
-		content: '';
-		position: absolute;
-		left: 4rpx;
-		right: 4rpx;
-		top: -14rpx;
-		height: 18rpx;
-		border: 5rpx solid var(--primary);
-		border-bottom: 0;
-		border-radius: 18rpx 18rpx 0 0;
-	}
-
-	.cart-fab-badge {
-		position: absolute;
-		top: -8rpx;
-		right: -8rpx;
-		min-width: 40rpx;
-		height: 40rpx;
-		padding: 0 8rpx;
-		border-radius: 999rpx;
-		background: var(--primary);
-		color: #ffffff;
-		font-size: 22rpx;
-		font-weight: 800;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: 0 4rpx 10rpx rgba(10, 46, 36, 0.3);
+		display: none;
 	}
 
 	.cart-bar {
 		position: fixed;
-		left: 32rpx;
-		right: 32rpx;
-		bottom: 40rpx;
-		height: 108rpx;
-		background: rgba(10, 46, 36, 0.95);
-		border: 1rpx solid rgba(255, 255, 255, 0.1);
-		border-radius: 99rpx;
-		padding: 0 14rpx 0 36rpx;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: auto;
+		background: var(--surface);
+		border-top: 1rpx solid var(--line);
+		padding: 20rpx var(--gut) calc(20rpx + env(safe-area-inset-bottom));
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		box-shadow: 0 20rpx 50rpx rgba(10, 46, 36, 0.22);
-		backdrop-filter: blur(15px);
 		z-index: 99;
 	}
 
@@ -503,32 +432,35 @@
 	}
 
 	.cart-bar-count {
-		color: rgba(255, 255, 255, 0.5);
-		font-size: 22rpx;
-		font-weight: 600;
+		color: var(--ink-3);
+		font-size: var(--t-xs);
 	}
 
 	.cart-bar-amount {
-		color: #ffffff;
-		font-size: 34rpx;
-		font-weight: 800;
+		color: var(--ink);
+		font-size: var(--t-h2);
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.cart-bar-btn {
-		background: var(--accent-gradient);
-		color: var(--primary);
-		height: 80rpx;
-		padding: 0 44rpx;
-		border-radius: 99rpx;
+		background: var(--g-600);
+		color: #fff;
+		height: 84rpx;
+		padding: 0 48rpx;
+		border-radius: var(--r);
 		display: flex;
 		align-items: center;
-		font-size: 28rpx;
-		font-weight: 800;
-		box-shadow: var(--accent-glow);
+		font-size: var(--t-body);
+		font-weight: 500;
 		transition: var(--transition);
 	}
 
 	.cart-bar-btn:active {
 		transform: scale(0.95);
 	}
+</style>
+
+<style>
+.mall{min-height:100vh;padding-bottom:calc(118rpx + env(safe-area-inset-bottom));background:#f7fbfb}.mall .hero{height:330rpx;padding:28rpx 28rpx 0;box-sizing:border-box;overflow:hidden}.mall-hero-photo{position:absolute;inset:0;width:100%;height:100%}.mall .hero-bg{background:linear-gradient(90deg,rgba(0,151,151,.97),rgba(0,156,154,.6) 55%,rgba(0,91,92,.12))}.mall .hero-content{height:100%}.mall .hero-title{font-size:51rpx;font-weight:800}.hero-subtitle{display:block;margin-top:7rpx;color:#dffbfa;font-size:23rpx}.hero-trust{display:block;margin-top:18rpx;color:#e3fbfa;font-size:18rpx}.mall .hero-search{position:absolute;left:0;right:0;bottom:14rpx;height:62rpx}.mall .hero-search-input{font-size:21rpx}.mall-catalog{display:flex;align-items:stretch;min-height:660rpx}.cats{width:150rpx;min-width:150rpx;height:660rpx;padding:0;background:#fff;border-right:1rpx solid #dbe7e6}.cat{width:150rpx;height:100rpx;padding:0;display:flex;align-items:center;justify-content:center;gap:8rpx;border-radius:0;color:#536f71;box-sizing:border-box;position:relative}.cat.active{background:#eff9f8;color:#08a4a1}.cat.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6rpx;background:#08aaa6}.cat-icon{display:none}.cat-name{font-size:23rpx}.goods-grid{flex:1;min-width:0;margin:0;padding:10rpx;display:flex;flex-direction:column;gap:10rpx}.goods{height:142rpx;padding:10rpx;display:grid;grid-template-columns:128rpx 1fr 60rpx;grid-template-rows:35rpx 33rpx 38rpx 22rpx;column-gap:12rpx;border:1rpx solid #dce8e7;border-radius:11rpx;background:#fff}.goods-cover{grid-row:1/5;width:128rpx;height:120rpx;border-radius:8rpx;overflow:hidden}.goods-name{grid-column:2/4;font-size:23rpx}.goods-subtitle{grid-column:2/4;font-size:18rpx}.goods-foot{grid-column:2/4;display:flex;align-items:center}.goods-price{font-size:27rpx}.goods-add{margin-left:auto;width:42rpx;height:42rpx;font-size:31rpx}.goods-sales{grid-column:2/4;font-size:16rpx}.goods-cover-emoji{display:none}.cart-fab{display:none}.cart-bar{left:20rpx;right:20rpx;bottom:calc(104rpx + env(safe-area-inset-bottom));height:78rpx;border-radius:99rpx;background:#0aa9a5}.cart-bar-info{flex-direction:row;align-items:center;gap:18rpx}.cart-bar-count{color:#fff}.cart-bar-amount{font-size:27rpx}.cart-bar-btn{border-left:1rpx solid rgba(255,255,255,.45);background:transparent}
 </style>

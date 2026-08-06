@@ -1,10 +1,6 @@
 <template>
-	<view class="app protocol-page">
-		<view class="protocol-header">
-			<text class="protocol-title">用户服务协议</text>
-			<text class="protocol-sub">共享钓场小程序服务说明</text>
-		</view>
-
+	<view class="app protocol-page has-account-tabbar has-brand-header">
+		<brand-header title="用户服务协议" theme="light" layout="compact" :back="true" />
 		<view class="protocol-section">
 			<text class="section-title">一、服务内容</text>
 			<text class="section-text">共享钓场为用户提供钓场信息浏览、扫码入场、计时计费、离场结算、订单查询、活动报名、优惠券、装备租赁及客服联系等钓场相关服务。</text>
@@ -29,6 +25,8 @@
 			<text class="section-title">五、联系我们</text>
 			<text class="section-text">如对服务协议或订单有疑问，可通过小程序内“联系客服”页面联系钓场工作人员处理。</text>
 		</view>
+		<view class="protocol-agree"><text>✓</text><text>我已阅读并同意《用户服务协议》</text></view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -39,7 +37,7 @@
 <style>
 	.protocol-page {
 		padding: 32rpx 28rpx 80rpx;
-		background: #f6f7f8;
+		background: var(--surface-2);
 		min-height: 100vh;
 		box-sizing: border-box;
 	}
@@ -53,28 +51,27 @@
 
 	.protocol-title {
 		font-size: 42rpx;
-		font-weight: 800;
-		color: #10231f;
+		font-weight: 600;
+		color: var(--ink);
 	}
 
 	.protocol-sub {
 		font-size: 24rpx;
-		color: #7a8380;
+		color: var(--ink-2);
 	}
 
 	.protocol-section {
-		background: #ffffff;
-		border-radius: 20rpx;
+		background: var(--surface);
+		border-radius: var(--r);
 		padding: 28rpx;
 		margin-bottom: 20rpx;
-		box-shadow: 0 6rpx 20rpx rgba(16, 35, 31, 0.04);
 	}
 
 	.section-title {
 		display: block;
 		font-size: 30rpx;
-		font-weight: 800;
-		color: #10231f;
+		font-weight: 600;
+		color: var(--ink);
 		margin-bottom: 16rpx;
 	}
 
@@ -82,6 +79,10 @@
 		display: block;
 		font-size: 26rpx;
 		line-height: 1.8;
-		color: #4f5b57;
+		color: var(--ink);
 	}
+</style>
+
+<style>
+.protocol-page{min-height:100vh;padding:24rpx 24rpx calc(122rpx + env(safe-area-inset-bottom));background:#fff}.protocol-header{text-align:center;margin-bottom:24rpx}.protocol-title{font-size:31rpx}.protocol-sub{display:none}.protocol-section{padding:0;margin-bottom:22rpx;background:transparent}.protocol-section .section-title{font-size:24rpx;color:#078f8e;margin-bottom:10rpx}.protocol-section .section-text{font-size:20rpx;line-height:1.75;color:#536e70}.protocol-agree{display:flex;align-items:center;gap:10rpx;color:#079b99;font-size:20rpx}.protocol-agree text:first-child{width:28rpx;height:28rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#14a86f;color:#fff}
 </style>

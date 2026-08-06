@@ -1,10 +1,10 @@
 <template>
-	<view class="app rate-info">
+	<view class="app rate-info has-account-tabbar has-brand-header">
+		<brand-header title="费率说明" theme="light" layout="compact" :back="true" />
 		<view class="hero">
 			<view class="hero-bg"></view>
 			<view class="hero-content">
 				<text class="hero-title">费率说明</text>
-				<text class="hero-sub">SHARED · FISHING RATES</text>
 			</view>
 		</view>
 
@@ -63,6 +63,7 @@
 				<text class="note-text">{{ note }}</text>
 			</view>
 		</view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -113,16 +114,16 @@
 
 	.hero {
 		position: relative;
-		margin: 20rpx 28rpx 0;
+		margin: 0;
 		padding: 40rpx 32rpx 36rpx;
-		border-radius: 28rpx;
+		border-radius: 0;
 		overflow: hidden;
 	}
 
 	.hero-bg {
 		position: absolute;
 		top: 0; right: 0; bottom: 0; left: 0;
-		background: linear-gradient(135deg, #1a1a1a 0%, #2e2e2e 100%);
+		background: linear-gradient(135deg, var(--g-900) 0%, var(--g-950) 100%);
 	}
 
 	.hero-content {
@@ -132,7 +133,7 @@
 
 	.hero-title {
 		font-size: 44rpx;
-		font-weight: 800;
+		font-weight: 600;
 		color: #ffffff;
 		letter-spacing: 2rpx;
 		display: block;
@@ -140,7 +141,7 @@
 
 	.hero-sub {
 		font-size: 22rpx;
-		color: #f5c23b;
+		color: var(--gold);
 		letter-spacing: 4rpx;
 		display: block;
 		margin-top: 8rpx;
@@ -149,10 +150,9 @@
 	.rule-highlight {
 		margin-top: 20rpx;
 		padding: 32rpx;
-		background: #fffbf0;
-		border-radius: 16rpx;
+		background: var(--surface-2);
+		border-radius: var(--r-sm);
 		text-align: center;
-		border: 1rpx solid #f5c23b;
 	}
 
 	.rule-main {
@@ -164,21 +164,21 @@
 
 	.rule-price {
 		font-size: 56rpx;
-		font-weight: 800;
-		color: #b8860b;
+		font-weight: 600;
+		color: var(--gold);
 		font-variant-numeric: tabular-nums;
 	}
 
 	.rule-unit {
 		font-size: 26rpx;
-		color: #6b7280;
+		color: var(--ink-2);
 	}
 
 	.rule-sub {
 		display: block;
 		margin-top: 8rpx;
 		font-size: 24rpx;
-		color: #9aa3b2;
+		color: var(--ink-3);
 	}
 
 	.example {
@@ -186,7 +186,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 20rpx 0;
-		border-bottom: 1rpx solid #f4f5f7;
+		border-bottom: 1rpx solid var(--surface-2);
 	}
 
 	.example:last-child {
@@ -201,19 +201,19 @@
 
 	.example-duration {
 		font-size: 28rpx;
-		font-weight: 700;
-		color: #1a2030;
+		font-weight: 500;
+		color: var(--ink);
 	}
 
 	.example-label {
 		font-size: 22rpx;
-		color: #9aa3b2;
+		color: var(--ink-3);
 	}
 
 	.example-amount {
 		font-size: 32rpx;
-		font-weight: 800;
-		color: #b8860b;
+		font-weight: 600;
+		color: var(--gold);
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -225,16 +225,20 @@
 	}
 
 	.note-dot {
-		color: #f5c23b;
+		color: var(--gold);
 		font-size: 28rpx;
-		font-weight: 700;
+		font-weight: 500;
 		line-height: 1.5;
 	}
 
 	.note-text {
 		flex: 1;
 		font-size: 24rpx;
-		color: #6b7280;
+		color: var(--ink-2);
 		line-height: 1.5;
 	}
+</style>
+
+<style>
+.rate-info{min-height:100vh;padding:16rpx 20rpx calc(122rpx + env(safe-area-inset-bottom));background:#f7fbfb}.rate-info>.hero{display:none}.rate-info .card{margin:0 0 14rpx;padding:18rpx;border:1rpx solid #d7e5e4;border-radius:12rpx;background:#fff}.rate-info .card-title{font-size:25rpx}.rate-info .rule-highlight{margin-top:12rpx;padding:15rpx;background:#f4f9f8}.rate-info .rule-price{color:#079f9d}.rate-info .kv-row{min-height:54rpx}.rate-info .kv-key,.rate-info .kv-val{font-size:21rpx}.rate-info .example{min-height:56rpx;padding:8rpx;border:1rpx solid #dce7e6;border-bottom:0;border-radius:0}.rate-info .example:last-child{border-bottom:1rpx solid #dce7e6}.rate-info .example-label{display:none}.rate-info .example-duration,.rate-info .example-amount{font-size:20rpx}.rate-info .note-item{font-size:20rpx}
 </style>

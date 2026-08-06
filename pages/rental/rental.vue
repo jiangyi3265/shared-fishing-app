@@ -1,15 +1,15 @@
 <template>
-	<view class="app rental-page">
-		<view class="page-head"><text class="page-head-title">装备租赁</text></view>
+	<view class="app rental-page has-account-tabbar has-brand-header">
+		<brand-header title="装备租赁" theme="light" layout="compact" :back="true" />
 		<view class="balance-tip">
-			<text class="balance-tip-label">当前余额</text>
+			<text class="balance-tip-label">储值余额</text>
 			<text class="balance-tip-amount">¥{{ formatMoney(walletBalance) }}</text>
-			<text class="balance-tip-link" @click="goRecharge">充值</text>
+			<text class="balance-tip-link" @click="goRecharge">立即充值</text>
 		</view>
+		<view class="rental-tabs"><text class="active">可租装备</text><text>我的租赁（{{ myOrders.length }}）</text></view>
 		<view class="rental-list">
 			<view class="rental-card" v-for="g in goods" :key="g.goodsId">
-				<image v-if="g.image" :src="g.image" class="rental-img" mode="aspectFill" />
-				<view class="rental-img rental-placeholder" v-else></view>
+				<view class="rental-img"><equipment-thumb :name="g.name" /></view>
 				<view class="rental-info">
 					<text class="rental-name">{{ g.name }}</text>
 					<text class="rental-cat">{{ g.category }}</text>
@@ -31,6 +31,7 @@
 				<text class="my-status">{{ {0:'租借中',1:'已归还',2:'已取消',3:'押金扣除'}[o.status] }}</text>
 			</view>
 		</view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -116,28 +117,32 @@ export default {
 <style scoped>
 .rental-page { padding: 0 24rpx 40rpx; }
 .page-head { padding: 40rpx 4rpx 16rpx; }
-.page-head-title { font-size: 38rpx; font-weight: 800; color: var(--text-main); letter-spacing: 0.5rpx; }
-.balance-tip { margin: 0 0 20rpx; padding: 18rpx 22rpx; display: flex; align-items: center; gap: 14rpx; background: #fff8e5; border: 1rpx solid rgba(199,146,43,0.22); border-radius: 18rpx; }
+.page-head-title { font-size: 38rpx; font-weight: 600; color: var(--text-main); letter-spacing: 0.5rpx; }
+.balance-tip { margin: 0 0 20rpx; padding: 18rpx 22rpx; display: flex; align-items: center; gap: 14rpx; background: var(--gold-bg); border: 1rpx solid rgba(199,146,43,0.22); border-radius: var(--r-sm); }
 .balance-tip-label { font-size: 24rpx; color: var(--text-muted); }
-.balance-tip-amount { flex: 1; font-size: 30rpx; color: #9c710f; font-weight: 800; font-variant-numeric: tabular-nums; }
-.balance-tip-link { padding: 8rpx 20rpx; border-radius: 999rpx; background: #13241f; color: #f5d285; font-size: 24rpx; font-weight: 800; }
+.balance-tip-amount { flex: 1; font-size: 30rpx; color: var(--gold-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.balance-tip-link { padding: 8rpx 20rpx; border-radius: var(--r-pill); background: var(--g-900); color: var(--gold-line); font-size: 24rpx; font-weight: 600; }
 .rental-list { display: flex; flex-direction: column; gap: 16rpx; }
-.rental-card { background: var(--surface); border: 1rpx solid var(--border-color); border-radius: 20rpx; padding: 22rpx; display: flex; align-items: center; gap: 20rpx; box-shadow: 0 6rpx 18rpx rgba(17,49,40,0.05); }
-.rental-img { width: 100rpx; height: 100rpx; border-radius: 16rpx; flex-shrink: 0; }
-.rental-placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#eef7f4,#e2f0ea); }
+.rental-card { background: var(--surface); border: 1rpx solid var(--border-color); border-radius: var(--r); padding: 22rpx; display: flex; align-items: center; gap: 20rpx; }
+.rental-img { width: 100rpx; height: 100rpx; border-radius: var(--r-sm); flex-shrink: 0; }
+.rental-placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,var(--g-50),var(--g-100)); }
 .rental-info { flex: 1; min-width: 0; }
-.rental-name { font-size: 29rpx; font-weight: 800; display: block; color: var(--text-main); }
+.rental-name { font-size: 29rpx; font-weight: 600; display: block; color: var(--text-main); }
 .rental-cat { font-size: 22rpx; color: var(--text-light); }
 .rental-prices { margin-top: 10rpx; }
-.rental-rent { font-size: 26rpx; color: #c7922b; font-weight: 700; }
+.rental-rent { font-size: 26rpx; color: var(--gold); font-weight: 500; }
 .rental-deposit { font-size: 22rpx; color: var(--text-muted); margin-left: 12rpx; }
 .rental-charge { display: block; margin-top: 6rpx; font-size: 22rpx; color: var(--text-muted); }
-.rental-btn { background: linear-gradient(135deg,#1b745e,#104a3d); color: #fff; padding: 14rpx 30rpx; border-radius: 99rpx; font-size: 25rpx; font-weight: 700; box-shadow: 0 6rpx 14rpx rgba(16,74,61,0.2); flex-shrink: 0; }
-.rental-btn.warn { background: linear-gradient(135deg,#f5d285,#c7922b); color: #352407; box-shadow: 0 6rpx 14rpx rgba(199,146,43,0.2); }
+.rental-btn { background: linear-gradient(135deg,var(--g-700),var(--g-800)); color: #fff; padding: 14rpx 30rpx; border-radius: 99rpx; font-size: 25rpx; font-weight: 500; flex-shrink: 0; }
+.rental-btn.warn { background: var(--g-600); color: #fff; }
 .rental-btn:active { transform: scale(0.96); }
-.section-title { font-size: 30rpx; font-weight: 800; margin: 28rpx 0 14rpx; color: var(--text-main); }
+.section-title { font-size: 30rpx; font-weight: 600; margin: 28rpx 0 14rpx; color: var(--text-main); }
 .my-list { display: flex; flex-direction: column; gap: 12rpx; }
-.my-item { background: var(--surface); border: 1rpx solid var(--border-color); border-radius: 18rpx; padding: 22rpx 24rpx; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6rpx 18rpx rgba(17,49,40,0.05); }
+.my-item { background: var(--surface); border: 1rpx solid var(--border-color); border-radius: var(--r-sm); padding: 22rpx 24rpx; display: flex; justify-content: space-between; align-items: center; }
 .my-name { font-size: 27rpx; color: var(--text-main); font-weight: 600; }
 .my-status { font-size: 23rpx; color: var(--text-muted); background: var(--surface-soft); padding: 4rpx 14rpx; border-radius: 99rpx; }
+</style>
+
+<style scoped>
+.rental-page{min-height:100vh;padding:14rpx 20rpx calc(122rpx + env(safe-area-inset-bottom));background:#f7fbfb}.page-head{display:none}.balance-tip{height:114rpx;padding:20rpx 24rpx;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;grid-template-rows:30rpx 42rpx;border:1rpx solid #d7e5e4;border-radius:14rpx;background:#fff}.balance-tip-label{font-size:21rpx}.balance-tip-amount{grid-row:2;font-size:35rpx;color:#079f9d}.balance-tip-link{grid-column:2;grid-row:1/3;align-self:center;padding:9rpx 16rpx;border-radius:8rpx;background:#0aa9a5;color:#fff;font-size:19rpx}.rental-tabs{height:70rpx;margin-top:14rpx;display:flex;align-items:center;justify-content:space-around;border:1rpx solid #d8e5e4;border-radius:13rpx 13rpx 0 0;background:#fff;color:#617577;font-size:22rpx}.rental-tabs text{height:70rpx;display:flex;align-items:center;position:relative}.rental-tabs .active{color:#08a5a2;font-weight:800}.rental-tabs .active::after{content:'';position:absolute;left:0;right:0;bottom:0;height:5rpx;background:#08a5a2}.rental-list{gap:0;border:1rpx solid #d8e5e4;border-top:0;border-radius:0 0 13rpx 13rpx;background:#fff}.rental-card{min-height:124rpx;margin:0;padding:13rpx 16rpx;border:0;border-bottom:1rpx solid #e0e9e8;border-radius:0}.rental-card:last-child{border-bottom:0}.rental-img{width:110rpx;height:96rpx;border-radius:8rpx;overflow:hidden}.rental-info{gap:4rpx}.rental-name{font-size:23rpx}.rental-cat{display:none}.rental-prices{gap:10rpx}.rental-rent{font-size:22rpx;color:#079f9d}.rental-deposit{font-size:17rpx}.rental-charge{font-size:17rpx}.rental-btn{padding:8rpx 12rpx;border-radius:7rpx;background:#0aa9a5;font-size:18rpx}.section-title{font-size:24rpx}.my-item{border-radius:10rpx}
 </style>

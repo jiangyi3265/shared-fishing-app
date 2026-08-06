@@ -4,255 +4,355 @@
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "共享钓场",
+				"navigationBarBackgroundColor": "#08b8b2",
+				"navigationBarTextStyle": "white",
+				"navigationStyle": "custom",
 				"disableSwipeBack": true
 			}
 		},
 		{
 			"path": "pages/mine/mine",
 			"style": {
-				"navigationBarTitleText": "我的"
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#08b8b2",
+				"navigationBarTextStyle": "white"
 			}
 		},
 		{
 			"path": "pages/login/login",
 			"style": {
-				"navigationBarTitleText": "登录"
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#08b8b2",
+				"navigationBarTextStyle": "white"
+			}
+		},
+		{
+			"path": "pages/services/services",
+			"style": {
+				"navigationBarTitleText": "全部服务",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#08b8b2",
+				"navigationBarTextStyle": "white"
 			}
 		},
 		{
 			"path": "pages/protocol/user",
 			"style": {
-				"navigationBarTitleText": "用户服务协议"
+				"navigationBarTitleText": "用户服务协议",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/protocol/privacy",
 			"style": {
-				"navigationBarTitleText": "隐私政策"
+				"navigationBarTitleText": "隐私政策",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/start/start",
 			"style": {
-				"navigationBarTitleText": "开始计时"
+				"navigationBarTitleText": "准备开始",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/stocking/stocking",
 			"style": {
-				"navigationBarTitleText": "放鱼动态"
+				"navigationBarTitleText": "放鱼动态",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/reserve/reserve",
 			"style": {
-				"navigationBarTitleText": "钓位预订"
+				"navigationBarTitleText": "钓位预订",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/catch/catch",
 			"style": {
-				"navigationBarTitleText": "钓获社区"
+				"navigationBarTitleText": "钓获社区",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/fishCard/fishCard",
+			"style": {
+				"navigationBarTitleText": "极智鱼鉴",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/member/member",
 			"style": {
-				"navigationBarTitleText": "会员中心"
+				"navigationBarTitleText": "会员等级",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/points/points",
 			"style": {
-				"navigationBarTitleText": "积分兑换"
+				"navigationBarTitleText": "我的积分",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/group/group",
 			"style": {
-				"navigationBarTitleText": "拼场约钓"
+				"navigationBarTitleText": "拼场约钓",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/checkin/checkin",
 			"style": {
-				"navigationBarTitleText": "签到日历"
+				"navigationBarTitleText": "签到日历",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/rental/rental",
 			"style": {
-				"navigationBarTitleText": "装备租赁"
+				"navigationBarTitleText": "装备租赁",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/competition/competition",
 			"style": {
-				"navigationBarTitleText": "钓王争霸"
+				"navigationBarTitleText": "钓王争霸",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/rank/rank",
+			"style": {
+				"navigationBarTitleText": "钓王排行榜",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/goal/goal",
+			"style": {
+				"navigationBarTitleText": "冲榜目标",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/session/session",
 			"style": {
-				"navigationBarTitleText": "计时中"
+				"navigationBarTitleText": "计时中",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/pay/pay",
 			"style": {
-				"navigationBarTitleText": "订单结算"
+				"navigationBarTitleText": "订单结算",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/payResult/payResult",
 			"style": {
-				"navigationBarTitleText": "支付结果"
+				"navigationBarTitleText": "支付成功",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/orders/orders",
 			"style": {
-				"navigationBarTitleText": "历史订单"
+				"navigationBarTitleText": "我的订单",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/adDetail/adDetail",
 			"style": {
-				"navigationBarTitleText": "活动详情"
+				"navigationBarTitleText": "活动详情",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/activityRegister/activityRegister",
 			"style": {
-				"navigationBarTitleText": "活动报名"
+				"navigationBarTitleText": "活动报名",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/coupons/coupons",
 			"style": {
-				"navigationBarTitleText": "我的优惠券"
+				"navigationBarTitleText": "我的优惠券",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/settings/settings",
 			"style": {
-				"navigationBarTitleText": "设置"
+				"navigationBarTitleText": "设置",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/guide/guide",
 			"style": {
-				"navigationBarTitleText": "操作指引"
+				"navigationBarTitleText": "操作指引",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/promotions/promotions",
 			"style": {
-				"navigationBarTitleText": "优惠活动"
+				"navigationBarTitleText": "优惠活动",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/rateInfo/rateInfo",
 			"style": {
-				"navigationBarTitleText": "费率说明"
+				"navigationBarTitleText": "费率说明",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/contact/contact",
 			"style": {
-				"navigationBarTitleText": "联系客服"
+				"navigationBarTitleText": "联系客服",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/about/about",
 			"style": {
-				"navigationBarTitleText": "关于我们"
+				"navigationBarTitleText": "关于我们",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/venue/venue",
 			"style": {
-				"navigationBarTitleText": "钓场详情"
+				"navigationBarTitleText": "钓场详情",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/refund/apply",
 			"style": {
-				"navigationBarTitleText": "申请退款"
+				"navigationBarTitleText": "申请退款",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/refund/list",
 			"style": {
-				"navigationBarTitleText": "退款记录"
+				"navigationBarTitleText": "退款记录",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/mall/index",
 			"style": {
-				"navigationBarTitleText": "钓场补给"
+				"navigationBarTitleText": "钓场补给",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/mall/detail",
 			"style": {
-				"navigationBarTitleText": "补给详情"
+				"navigationBarTitleText": "补给详情",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/mall/cart",
 			"style": {
-				"navigationBarTitleText": "购物车"
+				"navigationBarTitleText": "补给车",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/mall/checkout",
 			"style": {
-				"navigationBarTitleText": "确认订单"
+				"navigationBarTitleText": "确认订单",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/mall/orders",
 			"style": {
-				"navigationBarTitleText": "补给订单"
+				"navigationBarTitleText": "补给订单",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/mall/voucher",
 			"style": {
-				"navigationBarTitleText": "核销码"
+				"navigationBarTitleText": "商品使用凭证",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
 			"path": "pages/staff/workbench",
 			"style": {
-				"navigationBarTitleText": "商家工作台"
+				"navigationBarTitleText": "商家工作台",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/wallet/wallet",
 			"style": {
-				"navigationBarTitleText": "我的钱包"
+				"navigationBarTitleText": "储值余额",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/wallet/recharge",
 			"style": {
-				"navigationBarTitleText": "钱包充值"
+				"navigationBarTitleText": "钱包充值",
+				"navigationStyle": "custom"
 			}
 		},
 		{
 			"path": "pages/weighFish/weighFish",
 			"style": {
-				"navigationBarTitleText": "称鱼结算"
+				"navigationBarTitleText": "称鱼结算",
+				"navigationStyle": "custom",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		}
 	],
 	"globalStyle": {
-		"navigationBarTextStyle": "black",
+		"navigationBarTextStyle": "white",
 		"navigationBarTitleText": "共享钓场",
-		"navigationBarBackgroundColor": "#fbfcfb",
-		"backgroundColor": "#f4f7f5"
+		"navigationBarBackgroundColor": "#08b8b2",
+		"backgroundColor": "#eef8f7",
+		"backgroundTextStyle": "dark"
 	},
 	"uniIdRouter": {}
 }

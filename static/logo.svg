@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="共享钓场">
+	<defs>
+		<!-- userSpaceOnUse：竖直笔画 bbox 宽度为 0，用默认 objectBoundingBox 会整段不渲染 -->
+		<linearGradient id="lgBg" gradientUnits="userSpaceOnUse" x1="90" y1="20" x2="430" y2="500">
+			<stop offset="0" stop-color="#22624f"/>
+			<stop offset="1" stop-color="#0a1c17"/>
+		</linearGradient>
+		<linearGradient id="lgGold" gradientUnits="userSpaceOnUse" x1="80" y1="180" x2="420" y2="400">
+			<stop offset="0" stop-color="#f3dca6"/>
+			<stop offset="1" stop-color="#bd9040"/>
+		</linearGradient>
+		<radialGradient id="lgGlow" gradientUnits="userSpaceOnUse" cx="150" cy="120" r="290">
+			<stop offset="0" stop-color="#7fd4b4" stop-opacity="0.18"/>
+			<stop offset="1" stop-color="#7fd4b4" stop-opacity="0"/>
+		</radialGradient>
+		<clipPath id="lgClip"><rect x="16" y="16" width="480" height="480" rx="116"/></clipPath>
+	</defs>
+
+	<rect x="16" y="16" width="480" height="480" rx="116" fill="url(#lgBg)"/>
+	<rect x="16" y="16" width="480" height="480" rx="116" fill="url(#lgGlow)"/>
+
+	<g clip-path="url(#lgClip)">
+		<!-- 水面：一道就够，小尺寸不糊 -->
+		<path d="M16 418c54 0 54-20 108-20s54 20 108 20 54-20 108-20 54 20 108 20 54-20 108-20"
+			fill="none" stroke="#7fd4b4" stroke-opacity="0.20" stroke-width="13" stroke-linecap="round"/>
+
+		<!-- 鱼：约 3:1 的流线体 + 分叉尾，40px 下仍是一条鱼而不是一团 -->
+		<path d="M128 318 L60 268 L82 318 L60 368 Z" fill="url(#lgGold)"/>
+		<path d="M398 318c-30-44-92-62-152-56-56 6-98 28-118 56 20 28 62 50 118 56 60 6 122-12 152-56z"
+			fill="url(#lgGold)"/>
+		<path d="M236 262c6-30 34-42 56-28-18 4-32 14-40 30z" fill="url(#lgGold)" opacity="0.7"/>
+		<path d="M232 374c6 26 32 36 52 24-16-4-30-12-38-26z" fill="url(#lgGold)" opacity="0.55"/>
+		<circle cx="362" cy="306" r="11" fill="#0a1c17"/>
+
+		<!-- 钓钩：垂在鱼背上方，不压住鱼身 -->
+		<g fill="none" stroke="url(#lgGold)" stroke-width="21" stroke-linecap="round">
+			<circle cx="330" cy="82" r="24" stroke-width="18"/>
+			<path d="M330 106 L330 176"/>
+			<path d="M330 176c0 42-31 62-54 48-22-13-22-43-2-54"/>
+		</g>
+		<path d="M276 160 L308 174 L274 188 Z" fill="url(#lgGold)"/>
+	</g>
+</svg>

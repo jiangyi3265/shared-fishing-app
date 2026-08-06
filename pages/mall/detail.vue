@@ -1,7 +1,9 @@
 <template>
-	<view class="app detail" v-if="goods">
+	<view class="app detail has-brand-header">
+		<brand-header title="补给详情" theme="light" layout="compact" :back="true" />
+		<view v-if="goods">
 		<view class="cover">
-			<text class="cover-emoji">{{ goods.cover }}</text>
+			<product-thumb :name="goods.name" :goods-id="goods.goodsId" />
 		</view>
 		<view class="head">
 			<text class="name">{{ goods.name }}</text>
@@ -14,8 +16,11 @@
 		</view>
 
 		<view class="card">
-			<text class="card-title">补给详情</text>
-			<text class="desc">{{ goods.desc }}</text>
+			<view class="spec-row"><text>规格</text><text>{{ goods.subtitle }}</text></view>
+			<view class="spec-row"><text>适用鱼种</text><text>鲫鱼、鲤鱼、草鱼等</text></view>
+			<view class="spec-row"><text>饵料状态</text><text>粉饵</text></view>
+			<view class="spec-row"><text>使用方法</text><text>{{ goods.desc }}</text></view>
+			<view class="spec-row"><text>保质期</text><text>18个月</text></view>
 		</view>
 
 		<view class="footer">
@@ -26,6 +31,11 @@
 			</view>
 			<button class="btn ghost" @click="addCart">加入补给车</button>
 			<button class="btn primary" @click="buyNow">立即下单</button>
+		</view>
+		</view>
+		<view v-else class="empty detail-empty">
+			<text class="empty-title">正在加载补给信息</text>
+			<text class="empty-desc">如果商品已下架，可返回补给商城重新选择</text>
 		</view>
 	</view>
 </template>
@@ -68,26 +78,30 @@
 
 <style>
 	.detail { padding-bottom: 200rpx; }
-	.cover { height: 600rpx; background: linear-gradient(135deg,#fafbfd 0%, #eef0f5 100%); display: flex; align-items: center; justify-content: center; }
+	.cover { height: 600rpx; background: linear-gradient(135deg,var(--surface-2) 0%, var(--bg) 100%); display: flex; align-items: center; justify-content: center; }
 	.cover-emoji { font-size: 240rpx; }
-	.head { background: #fff; padding: 32rpx 28rpx; }
-	.name { display: block; font-size: 40rpx; font-weight: 800; color: #1a2030; }
-	.subtitle { display: block; color: #9aa3b2; font-size: 26rpx; margin-top: 10rpx; }
+	.head { background: var(--surface); padding: 32rpx 28rpx; }
+	.name { display: block; font-size: 40rpx; font-weight: 600; color: var(--ink); }
+	.subtitle { display: block; color: var(--ink-3); font-size: 26rpx; margin-top: 10rpx; }
 	.meta { display: flex; justify-content: space-between; align-items: baseline; margin-top: 20rpx; }
-	.price { color: #b8860b; font-size: 52rpx; font-weight: 800; font-variant-numeric: tabular-nums; }
-	.sales { color: #9aa3b2; font-size: 22rpx; }
-	.share-line { margin: 24rpx 0 0; height: 68rpx; line-height: 68rpx; border-radius: 999rpx; background: #1a2030; color: #fff; font-size: 26rpx; font-weight: 800; border: 0; }
+	.price { color: var(--gold); font-size: 52rpx; font-weight: 600; font-variant-numeric: tabular-nums; }
+	.sales { color: var(--ink-3); font-size: 22rpx; }
+	.share-line { margin: 24rpx 0 0; height: 68rpx; line-height: 68rpx; border-radius: var(--r-pill); background: var(--g-900); color: #fff; font-size: 26rpx; font-weight: 600; border: 0; }
 	.share-line::after { border: 0; }
 
-	.card { margin: 20rpx 28rpx; padding: 28rpx; background: #fff; border-radius: 22rpx; box-shadow: 0 6rpx 20rpx rgba(26,32,48,.04); }
-	.card-title { display: block; font-size: 28rpx; font-weight: 800; color: #1a2030; margin-bottom: 14rpx; }
-	.desc { color: #3a4355; font-size: 26rpx; line-height: 44rpx; }
+	.card { margin: 20rpx 28rpx; padding: 28rpx; background: var(--surface); border-radius: var(--r); }
+	.card-title { display: block; font-size: 28rpx; font-weight: 600; color: var(--ink); margin-bottom: 14rpx; }
+	.desc { color: var(--ink); font-size: 26rpx; line-height: 44rpx; }
 
-	.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 28rpx env(safe-area-inset-bottom); background: #fff; display: flex; align-items: center; gap: 16rpx; box-shadow: 0 -6rpx 20rpx rgba(26,32,48,.06); }
-	.qty { display: flex; align-items: center; background: #f4f5f7; border-radius: 999rpx; padding: 4rpx 8rpx; }
-	.qty-btn { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; font-size: 36rpx; color: #1a2030; }
-	.qty-num { padding: 0 16rpx; font-size: 28rpx; font-weight: 800; min-width: 40rpx; text-align: center; }
-	.btn { flex: 1; height: 80rpx; border-radius: 999rpx; font-size: 28rpx; font-weight: 800; }
-	.btn.ghost { background: #fff7e0; color: #b8860b; border: 1rpx solid #f0d47a; }
-	.btn.primary { background: #f5c23b; color: #1a1306; }
+	.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 28rpx env(safe-area-inset-bottom); background: var(--surface); display: flex; align-items: center; gap: 16rpx; }
+	.qty { display: flex; align-items: center; background: var(--surface-2); border-radius: var(--r-pill); padding: 4rpx 8rpx; }
+	.qty-btn { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; font-size: 36rpx; color: var(--ink); }
+	.qty-num { padding: 0 16rpx; font-size: 28rpx; font-weight: 600; min-width: 40rpx; text-align: center; }
+	.btn { flex: 1; height: 80rpx; border-radius: var(--r-pill); font-size: 28rpx; font-weight: 600; }
+	.btn.ghost { background: transparent; color: var(--jade); border: 1rpx solid var(--g-200); }
+	.btn.primary { background: var(--g-600); color: #fff; }
+</style>
+
+<style>
+.detail{min-height:100vh;padding-bottom:calc(118rpx + env(safe-area-inset-bottom));background:#f7fbfb}.detail .cover{height:520rpx;border-radius:0;background:#f1f3f2;overflow:hidden}.cover-emoji{display:none}.detail .head{margin:0;padding:22rpx 24rpx;background:#fff}.detail .name{font-size:31rpx}.detail .subtitle{margin-top:7rpx;font-size:22rpx}.detail .meta{margin-top:12rpx}.detail .price{font-size:37rpx;color:#f08d00}.share-line{display:none}.detail .card{margin:14rpx 0 0;padding:0 24rpx;border-radius:0;border:0;background:#fff}.spec-row{min-height:66rpx;display:flex;align-items:center;justify-content:space-between;gap:22rpx;border-bottom:1rpx solid #dce7e6;color:#607476;font-size:22rpx}.spec-row text:first-child{width:125rpx;flex-shrink:0}.spec-row text:last-child{text-align:right;color:#3d5c5e}.detail .footer{height:calc(100rpx + env(safe-area-inset-bottom));padding:10rpx 18rpx env(safe-area-inset-bottom);gap:10rpx;background:#fff}.detail .qty{width:125rpx}.detail .btn{height:72rpx;border-radius:99rpx;font-size:23rpx}.detail .btn.ghost{border:2rpx solid #0aa6a3;color:#0a9b99}.detail .btn.primary{background:#0aa9a5}
 </style>

@@ -1,10 +1,6 @@
 <template>
-	<view class="app protocol-page">
-		<view class="protocol-header">
-			<text class="protocol-title">隐私政策</text>
-			<text class="protocol-sub">共享钓场小程序个人信息保护说明</text>
-		</view>
-
+	<view class="app protocol-page has-account-tabbar has-brand-header">
+		<brand-header title="隐私政策" theme="light" layout="compact" :back="true" />
 		<view class="protocol-section">
 			<text class="section-title">一、我们收集的信息</text>
 			<text class="section-text">在用户主动授权登录或使用相关服务时，我们可能收集微信 openid、订单信息、支付状态、活动报名信息、联系电话和用户主动提交的备注内容。昵称、头像仅在用户主动提供时用于账号展示。</text>
@@ -29,6 +25,7 @@
 			<text class="section-title">五、用户权利</text>
 			<text class="section-text">用户可通过小程序内设置、客服或相关页面查询订单与账号信息。如需更正、删除信息或撤回授权，可联系钓场工作人员处理。</text>
 		</view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -39,7 +36,7 @@
 <style>
 	.protocol-page {
 		padding: 32rpx 28rpx 80rpx;
-		background: #f6f7f8;
+		background: var(--surface-2);
 		min-height: 100vh;
 		box-sizing: border-box;
 	}
@@ -53,28 +50,27 @@
 
 	.protocol-title {
 		font-size: 42rpx;
-		font-weight: 800;
-		color: #10231f;
+		font-weight: 600;
+		color: var(--ink);
 	}
 
 	.protocol-sub {
 		font-size: 24rpx;
-		color: #7a8380;
+		color: var(--ink-2);
 	}
 
 	.protocol-section {
-		background: #ffffff;
-		border-radius: 20rpx;
+		background: var(--surface);
+		border-radius: var(--r);
 		padding: 28rpx;
 		margin-bottom: 20rpx;
-		box-shadow: 0 6rpx 20rpx rgba(16, 35, 31, 0.04);
 	}
 
 	.section-title {
 		display: block;
 		font-size: 30rpx;
-		font-weight: 800;
-		color: #10231f;
+		font-weight: 600;
+		color: var(--ink);
 		margin-bottom: 16rpx;
 	}
 
@@ -82,6 +78,10 @@
 		display: block;
 		font-size: 26rpx;
 		line-height: 1.8;
-		color: #4f5b57;
+		color: var(--ink);
 	}
+</style>
+
+<style>
+.protocol-page{min-height:100vh;padding:24rpx 24rpx calc(122rpx + env(safe-area-inset-bottom));background:#fff}.protocol-header{text-align:center;margin-bottom:24rpx}.protocol-title{font-size:31rpx}.protocol-sub{display:none}.protocol-section{padding:0;margin-bottom:22rpx;background:transparent}.protocol-section .section-title{font-size:24rpx;color:#078f8e;margin-bottom:10rpx}.protocol-section .section-text{font-size:20rpx;line-height:1.75;color:#536e70}
 </style>

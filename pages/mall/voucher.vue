@@ -1,8 +1,10 @@
 <template>
-	<view class="app voucher" v-if="order">
+	<view class="app voucher has-brand-header">
+		<brand-header title="商品使用凭证" theme="light" layout="compact" :back="true" />
+		<view v-if="order">
 		<view class="hero">
 			<text class="hero-status">{{ statusLabel[order.status] || '订单' }}</text>
-			<text class="hero-no">订单号 {{ order.mallOrderNo }}</text>
+			<text class="hero-no">到钓场吧台出示此页领取</text>
 		</view>
 
 		<view class="card use-card">
@@ -17,7 +19,7 @@
 		<view class="card">
 			<text class="card-title">商品清单</text>
 			<view v-for="it in order.items" :key="it.goodsId" class="line">
-				<text class="line-cover">{{ it.cover }}</text>
+				<view class="line-cover"><product-thumb :name="it.name" :goods-id="it.goodsId" /></view>
 				<view class="line-info">
 					<text class="line-name">{{ it.name }}</text>
 					<text class="line-sub">{{ it.subtitle }} · x{{ it.qty }}</text>
@@ -38,6 +40,11 @@
 			<button class="btn ghost" @click="goOrders">订单列表</button>
 			<button v-if="canRefund" class="btn warn" @click="goRefund">申请退款</button>
 			<button class="btn primary" @click="goMall">继续选购</button>
+		</view>
+		</view>
+		<view v-else class="empty voucher-empty">
+			<text class="empty-title">正在读取订单凭证</text>
+			<text class="empty-desc">请稍候，或返回补给订单重新进入</text>
 		</view>
 	</view>
 </template>
@@ -106,37 +113,41 @@
 
 <style>
 	.voucher { padding-bottom: 200rpx; }
-	.hero { padding: 50rpx 28rpx 32rpx; background: linear-gradient(135deg,#1a1a1a,#2e2e2e); }
-	.hero-status { display: block; color: #f5c23b; font-size: 44rpx; font-weight: 800; }
-	.hero-no { display: block; color: #d8d8d8; font-size: 24rpx; margin-top: 12rpx; letter-spacing: 1rpx; }
+	.hero { padding: 50rpx 28rpx 32rpx; background: linear-gradient(135deg,var(--g-900),var(--g-950)); }
+	.hero-status { display: block; color: var(--gold); font-size: 44rpx; font-weight: 600; }
+	.hero-no { display: block; color: var(--ink-4); font-size: 24rpx; margin-top: 12rpx; letter-spacing: 1rpx; }
 
-	.card { margin: 20rpx 28rpx; padding: 28rpx; background: #fff; border-radius: 22rpx; box-shadow: 0 6rpx 20rpx rgba(26,32,48,.04); }
-	.card-title { display: block; font-size: 28rpx; font-weight: 800; color: #1a2030; margin-bottom: 18rpx; }
+	.card { margin: 20rpx 28rpx; padding: 28rpx; background: var(--surface); border-radius: var(--r); }
+	.card-title { display: block; font-size: 28rpx; font-weight: 600; color: var(--ink); margin-bottom: 18rpx; }
 
-	.use-card { border: 2rpx solid #f5c23b; }
-	.ticket { display: flex; flex-direction: column; align-items: center; padding: 42rpx 20rpx; background: #fafbfd; border-radius: 22rpx; }
-	.ticket-main { color: #1a2030; font-size: 46rpx; font-weight: 900; }
-	.ticket-sub { color: #6b7280; font-size: 26rpx; margin-top: 12rpx; }
-	.code-tip { display: block; text-align: center; color: #9aa3b2; font-size: 24rpx; margin-top: 18rpx; }
+	.use-card { border: 2rpx solid var(--gold); }
+	.ticket { display: flex; flex-direction: column; align-items: center; padding: 42rpx 20rpx; background: var(--surface-2); border-radius: var(--r); }
+	.ticket-main { color: var(--ink); font-size: 46rpx; font-weight: 600; }
+	.ticket-sub { color: var(--ink-2); font-size: 26rpx; margin-top: 12rpx; }
+	.code-tip { display: block; text-align: center; color: var(--ink-3); font-size: 24rpx; margin-top: 18rpx; }
 
-	.line { display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx dashed #eef0f5; }
+	.line { display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx dashed var(--bg); }
 	.line:last-child { border-bottom: 0; }
 	.line-cover { font-size: 56rpx; width: 80rpx; text-align: center; }
 	.line-info { flex: 1; display: flex; flex-direction: column; }
-	.line-name { color: #1a2030; font-size: 26rpx; font-weight: 700; }
-	.line-sub { color: #9aa3b2; font-size: 22rpx; margin-top: 4rpx; }
-	.line-price { color: #1a2030; font-size: 26rpx; font-weight: 700; }
+	.line-name { color: var(--ink); font-size: 26rpx; font-weight: 500; }
+	.line-sub { color: var(--ink-3); font-size: 22rpx; margin-top: 4rpx; }
+	.line-price { color: var(--ink); font-size: 26rpx; font-weight: 500; }
 
 	.row { display: flex; justify-content: space-between; padding: 12rpx 0; }
-	.row.big { padding-top: 18rpx; border-top: 1rpx dashed #eef0f5; margin-top: 6rpx; }
-	.k { color: #9aa3b2; font-size: 26rpx; }
-	.v { color: #1a2030; font-size: 26rpx; font-weight: 700; }
-	.v.dim { color: #6b7280; font-weight: 400; max-width: 60%; text-align: right; }
-	.v.price { color: #b8860b; font-size: 36rpx; font-weight: 800; }
+	.row.big { padding-top: 18rpx; border-top: 1rpx dashed var(--bg); margin-top: 6rpx; }
+	.k { color: var(--ink-3); font-size: 26rpx; }
+	.v { color: var(--ink); font-size: 26rpx; font-weight: 500; }
+	.v.dim { color: var(--ink-2); font-weight: 400; max-width: 60%; text-align: right; }
+	.v.price { color: var(--gold); font-size: 36rpx; font-weight: 600; }
 
-	.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 28rpx env(safe-area-inset-bottom); background: #fff; display: flex; gap: 16rpx; box-shadow: 0 -6rpx 20rpx rgba(26,32,48,.06); }
-	.btn { flex: 1; height: 88rpx; border-radius: 999rpx; font-size: 30rpx; font-weight: 800; }
-	.btn.ghost { background: #f4f5f7; color: #6b7280; }
-	.btn.warn  { background: #fff0f0; color: #c62828; }
-	.btn.primary { background: #f5c23b; color: #1a1306; }
+	.footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 28rpx env(safe-area-inset-bottom); background: var(--surface); display: flex; gap: 16rpx; }
+	.btn { flex: 1; height: 88rpx; border-radius: var(--r-pill); font-size: 30rpx; font-weight: 600; }
+	.btn.ghost { background: var(--surface-2); color: var(--ink-2); }
+	.btn.warn  { background: var(--danger-bg); color: var(--danger); }
+	.btn.primary { background: var(--g-600); color: #fff; }
+</style>
+
+<style>
+.voucher{min-height:100vh;padding:14rpx 20rpx calc(144rpx + env(safe-area-inset-bottom));background:#f7fbfb}.voucher .hero{margin:0;padding:24rpx 0;background:transparent;text-align:center}.voucher .hero-status{font-size:35rpx;color:#079f9d}.voucher .hero-no{margin-top:7rpx;color:#697d7f;font-size:22rpx}.voucher .card{margin:0 0 14rpx;padding:22rpx;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff}.voucher .use-card .card-title{text-align:center}.voucher .ticket{margin-top:17rpx;padding:24rpx;border-radius:10rpx;background:#f5f9f8;text-align:center}.voucher .ticket-main{color:#0a8382;font-size:42rpx;letter-spacing:4rpx}.voucher .line-cover{width:80rpx;height:80rpx;border-radius:8rpx;overflow:hidden}.voucher .footer{padding:10rpx 20rpx calc(10rpx + env(safe-area-inset-bottom));display:flex;gap:10rpx}.voucher .btn{padding:16rpx 8rpx;border-radius:10rpx}
 </style>

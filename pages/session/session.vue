@@ -1,77 +1,38 @@
 <template>
-	<view class="app session">
-		<view class="hero">
-			<view class="hero-top">
-				<view class="dot-pulse"></view>
-				<text class="hero-status">RUNNING · 实时同步</text>
-			</view>
-			<text class="hero-label">已用时长</text>
-			<text class="hero-timer">{{ formatDuration(elapsed) }}</text>
-			<view class="hero-bar">
-				<view class="hero-bar-inner" :style="{ width: progressWidth }"></view>
-			</view>
-			<view class="hero-meta">
-				<view class="hero-meta-item">
-					<text class="hero-meta-label">开始时间</text>
-					<text class="hero-meta-value">{{ startTimeText }}</text>
-				</view>
-				<view class="hero-meta-sep"></view>
-				<view class="hero-meta-item">
-					<text class="hero-meta-label">订单号</text>
-					<text class="hero-meta-value">{{ order.orderNo }}</text>
+	<view class="app session dc-session has-brand-header">
+		<brand-header title="计时中" theme="light" layout="compact" :back="true" />
+		<view class="dc-session-content">
+			<view class="dc-session-hero">
+				<text v-if="order.spotName" class="dc-session-spot">{{ order.spotName }} · 已绑定</text>
+				<text class="dc-session-label">已用时长</text>
+				<text class="dc-session-timer">{{ formatDuration(elapsed) }}</text>
+				<view class="dc-session-divider"></view>
+				<view class="dc-session-metrics">
+					<view><text>开始时间</text><text>{{ startTimeText }}</text></view>
+					<view class="dc-session-metric-line"></view>
+					<view><text>预估金额</text><text>¥{{ formatMoney(estimate.amountCents) }}</text></view>
 				</view>
 			</view>
-		</view>
 
-		<view class="amount-card">
-			<view class="amount-badge">预估金额</view>
-			<view class="amount-row">
-				<text class="money-currency">¥</text>
-				<text class="money-number">{{ formatMoney(estimate.amountCents) }}</text>
+			<view class="dc-session-rule">
+				<text class="dc-session-rule-title">计费规则</text>
+				<text class="dc-session-rule-summary">每 {{ rule.stepMinutes }} 分钟 ¥{{ stepPriceYuan }} · 起步 {{ rule.minDurationMinutes }} 分钟 · 向上取整</text>
+				<view class="dc-session-row"><text>计费单位</text><text>{{ rule.stepMinutes }} 分钟</text></view>
+				<view class="dc-session-row"><text>单位价格</text><text>¥{{ stepPriceYuan }}</text></view>
+				<view class="dc-session-row"><text>起步时长</text><text>{{ rule.minDurationMinutes }} 分钟</text></view>
+				<view class="dc-session-row"><text>向上取整</text><text>是</text></view>
 			</view>
-			<text class="amount-tip">按 {{ rule.stepMinutes }} 分钟向上取整 · 起步 {{ rule.minDurationMinutes }} 分钟</text>
-			<view class="amount-chips">
-				<view class="chip">
-					<text class="chip-label">计费时长</text>
-					<text class="chip-value">{{ formatDuration(estimate.billableDurationSeconds) }}</text>
-				</view>
-				<view class="chip">
-					<text class="chip-label">费率</text>
-					<text class="chip-value">¥{{ stepPriceYuan }} / {{ rule.stepMinutes }} 分</text>
-				</view>
-			</view>
-		</view>
 
-		<view class="steps">
-			<view class="step step-done">
-				<view class="step-dot">1</view>
-				<text class="step-name">扫入口码</text>
-				<text class="step-desc">已完成</text>
+			<view class="dc-session-steps">
+				<view class="dc-session-step active"><view>1</view><text>下竿准备</text></view>
+				<view class="dc-session-step-line active"></view>
+				<view class="dc-session-step active"><view>2</view><text>计时进行中</text></view>
+				<view class="dc-session-step-line"></view>
+				<view class="dc-session-step"><view>3</view><text>收竿结算</text></view>
 			</view>
-			<view class="step-line step-line-active"></view>
-			<view class="step step-active">
-				<view class="step-dot">2</view>
-				<text class="step-name">计时进行中</text>
-				<text class="step-desc">当前步骤</text>
-			</view>
-			<view class="step-line"></view>
-			<view class="step">
-				<view class="step-dot">3</view>
-				<text class="step-name">出口结算</text>
-				<text class="step-desc">待执行</text>
-			</view>
-		</view>
 
-		<view class="tip">
-			<text class="tip-emoji">📍</text>
-			<text class="tip-text">离场请前往出口扫码结束并支付</text>
-		</view>
-
-		<view class="spacer"></view>
-
-		<view class="dock">
-			<button class="dock-ghost" @click="backHome">返回首页</button>
-			<button class="dock-primary" @click="finish">扫出口码结算</button>
+			<button class="dc-session-primary" :disabled="finishConfirming || finishing" @click="finish">{{ finishing ? '正在结算…' : '收竿结算' }}</button>
+			<button class="dc-session-back" @click="backHome">返回首页</button>
 		</view>
 	</view>
 </template>
@@ -85,12 +46,12 @@
 		getUser,
 		fetchRunningOrder,
 		finishOrder,
-		resolveQrcode,
 		getCachedVenue,
 		loadDefaultVenue,
 		isLoggedIn,
 		goHomeSafely
 	} from '../../utils/fishingStore.js'
+	import { safeDecode, parseScanParams, extractScanProof } from '../../utils/scan.js'
 
 	const DEFAULT_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
 
@@ -100,7 +61,14 @@
 				order: { orderNo: '--', startTime: 0, ruleSnapshot: null },
 				now: Date.now(),
 				timer: null,
-				rule: DEFAULT_RULE
+				rule: DEFAULT_RULE,
+				scanQrId: null,
+				scanScene: '',
+				autoSettle: false,
+				directEntry: false,
+				settlePromptShown: false,
+				finishConfirming: false,
+				finishing: false
 			}
 		},
 		computed: {
@@ -127,12 +95,17 @@
 				return (Math.max(0.05, ratio) * 100).toFixed(1) + '%'
 			}
 		},
+		onLoad(option = {}) {
+			this.applyScanOption(option)
+			this.autoSettle = String(option.settle || '') === '1'
+			this.directEntry = String(option.direct || '') === '1'
+		},
 		onShow() {
 			if (!isLoggedIn()) {
-				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/session/session') })
+				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/session/session' + this.buildEntryQuery()) })
 				return
 			}
-			this.ensureVenue().then(() => this.refresh())
+			this.ensureVenue().then(() => this.refresh()).catch(() => {})
 			this.startTimer()
 		},
 		onHide() { this.stopTimer() },
@@ -146,86 +119,73 @@
 			refresh() {
 				const user = getUser()
 				if (!user) { goHomeSafely(); return }
-				fetchRunningOrder(user.userId).then((running) => {
-					if (!running) { goHomeSafely(); return }
+				return fetchRunningOrder(user.userId).then((running) => {
+					if (!running) {
+						uni.showToast({ title: '当前没有进行中的计时', icon: 'none' })
+						setTimeout(() => goHomeSafely(), 500)
+						return
+					}
 					this.order = running
 					if (running.ruleSnapshot) {
 						try { this.rule = Object.assign({}, this.rule, JSON.parse(running.ruleSnapshot)) } catch (e) {}
 					}
+					if (this.autoSettle && !this.settlePromptShown) {
+						this.settlePromptShown = true
+						setTimeout(() => this.confirmFinish(this.currentScan()), 150)
+					}
 				})
 			},
 			finish() {
-				this.launchScan()
+				this.confirmFinish(this.currentScan())
 			},
-			launchScan() {
-				// #ifdef MP-WEIXIN || APP-PLUS
-				uni.scanCode({
-					onlyFromCamera: true,
-					success: (res) => this.handleScanResult((res && (res.path || res.result)) || ''),
-					fail: () => uni.showToast({ title: '请扫描出口码', icon: 'none' })
-				})
-				// #endif
-				// #ifndef MP-WEIXIN || APP-PLUS
-				uni.showToast({ title: '请扫描出口码', icon: 'none' })
-				// #endif
+			applyScanOption(option = {}) {
+				const rawScene = option.scene
+					? safeDecode(option.scene)
+					: (option.action && option.venueId ? 'action=' + option.action + '&venueId=' + option.venueId : '')
+				const proof = extractScanProof(parseScanParams(rawScene))
+				const qrId = Number(option.qrId || (proof && proof.qrId) || 0)
+				this.scanQrId = Number.isSafeInteger(qrId) && qrId > 0 ? qrId : null
+				this.scanScene = this.scanQrId ? '' : ((proof && proof.scene) || rawScene)
 			},
-			handleScanResult(raw) {
-				const scan = this.extractScanProof(this.parseScan(raw))
-				if (!scan) {
-					uni.showToast({ title: '请扫描出口码', icon: 'none' })
-					return
+			currentScan() {
+				if (this.scanQrId) return { qrId: this.scanQrId }
+				if (this.scanScene) return { scene: this.scanScene }
+				return {}
+			},
+			buildEntryQuery() {
+				const parts = []
+				if (this.scanQrId) parts.push('qrId=' + encodeURIComponent(this.scanQrId))
+				else if (this.scanScene) parts.push('scene=' + encodeURIComponent(this.scanScene))
+				if (this.autoSettle) parts.push('settle=1')
+				if (this.directEntry) parts.push('direct=1')
+				return parts.length ? '?' + parts.join('&') : ''
+			},
+			confirmFinish(scan = {}) {
+				if (this.finishConfirming || this.finishing) return
+				this.finishConfirming = true
+				try {
+					uni.showModal({
+						title: '确认收竿结算',
+						content: '确认后将结束计时，并按当前时长生成待支付订单。',
+						success: (res) => {
+							if (!res.confirm || this.finishing) return
+							const user = getUser()
+							if (!user) return
+							this.finishing = true
+							finishOrder(user.userId, scan).then((result) => {
+								if (!result) {
+									uni.showToast({ title: '未检测到进行中订单', icon: 'none' })
+									this.backHome()
+									return
+								}
+								uni.redirectTo({ url: '/pages/pay/pay' })
+							}).catch(() => {}).finally(() => { this.finishing = false })
+						},
+						complete: () => { this.finishConfirming = false }
+					})
+				} catch (error) {
+					this.finishConfirming = false
 				}
-				resolveQrcode(scan).then((data) => {
-					if (!data || data.action !== 'end') {
-						uni.showToast({ title: '请扫描出口码', icon: 'none' })
-						return
-					}
-					this.confirmFinish(scan)
-				}).catch(() => {
-					uni.showToast({ title: '二维码无效或已停用', icon: 'none' })
-				})
-			},
-			confirmFinish(scan) {
-				uni.showModal({
-					title: '结束本次计时',
-					content: '将记录结束时间并生成待支付订单',
-					success: (res) => {
-						if (!res.confirm) return
-						const user = getUser()
-						finishOrder(user.userId, scan).then((result) => {
-							if (!result) {
-								uni.showToast({ title: '未检测到进行中订单', icon: 'none' })
-								this.backHome()
-								return
-							}
-							uni.redirectTo({ url: '/pages/pay/pay' })
-						})
-					}
-				})
-			},
-			parseScan(raw) {
-				if (!raw) return null
-				const idx = raw.indexOf('?')
-				const qs = idx >= 0 ? raw.slice(idx + 1) : raw
-				if (qs.indexOf('=') < 0) return { scene: qs }
-				const out = {}
-				qs.split('&').forEach((pair) => {
-					const [k, v] = pair.split('=')
-					if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '')
-				})
-				if (out.qrId) out.qrId = Number(out.qrId)
-				return out
-			},
-			extractScanProof(params) {
-				if (!params) return null
-				if (params.qrId) return { qrId: params.qrId }
-				if (params.scene) {
-					const nested = this.parseScan(params.scene)
-					if (nested && nested.qrId) return { qrId: nested.qrId }
-					return { scene: params.scene }
-				}
-				if (params.action && params.venueId) return { scene: 'action=' + params.action + '&venueId=' + params.venueId }
-				return null
 			},
 			backHome() { goHomeSafely() },
 			startTimer() {
@@ -241,433 +201,237 @@
 </script>
 
 <style>
-	.session {
-		padding-bottom: 220rpx;
-		background: transparent;
+/* v18：严格对齐计时中设计稿 */
+	.dc-session.session {
+		min-height: 100vh;
+		padding: 0 0 calc(42rpx + env(safe-area-inset-bottom)) !important;
+		background: var(--g-600);
 	}
 
-	/* ---------------- 计时仪表盘 ---------------- */
-	.hero {
-		margin: 24rpx 32rpx 0;
-		padding: 52rpx 36rpx 56rpx;
-		border-radius: 48rpx 16rpx 48rpx 16rpx;
-		background: linear-gradient(135deg, #071f18 0%, #0c352a 50%, #031410 100%);
-		color: #ffffff;
-		box-shadow: 0 24rpx 56rpx rgba(10, 46, 36, 0.2);
-		position: relative;
-		overflow: hidden;
-		border: 1rpx solid rgba(245, 210, 133, 0.16);
+	.dc-session-content {
+		padding: 0 24rpx;
 	}
 
-	.hero::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 320rpx;
-		height: 320rpx;
-		border-radius: 50%;
-		background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
-		filter: blur(30px);
-		z-index: 0;
-		pointer-events: none;
-	}
-
-	.hero-top {
-		display: flex;
-		align-items: center;
-		gap: 16rpx;
-		position: relative;
-		z-index: 1;
-	}
-
-	.dot-pulse {
-		width: 14rpx;
-		height: 14rpx;
-		border-radius: 50%;
-		background: #10b981;
-		box-shadow: 0 0 12rpx rgba(16, 185, 129, 0.8);
-		position: relative;
-	}
-
-	.dot-pulse::after {
-		content: '';
-		position: absolute;
-		top: -12rpx;
-		left: -12rpx;
-		right: -12rpx;
-		bottom: -12rpx;
-		border-radius: 50%;
-		border: 2rpx solid rgba(16, 185, 129, 0.4);
-		animation: radar-pulse 1.8s infinite cubic-bezier(0.25, 0, 0, 1);
-	}
-
-	.hero-status {
-		color: #10b981;
-		font-size: 22rpx;
-		letter-spacing: 4rpx;
-		font-weight: 800;
-	}
-
-	.hero-label {
-		display: block;
-		margin-top: 32rpx;
-		color: rgba(255, 255, 255, 0.5);
-		font-size: 22rpx;
-		letter-spacing: 4rpx;
-		font-weight: 700;
-	}
-
-	.hero-timer {
-		display: block;
-		margin-top: 14rpx;
-		color: #ffffff;
-		font-size: 120rpx;
-		font-weight: 800;
-		letter-spacing: 2rpx;
-		font-variant-numeric: tabular-nums;
-		line-height: 1;
-		text-shadow: 0 0 20rpx rgba(16, 185, 129, 0.6), 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
-		position: relative;
-		z-index: 1;
-	}
-
-	/* 仪表盘进度条 */
-	.hero-bar {
-		margin-top: 40rpx;
-		height: 12rpx;
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 99rpx;
-		overflow: hidden;
-	}
-
-	.hero-bar-inner {
-		height: 100%;
-		background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-		border-radius: 99rpx;
-		transition: width 0.5s ease-in-out;
-		position: relative;
-	}
-
-	.hero-bar-inner::after {
-		content: '';
-		position: absolute;
-		top: 0; right: 0; bottom: 0; left: 0;
-		background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
-		animation: shimmer 1.5s infinite;
-	}
-
-	@keyframes shimmer {
-		0% { transform: translateX(-100%); }
-		100% { transform: translateX(100%); }
-	}
-
-	.hero-meta {
-		margin-top: 36rpx;
-		display: flex;
-		align-items: center;
-		gap: 20rpx;
-	}
-
-	.hero-meta-item {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 8rpx;
-	}
-
-	.hero-meta-label {
-		font-size: 22rpx;
-		color: rgba(255, 255, 255, 0.4);
-	}
-
-	.hero-meta-value {
-		font-size: 26rpx;
-		color: #ffffff;
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.hero-meta-sep {
-		width: 1rpx;
-		height: 64rpx;
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	/* ---------------- 预估账单卡 ---------------- */
-	.amount-card {
-		margin: 24rpx 32rpx 0;
-		padding: 40rpx 32rpx;
-		border-radius: 16rpx 48rpx 16rpx 48rpx;
-		background: rgba(255, 255, 255, 0.78);
-		backdrop-filter: blur(20px);
-		border: 1rpx solid rgba(255, 255, 255, 0.45);
-		box-shadow: var(--card-shadow);
+	.dc-session-hero {
+		padding: 54rpx 20rpx 34rpx;
+		color: #f8fffe;
 		text-align: center;
 	}
 
-	.amount-badge {
-		display: inline-flex;
-		padding: 8rpx 24rpx;
-		border-radius: 99rpx;
-		background: var(--warning-bg);
-		color: var(--warning);
-		border: 1rpx solid var(--warning-border);
-		font-size: 22rpx;
-		font-weight: 800;
-		letter-spacing: 2rpx;
-	}
-
-	.amount-row {
-		display: flex;
-		align-items: baseline;
-		justify-content: center;
-		margin-top: 24rpx;
-	}
-
-	.amount-row .money-currency {
-		font-size: 38rpx;
-		font-weight: 800;
-		color: var(--primary);
-	}
-
-	.amount-row .money-number {
-		font-size: 96rpx;
-		font-weight: 900;
-		color: var(--primary);
-	}
-
-	.amount-tip {
+	.dc-session-label {
 		display: block;
-		margin-top: 14rpx;
-		color: var(--text-muted);
-		font-size: 24rpx;
-		font-weight: 600;
+		font-size: 27rpx;
+		font-weight: 700;
 	}
 
-	/* 计费详情芯片 */
-	.amount-chips {
-		margin-top: 36rpx;
-		display: flex;
-		gap: 20rpx;
-	}
-
-	.chip {
-		flex: 1;
-		padding: 20rpx;
-		border-radius: 24rpx;
-		background: rgba(255, 255, 255, 0.4);
-		border: 1rpx solid rgba(255, 255, 255, 0.3);
-		display: flex;
-		flex-direction: column;
+	.dc-session-spot {
+		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		min-height: 48rpx;
+		margin-bottom: 18rpx;
+		padding: 0 20rpx;
+		border: 1rpx solid rgba(248,255,254,.5);
+		border-radius: 12rpx;
+		font-size: 23rpx;
+		font-weight: 800;
+	}
+
+	.dc-session-timer {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 82rpx;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 2rpx;
+		line-height: 1.2;
+	}
+
+	.dc-session-divider {
+		height: 1rpx;
+		margin: 28rpx 10rpx 24rpx;
+		background: rgba(248,255,254,.48);
+	}
+
+	.dc-session-metrics {
+		display: flex;
+		align-items: center;
+	}
+
+	.dc-session-metrics > view:not(.dc-session-metric-line) {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
 		gap: 8rpx;
 	}
 
-	.chip-label {
+	.dc-session-metrics text:first-child {
 		font-size: 22rpx;
-		color: var(--text-light);
-		font-weight: 600;
+		font-weight: 650;
+		opacity: .88;
 	}
 
-	.chip-value {
-		font-size: 26rpx;
+	.dc-session-metrics text:last-child {
+		font-size: 34rpx;
 		font-weight: 800;
-		color: var(--primary);
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* ---------------- 步骤流向图 ---------------- */
-	.steps {
-		margin: 36rpx 32rpx 0;
-		padding: 24rpx 16rpx;
-		background: transparent;
-		border: none;
-		box-shadow: none;
-		display: flex;
-		align-items: center;
+	.dc-session-metric-line {
+		width: 1rpx;
+		height: 70rpx;
+		background: rgba(248,255,254,.42);
 	}
 
-	.step {
-		flex: 0 0 auto;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 8rpx;
-		min-width: 140rpx;
+	.dc-session-rule,
+	.dc-session-steps {
+		border: 1rpx solid rgba(248,255,254,.28);
+		border-radius: 22rpx;
+		background: var(--surface-strong);
+		box-shadow: 0 7rpx 22rpx rgba(4,69,70,.11);
 	}
 
-	.step-dot {
-		width: 56rpx;
-		height: 56rpx;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.4);
-		color: var(--text-light);
-		font-size: 26rpx;
+	.dc-session-rule {
+		padding: 26rpx 28rpx 0;
+	}
+
+	.dc-session-rule-title {
+		display: block;
+		color: var(--ink);
+		font-size: 30rpx;
 		font-weight: 800;
+	}
+
+	.dc-session-rule-summary {
+		display: block;
+		margin: 8rpx 0 14rpx;
+		color: var(--ink-3);
+		font-size: 21rpx;
+		line-height: 1.5;
+	}
+
+	.dc-session-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 20rpx;
+		min-height: 72rpx;
+		border-top: 1rpx solid var(--line);
+		color: var(--ink-2);
+		font-size: 24rpx;
+	}
+
+	.dc-session-row text:last-child {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.dc-session-steps {
+		display: flex;
+		align-items: flex-start;
+		margin-top: 20rpx;
+		padding: 28rpx 24rpx 24rpx;
+	}
+
+	.dc-session-step {
+		display: flex;
+		width: 116rpx;
+		align-items: center;
+		flex-direction: column;
+		gap: 10rpx;
+		color: var(--ink-3);
+		font-size: 21rpx;
+		white-space: nowrap;
+	}
+
+	.dc-session-step view {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1rpx solid rgba(255, 255, 255, 0.3);
-		transition: var(--transition);
-	}
-
-	.step-done .step-dot {
-		background: var(--success);
-		color: #ffffff;
-		border-color: var(--success);
-		box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.2);
-	}
-
-	.step-active .step-dot {
-		background: var(--accent-gradient);
-		color: var(--primary);
-		border-color: transparent;
-		box-shadow: var(--accent-glow);
-		position: relative;
-	}
-
-	.step-active .step-dot::after {
-		content: '';
-		position: absolute;
-		top: -8rpx;
-		left: -8rpx;
-		right: -8rpx;
-		bottom: -8rpx;
+		width: 50rpx;
+		height: 50rpx;
 		border-radius: 50%;
-		border: 2rpx solid rgba(199, 154, 57, 0.5);
-		animation: radar-pulse 2s infinite cubic-bezier(0.25, 0, 0, 1);
-	}
-
-	.step-name {
+		background: var(--surface-3);
+		color: var(--ink-3);
 		font-size: 24rpx;
 		font-weight: 800;
-		color: var(--primary);
 	}
 
-	.step-desc {
-		font-size: 20rpx;
-		color: var(--text-muted);
-		font-weight: 600;
+	.dc-session-step.active {
+		color: var(--ink);
 	}
 
-	.step-line {
+	.dc-session-step.active view {
+		background: var(--g-600);
+		color: #f8fffe;
+	}
+
+	.dc-session-step-line {
 		flex: 1;
 		height: 4rpx;
-		background: rgba(255, 255, 255, 0.4);
-		border-radius: 99rpx;
+		margin-top: 23rpx;
+		background: var(--surface-3);
 	}
 
-	.step-line-active {
-		background: var(--success);
+	.dc-session-step-line.active {
+		background: var(--g-600);
 	}
 
-	/* ---------------- 温馨提示 ---------------- */
-	.tip {
-		margin: 24rpx 32rpx 0;
-		padding: 24rpx 32rpx;
-		border-radius: 36rpx 12rpx;
-		background: rgba(255, 251, 239, 0.85);
-		backdrop-filter: blur(10px);
-		border: 1rpx solid rgba(224, 169, 60, 0.2);
+	.dc-session-primary,
+	.dc-session-back {
 		display: flex;
 		align-items: center;
-		gap: 16rpx;
-		box-shadow: 0 8rpx 24rpx rgba(224, 169, 60, 0.02);
+		justify-content: center;
+		width: 100%;
+		margin: 0;
+		line-height: 1.2;
 	}
 
-	.tip-emoji {
-		font-size: 32rpx;
-	}
-
-	.tip-text {
-		flex: 1;
-		font-size: 26rpx;
-		color: #8a6914;
-		line-height: 1.5;
-		font-weight: 600;
-	}
-
-	.spacer {
-		height: 40rpx;
-	}
-
-	/* ---------------- 底部悬浮操作板 ---------------- */
-	.dock {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-		background: rgba(255, 255, 255, 0.95);
-		display: flex;
-		gap: 20rpx;
-		box-shadow: 0 -12rpx 40rpx rgba(10, 46, 36, 0.06);
-		backdrop-filter: blur(15px);
-		border-top: 1rpx solid rgba(10, 46, 36, 0.04);
-		z-index: 99;
-	}
-
-	.dock-ghost {
-		flex: 0 0 220rpx;
-		height: 100rpx;
-		line-height: 100rpx;
-		border-radius: 99rpx;
-		background: #ffffff;
-		color: var(--primary);
-		border: 1rpx solid rgba(10, 46, 36, 0.15);
+	.dc-session-primary {
+		height: 92rpx;
+		margin-top: 22rpx;
+		border: 2rpx solid rgba(248,255,254,.86);
+		border-radius: 20rpx;
+		background: transparent;
+		color: #f8fffe;
 		font-size: 30rpx;
 		font-weight: 800;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
-		transition: var(--transition);
 	}
 
-	.dock-ghost:active {
-		background: #f7faf8;
-		transform: scale(0.97);
+	.dc-session-primary:active {
+		background: rgba(248,255,254,.12);
+		transform: scale(.985);
 	}
 
-	.dock-ghost::after {
-		border: 0;
+	.dc-session-back {
+		height: 72rpx;
+		margin-top: 6rpx;
+		background: transparent;
+		color: #f8fffe;
+		font-size: 27rpx;
+		font-weight: 700;
 	}
 
-	.dock-primary {
-		flex: 1;
-		height: 100rpx;
-		line-height: 100rpx;
-		border-radius: 99rpx;
-		background: var(--accent-gradient);
-		color: var(--primary);
-		font-size: 32rpx;
-		font-weight: 800;
-		letter-spacing: 2rpx;
-		box-shadow: var(--accent-glow);
-		transition: var(--transition);
-		border: 0;
-		position: relative;
-		overflow: hidden;
-	}
+	@media (max-width: 360px) {
+		.dc-session-content {
+			padding: 0 18rpx;
+		}
 
-	.dock-primary::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -150%;
-		width: 40%;
-		height: 100%;
-		background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
-		transform: skewX(-25deg);
-		animation: shimmer-sweep 3.5s infinite ease-in-out;
-		pointer-events: none;
-	}
+		.dc-session-hero {
+			padding-top: 42rpx;
+		}
 
-	.dock-primary:active {
-		transform: scale(0.97);
-		opacity: 0.95;
-	}
+		.dc-session-timer {
+			font-size: 70rpx;
+		}
 
-	.dock-primary::after {
-		border: 0;
+		.dc-session-steps {
+			padding-left: 16rpx;
+			padding-right: 16rpx;
+		}
+
+		.dc-session-step {
+			width: 102rpx;
+			font-size: 19rpx;
+		}
 	}
 </style>

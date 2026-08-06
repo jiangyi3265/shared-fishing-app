@@ -1,8 +1,9 @@
 <template>
-	<view class="app pay">
+	<view class="app pay has-brand-header">
+		<brand-header title="订单结算" theme="teal" layout="stacked" :back-on-title="true" :scene="true" />
 		<view v-if="!order" class="empty-wrap">
 			<view class="empty">
-				<view class="empty-icon">🧾</view>
+				<view class="empty-icon hic-rate"></view>
 				<text class="empty-title">暂无待支付订单</text>
 				<text class="empty-desc">您可以返回首页开始新一轮计时</text>
 				<button class="empty-btn" @click="goHome">返回首页</button>
@@ -32,6 +33,10 @@
 						<text class="sheet-key">订单号</text>
 						<text class="sheet-val">{{ order.orderNo }}</text>
 					</view>
+					<view v-if="order.spotName" class="sheet-row">
+						<text class="sheet-key">计时钓位</text>
+						<text class="sheet-val">{{ order.spotName }}</text>
+					</view>
 					<view class="sheet-row">
 						<text class="sheet-key">开始时间</text>
 						<text class="sheet-val">{{ formatDatetime(order.startTime) }}</text>
@@ -49,7 +54,7 @@
 				<view class="channel">
 					<text class="channel-title">支付方式</text>
 					<view class="channel-row">
-						<view class="channel-logo">💚</view>
+						<view class="channel-logo hic-wxpay"></view>
 						<view class="channel-text">
 							<text class="channel-name">微信支付</text>
 							<text class="channel-desc">安全快捷完成订单支付</text>
@@ -77,7 +82,7 @@
 
 				<view v-if="walletBalance > 0" class="balance-card" @click="toggleBalance">
 					<view class="balance-left">
-						<view class="balance-icon">💰</view>
+						<view class="balance-icon hic-coin"></view>
 						<view class="balance-text">
 							<text class="balance-title">储值余额抵扣</text>
 							<text class="balance-desc">当前余额 ¥{{ formatMoney(walletBalance) }}{{ useBalance && balanceUsed > 0 ? '，本单抵扣 ¥' + formatMoney(balanceUsed) : '' }}</text>
@@ -294,13 +299,11 @@
 	}
 
 	.empty {
-		background: rgba(255, 255, 255, 0.78);
-		backdrop-filter: blur(20px);
+		background: var(--surface);
 		border-radius: 48rpx 16rpx;
 		padding: 80rpx 40rpx;
 		text-align: center;
 		border: 1rpx solid rgba(255, 255, 255, 0.45);
-		box-shadow: var(--card-shadow);
 	}
 
 	.empty-icon {
@@ -312,8 +315,8 @@
 	.empty-title {
 		display: block;
 		font-size: 32rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.empty-desc {
@@ -329,47 +332,45 @@
 		height: 96rpx;
 		line-height: 96rpx;
 		border-radius: 99rpx;
-		background: var(--accent-gradient);
-		color: var(--primary);
+		background: var(--g-600);
+		color: #fff;
 		font-size: 30rpx;
-		font-weight: 800;
-		box-shadow: var(--accent-glow);
+		font-weight: 600;
+
 	}
 
 	/* ---------------- 金沙账单 Hero ---------------- */
 	.hero {
-		margin: 24rpx 32rpx 0;
+		margin: 0;
 		padding: 48rpx 36rpx 44rpx;
-		border-radius: 48rpx 16rpx;
-		background: linear-gradient(135deg, #fffcf2 0%, #fff3cf 50%, #ffeaa8 100%);
-		border: 1rpx solid rgba(224, 169, 60, 0.25);
-		box-shadow: 0 16rpx 40rpx rgba(199, 154, 57, 0.15);
+		border-radius: 0;
+		background: var(--surface);
+		border: 1rpx solid var(--line);
 	}
 
 	.hero-label {
-		color: #b8860b;
+		color: var(--gold);
 		font-size: 22rpx;
 		letter-spacing: 6rpx;
-		font-weight: 800;
-		text-transform: uppercase;
+		font-weight: 600;
 	}
 
 	.hero-amount {
 		margin-top: 18rpx;
-		color: var(--primary);
+		color: var(--jade);
 		display: flex;
 		align-items: baseline;
 	}
 
 	.hero-currency {
 		font-size: 40rpx;
-		font-weight: 800;
+		font-weight: 600;
 		margin-right: 6rpx;
 	}
 
 	.hero-number {
-		font-size: 112rpx;
-		font-weight: 900;
+		font-size: 88rpx;
+		font-weight: 300;
 		letter-spacing: -1rpx;
 		font-variant-numeric: tabular-nums;
 		line-height: 1;
@@ -384,8 +385,8 @@
 	.hero-chip {
 		flex: 1;
 		padding: 18rpx 20rpx;
-		border-radius: 20rpx;
-		background: rgba(255, 255, 255, 0.65);
+		border-radius: var(--r);
+		background: var(--surface);
 		border: 1rpx solid rgba(255, 255, 255, 0.4);
 		display: flex;
 		flex-direction: column;
@@ -394,25 +395,23 @@
 
 	.hero-chip-label {
 		font-size: 22rpx;
-		color: #8a6914;
+		color: var(--gold-ink);
 		font-weight: 600;
 	}
 
 	.hero-chip-value {
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 		font-variant-numeric: tabular-nums;
 	}
 
 	/* ---------------- 连续型黄金票据面板 ---------------- */
 	.ticket-board {
 		margin: 28rpx 32rpx 0;
-		background: rgba(255, 255, 255, 0.82);
-		backdrop-filter: blur(20px);
+		background: var(--surface);
 		border-radius: 48rpx 16rpx 48rpx 16rpx;
 		border: 1rpx solid rgba(255, 255, 255, 0.45);
-		box-shadow: var(--card-shadow);
 		padding: 12rpx 0 24rpx;
 		position: relative;
 		overflow: hidden;
@@ -437,18 +436,16 @@
 		width: 24rpx;
 		height: 24rpx;
 		border-radius: 50%;
-		background: #edf3f0;
+		background: var(--g-50);
 		z-index: 2;
 	}
 
 	.sheet::before {
 		left: -12rpx;
-		box-shadow: inset -4rpx 0 6rpx rgba(10, 46, 36, 0.03);
 	}
 
 	.sheet::after {
 		right: -12rpx;
-		box-shadow: inset 4rpx 0 6rpx rgba(10, 46, 36, 0.03);
 	}
 
 	.sheet-title {
@@ -457,8 +454,8 @@
 		align-items: center;
 		padding-bottom: 24rpx;
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.sheet-tag {
@@ -468,7 +465,7 @@
 		color: var(--warning);
 		border: 1rpx solid var(--warning-border);
 		font-size: 22rpx;
-		font-weight: 800;
+		font-weight: 600;
 	}
 
 	.sheet-row {
@@ -487,7 +484,7 @@
 
 	.sheet-val {
 		color: var(--text-main);
-		font-weight: 700;
+		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -501,16 +498,16 @@
 
 	.channel-title {
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 		display: block;
 		margin-bottom: 18rpx;
 	}
 
 	.channel-row {
 		padding: 24rpx;
-		border-radius: 24rpx;
-		background: rgba(255, 255, 255, 0.4);
+		border-radius: var(--r);
+		background: var(--surface);
 		border: 1rpx solid rgba(255, 255, 255, 0.3);
 		display: flex;
 		align-items: center;
@@ -520,8 +517,8 @@
 	.channel-logo {
 		width: 72rpx;
 		height: 72rpx;
-		border-radius: 20rpx;
-		background: #ffffff;
+		border-radius: var(--r);
+		background: var(--surface);
 		border: 1rpx solid rgba(10, 46, 36, 0.04);
 		display: flex;
 		align-items: center;
@@ -538,8 +535,8 @@
 
 	.channel-name {
 		font-size: 30rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.channel-desc {
@@ -554,12 +551,11 @@
 		border-radius: 50%;
 		background: var(--success);
 		color: #ffffff;
-		font-weight: 800;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 24rpx;
-		box-shadow: 0 4rpx 10rpx rgba(16, 185, 129, 0.3);
 	}
 
 	/* ---------------- 合并支付补给 ---------------- */
@@ -580,13 +576,13 @@
 
 	.mall-merge-title text:first-child {
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.mall-merge-tip {
 		font-size: 22rpx;
-		color: #b8860b;
+		color: var(--gold);
 		font-weight: 600;
 	}
 
@@ -606,22 +602,21 @@
 		width: 44rpx;
 		height: 44rpx;
 		border-radius: 50%;
-		border: 2rpx solid #c79a39;
+		border: 2rpx solid var(--gold);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--primary);
+		color: var(--jade);
 		font-size: 28rpx;
-		font-weight: 800;
-		background: #ffffff;
+		font-weight: 600;
+		background: var(--surface);
 		transition: var(--transition);
 	}
 
 	.mall-check.on {
 		background: var(--accent-gradient);
 		border-color: transparent;
-		color: var(--primary);
-		box-shadow: var(--accent-glow);
+		color: var(--jade);
 	}
 
 	.mall-info {
@@ -648,9 +643,9 @@
 	}
 
 	.mall-amount {
-		color: #b8860b;
+		color: var(--gold);
 		font-size: 32rpx;
-		font-weight: 800;
+		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -669,7 +664,7 @@
 	}
 
 	.balance-card:active {
-		background: rgba(255, 255, 255, 0.3);
+		background: var(--surface);
 	}
 
 	.balance-left {
@@ -682,13 +677,13 @@
 	.balance-icon {
 		width: 72rpx;
 		height: 72rpx;
-		border-radius: 20rpx;
-		background: #fff8eb;
+		border-radius: var(--r);
+		background: var(--gold-bg);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 38rpx;
-		border: 1rpx solid rgba(224, 169, 60, 0.1);
+		border: 1rpx solid var(--line);
 	}
 
 	.balance-text {
@@ -699,8 +694,8 @@
 
 	.balance-title {
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.balance-desc {
@@ -713,14 +708,14 @@
 		width: 90rpx;
 		height: 52rpx;
 		border-radius: 99rpx;
-		background: #e4e7ed;
+		background: var(--bg);
 		position: relative;
 		transition: var(--transition);
 	}
 
 	.balance-switch.on {
-		background: var(--accent-gradient);
-		box-shadow: var(--accent-glow);
+		background: var(--g-600);
+
 	}
 
 	.balance-dot {
@@ -730,8 +725,7 @@
 		width: 40rpx;
 		height: 40rpx;
 		border-radius: 50%;
-		background: #ffffff;
-		box-shadow: 0 4rpx 8rpx rgba(0,0,0,0.12);
+		background: var(--surface);
 		transition: var(--transition);
 	}
 
@@ -751,8 +745,8 @@
 
 	.coupon-select-title {
 		font-size: 28rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 		display: block;
 		margin-bottom: 18rpx;
 	}
@@ -777,8 +771,8 @@
 		display: flex;
 		align-items: center;
 		padding: 24rpx;
-		border-radius: 24rpx;
-		background: rgba(255, 255, 255, 0.4);
+		border-radius: var(--r);
+		background: var(--surface);
 		border: 1rpx solid rgba(255, 255, 255, 0.3);
 		box-shadow: none;
 		transition: var(--transition);
@@ -794,24 +788,21 @@
 		width: 20rpx;
 		height: 20rpx;
 		border-radius: 50%;
-		background: #edf3f0;
+		background: var(--g-50);
 		z-index: 2;
 	}
 
 	.coupon-option::before {
 		top: -10rpx;
-		box-shadow: inset 0 -4rpx 6rpx rgba(10, 46, 36, 0.02);
 	}
 
 	.coupon-option::after {
 		bottom: -10rpx;
-		box-shadow: inset 0 4rpx 6rpx rgba(10, 46, 36, 0.02);
 	}
 
 	.coupon-option.selected {
-		background: rgba(255, 253, 245, 0.85);
+		background: var(--surface);
 		border-color: rgba(224, 169, 60, 0.3);
-		box-shadow: 0 4rpx 14rpx rgba(199, 154, 57, 0.06);
 	}
 
 	.coupon-opt-left {
@@ -821,8 +812,8 @@
 
 	.coupon-opt-value {
 		font-size: 32rpx;
-		font-weight: 900;
-		color: #e85d04;
+		font-weight: 600;
+		color: var(--gold);
 	}
 
 	.coupon-opt-right {
@@ -836,8 +827,8 @@
 
 	.coupon-opt-name {
 		font-size: 26rpx;
-		font-weight: 800;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 	}
 
 	.coupon-opt-cond {
@@ -851,13 +842,12 @@
 		height: 44rpx;
 		border-radius: 50%;
 		background: var(--accent-gradient);
-		color: var(--primary);
+		color: var(--jade);
 		font-size: 24rpx;
-		font-weight: 800;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: var(--accent-glow);
 	}
 
 	/* ---------------- 底部结算栏 ---------------- */
@@ -867,12 +857,10 @@
 		right: 0;
 		bottom: 0;
 		padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-		background: rgba(255, 255, 255, 0.95);
+		background: var(--surface);
 		display: flex;
 		align-items: center;
 		gap: 24rpx;
-		box-shadow: 0 -12rpx 40rpx rgba(10, 46, 36, 0.08);
-		backdrop-filter: blur(15px);
 		border-top: 1rpx solid rgba(10, 46, 36, 0.04);
 		z-index: 99;
 	}
@@ -892,15 +880,15 @@
 
 	.dock-amount-value {
 		font-size: 42rpx;
-		font-weight: 900;
-		color: var(--primary);
+		font-weight: 600;
+		color: var(--jade);
 		font-variant-numeric: tabular-nums;
 	}
 
 	.dock-discount {
 		font-size: 22rpx;
-		color: #e85d04;
-		font-weight: 800;
+		color: var(--gold);
+		font-weight: 600;
 		letter-spacing: 0.5rpx;
 	}
 
@@ -908,13 +896,13 @@
 		flex: 0 0 320rpx;
 		height: 100rpx;
 		line-height: 100rpx;
-		border-radius: 20rpx;
-		background: var(--accent-gradient);
-		color: var(--primary);
+		border-radius: var(--r);
+		background: var(--g-600);
+		color: #fff;
 		font-size: 32rpx;
-		font-weight: 800;
+		font-weight: 600;
 		letter-spacing: 2rpx;
-		box-shadow: var(--accent-glow);
+
 		transition: var(--transition);
 		border: 0;
 		position: relative;
@@ -950,35 +938,121 @@
 
 	/* 支付页避开全局 hero-chip 浅色覆盖，保持深色头图内的可读性 */
 	.pay .hero-chips {
-		background: transparent !important;
-		border: 0 !important;
-		box-shadow: none !important;
+		background: transparent;
+		border: 0;
+		box-shadow: none;
 	}
 
 	.pay .hero-chip {
 		min-height: 96rpx;
-		padding: 20rpx 22rpx !important;
-		border-radius: 22rpx !important;
-		background: rgba(248, 251, 247, 0.13) !important;
-		border: 1rpx solid rgba(248, 251, 247, 0.2) !important;
-		box-shadow: none !important;
+		padding: 20rpx 22rpx;
+		border-radius: 22rpx;
+		background: rgba(248, 251, 247, 0.13);
+		border: 1rpx solid rgba(248, 251, 247, 0.2);
+		box-shadow: none;
 		justify-content: center;
 	}
 
 	.pay .hero-chip-label {
 		display: block;
-		color: rgba(248, 251, 247, 0.7) !important;
-		font-size: 22rpx !important;
-		font-weight: 700 !important;
-		letter-spacing: 0 !important;
+		color: rgba(248, 251, 247, 0.7);
+		font-size: 22rpx;
+		font-weight: 500;
+		letter-spacing: 0;
 	}
 
 	.pay .hero-chip-value {
 		display: block;
 		margin-top: 6rpx;
-		color: #f8fbf7 !important;
-		font-size: 28rpx !important;
-		font-weight: 900 !important;
+		color: #fff;
+		font-size: 28rpx;
+		font-weight: 600;
 		line-height: 1.2;
+	}
+	.channel-logo { background-size: 44rpx 44rpx; }
+	.balance-icon { background-size: 42rpx 42rpx; }
+
+	/* 设计稿 02：金额与计费时长在同一张白色摘要卡中 */
+	.pay {
+		background: #f7fbfa;
+	}
+
+	.pay .hero {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) minmax(180rpx, 0.8fr);
+		grid-template-rows: auto auto;
+		align-items: center;
+		margin: 0 20rpx 14rpx;
+		padding: 22rpx 24rpx;
+		border: 0;
+		border-radius: 14rpx;
+		background: #ffffff;
+	}
+
+	.pay .hero-label {
+		grid-column: 1;
+		grid-row: 1;
+		color: #799092;
+		font-size: 20rpx;
+		letter-spacing: 1rpx;
+	}
+
+	.pay .hero-amount {
+		grid-column: 1;
+		grid-row: 2;
+		margin-top: 8rpx;
+		color: #078f91;
+	}
+
+	.pay .hero-currency {
+		font-size: 28rpx;
+	}
+
+	.pay .hero-number {
+		font-size: 58rpx;
+		font-weight: 500;
+	}
+
+	.pay .hero-chips {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		display: block;
+		margin: 0;
+		padding-left: 24rpx;
+		border-left: 1rpx solid #dce9e8;
+	}
+
+	.pay .hero-chip {
+		min-height: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+	}
+
+	.pay .hero-chip:nth-child(2) {
+		display: none;
+	}
+
+	.pay .hero-chip-label {
+		color: #799092;
+		font-size: 20rpx;
+	}
+
+	.pay .hero-chip-value {
+		margin-top: 8rpx;
+		color: #0b3134;
+		font-size: 28rpx;
+	}
+
+	.pay .ticket-board {
+		margin: 0 20rpx;
+		padding: 0 0 16rpx;
+		border: 0;
+		border-radius: 14rpx;
+	}
+
+	.pay .sheet {
+		padding: 26rpx 24rpx 22rpx;
 	}
 </style>

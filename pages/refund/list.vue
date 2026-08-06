@@ -1,5 +1,6 @@
 <template>
-	<view class="app refund-list">
+	<view class="app refund-list has-account-tabbar has-brand-header">
+		<brand-header title="退款记录" theme="light" layout="compact" :back="true" />
 		<view v-if="!list.length" class="empty">
 			<text class="empty-emoji">💸</text>
 			<text class="empty-title">暂无退款记录</text>
@@ -22,6 +23,7 @@
 			<view class="row" v-if="r.auditRemark"><text class="k">审批意见</text><text class="v dim">{{ r.auditRemark }}</text></view>
 			<view class="row"><text class="k">提交时间</text><text class="v dim">{{ formatDatetime(r.createTime) }}</text></view>
 		</view>
+		<account-tabbar active="mine" />
 	</view>
 </template>
 
@@ -50,7 +52,7 @@
 		},
 		onShow() {
 			if (!isLoggedIn()) {
-				uni.redirectTo({ url: '/pages/login/login' })
+				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/refund/list') })
 				return
 			}
 			const user = getUser()
@@ -74,25 +76,29 @@
 
 <style>
 	.refund-list { padding: 20rpx 28rpx 60rpx; }
-	.empty { margin: 80rpx 0; padding: 80rpx 40rpx; background: #fff; border-radius: 24rpx; text-align: center; }
+	.empty { margin: 80rpx 0; padding: 80rpx 40rpx; background: var(--surface); border-radius: var(--r); text-align: center; }
 	.empty-emoji { display: block; font-size: 72rpx; margin-bottom: 16rpx; }
-	.empty-title { display: block; font-size: 30rpx; font-weight: 700; color: #1a2030; }
-	.empty-desc { display: block; color: #6b7280; font-size: 26rpx; margin-top: 10rpx; }
-	.item { background: #fff; border-radius: 22rpx; padding: 24rpx; margin-bottom: 20rpx; box-shadow: 0 6rpx 20rpx rgba(26,32,48,.04); }
+	.empty-title { display: block; font-size: 30rpx; font-weight: 500; color: var(--ink); }
+	.empty-desc { display: block; color: var(--ink-2); font-size: 26rpx; margin-top: 10rpx; }
+	.item { background: var(--surface); border-radius: var(--r); padding: 24rpx; margin-bottom: 20rpx; }
 	.head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
-	.rno { font-size: 24rpx; color: #6b7280; letter-spacing: 1rpx; }
+	.rno { font-size: 24rpx; color: var(--ink-2); letter-spacing: 1rpx; }
 	.row { display: flex; justify-content: space-between; padding: 8rpx 0; }
-	.k { color: #9aa3b2; font-size: 26rpx; }
-	.v { color: #1a2030; font-size: 26rpx; font-weight: 600; font-variant-numeric: tabular-nums; max-width: 60%; text-align: right; }
-	.v.dim { color: #6b7280; font-weight: 400; }
-	.v.price { color: #b8860b; }
-	.pill { padding: 6rpx 18rpx; border-radius: 999rpx; font-size: 22rpx; font-weight: 700; }
-	.pill-pending { background: #fff7e0; color: #b8860b; }
-	.pill-running { background: #e0f0ff; color: #1976d2; }
-	.pill-paid    { background: #e3f7e3; color: #2e7d32; }
-	.pill-cancel  { background: #ffe6e6; color: #c62828; }
-	.pill-idle    { background: #eef0f5; color: #6b7280; }
-	.type-tag { padding: 4rpx 14rpx; border-radius: 999rpx; font-size: 22rpx; font-weight: 700; }
-	.type-fishing { background: #e0f0ff; color: #1976d2; }
-	.type-mall    { background: #e3f7e3; color: #2e7d32; }
+	.k { color: var(--ink-3); font-size: 26rpx; }
+	.v { color: var(--ink); font-size: 26rpx; font-weight: 600; font-variant-numeric: tabular-nums; max-width: 60%; text-align: right; }
+	.v.dim { color: var(--ink-2); font-weight: 400; }
+	.v.price { color: var(--gold); }
+	.pill { padding: 6rpx 18rpx; border-radius: var(--r-pill); font-size: 22rpx; font-weight: 500; }
+	.pill-pending { background: var(--gold-bg); color: var(--gold); }
+	.pill-running { background: var(--g-50); color: var(--jade); }
+	.pill-paid    { background: var(--g-50); color: var(--ink); }
+	.pill-cancel  { background: var(--danger-bg); color: var(--danger); }
+	.pill-idle    { background: var(--bg); color: var(--ink-2); }
+	.type-tag { padding: 4rpx 14rpx; border-radius: var(--r-pill); font-size: 22rpx; font-weight: 500; }
+	.type-fishing { background: var(--g-50); color: var(--jade); }
+	.type-mall    { background: var(--g-50); color: var(--ink); }
+</style>
+
+<style>
+.refund-list{min-height:100vh;padding:14rpx 20rpx calc(122rpx + env(safe-area-inset-bottom));background:#f7fbfb}.refund-list::before{content:'全部　　　　审核中　　　　已完成';height:66rpx;display:flex;align-items:center;justify-content:center;border-bottom:1rpx solid #dce7e6;color:#566f71;font-size:22rpx;white-space:pre}.refund-list .item{margin:14rpx 0 0;padding:18rpx;border:1rpx solid #d7e5e4;border-radius:12rpx;background:#fff}.refund-list .head{padding-bottom:11rpx}.refund-list .rno{font-size:21rpx}.refund-list .row{min-height:40rpx}.refund-list .k,.refund-list .v{font-size:19rpx}.refund-list .price{font-size:25rpx}.empty-emoji{display:none}
 </style>
