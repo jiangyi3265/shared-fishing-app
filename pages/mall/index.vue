@@ -15,20 +15,34 @@
 			</view>
 		</view>
 
-		<view class="mall-catalog">
-		<scroll-view class="cats" scroll-y>
+		<view class="mall-catalog" :class="{ 'catalog-empty': !categories.length }">
+		<scroll-view v-if="categories.length" class="cats" scroll-y>
 			<view v-for="c in categories" :key="c.catId" class="cat" :class="{ active: c.catId === activeCat }" @click="switchCat(c.catId)">
 				<text class="cat-icon">{{ c.icon }}</text>
 				<text class="cat-name">{{ c.name }}</text>
 			</view>
 		</scroll-view>
 
-		<view v-if="!filteredGoods.length" class="empty">
-			<view class="empty-mark"></view>
-			<text class="empty-title">暂无补给</text>
+		<view v-if="loading" class="catalog-state">
+			<view class="state-spinner"></view>
+			<text class="empty-title">补给加载中</text>
+			<text class="empty-desc">正在同步后台商品和库存</text>
 		</view>
 
-		<view class="goods-grid">
+		<view v-else-if="loadError" class="catalog-state">
+			<view class="empty-mark error-mark"></view>
+			<text class="empty-title">补给暂时加载失败</text>
+			<text class="empty-desc">{{ loadError }}</text>
+			<view class="retry-btn" @click="retryLoad">重新加载</view>
+		</view>
+
+		<view v-else-if="!filteredGoods.length" class="catalog-state">
+			<view class="empty-mark"></view>
+			<text class="empty-title">暂无补给</text>
+			<text class="empty-desc">商品上架后会在这里展示</text>
+		</view>
+
+		<view v-else class="goods-grid">
 			<view v-for="g in filteredGoods" :key="g.goodsId" class="goods" @click="goDetail(g)">
 				<view class="goods-cover">
 					<product-thumb :name="g.name" :goods-id="g.goodsId" />
@@ -80,7 +94,9 @@
 				goods: [],
 				keyword: '',
 				cartTotal: 0,
-				cartAmount: 0
+				cartAmount: 0,
+				loading: true,
+				loadError: ''
 			}
 		},
 		computed: {
@@ -92,16 +108,44 @@
 		},
 		onShow() { this.refreshCart() },
 		onLoad() {
-			fetchCategories().then((cats) => {
-				this.categories = cats
-				if (cats[0]) this.switchCat(cats[0].catId)
-			})
+			this.loadCategories()
 		},
 		methods: {
 			formatMoney,
+			loadCategories() {
+				this.loading = true
+				this.loadError = ''
+				fetchCategories().then((cats) => {
+					this.categories = Array.isArray(cats) ? cats : []
+					if (this.categories[0]) return this.switchCat(this.categories[0].catId)
+					this.goods = []
+					this.loading = false
+				}).catch((error) => {
+					this.categories = []
+					this.goods = []
+					this.loading = false
+					this.loadError = this.errorMessage(error)
+				})
+			},
 			switchCat(catId) {
 				this.activeCat = catId
-				fetchGoodsByCategory(catId).then((g) => this.goods = g)
+				this.loading = true
+				this.loadError = ''
+				return fetchGoodsByCategory(catId).then((g) => {
+					this.goods = Array.isArray(g) ? g : []
+				}).catch((error) => {
+					this.goods = []
+					this.loadError = this.errorMessage(error)
+				}).finally(() => {
+					this.loading = false
+				})
+			},
+			errorMessage(error) {
+				return (error && (error.msg || error.message || error.errMsg)) || '网络异常，请检查连接后重试'
+			},
+			retryLoad() {
+				if (this.categories.length && this.activeCat) this.switchCat(this.activeCat)
+				else this.loadCategories()
 			},
 			goDetail(g) {
 				uni.navigateTo({ url: '/pages/mall/detail?goodsId=' + g.goodsId })
@@ -463,4 +507,5 @@
 
 <style>
 .mall{min-height:100vh;padding-bottom:calc(118rpx + env(safe-area-inset-bottom));background:#f7fbfb}.mall .hero{height:330rpx;padding:28rpx 28rpx 0;box-sizing:border-box;overflow:hidden}.mall-hero-photo{position:absolute;inset:0;width:100%;height:100%}.mall .hero-bg{background:linear-gradient(90deg,rgba(0,151,151,.97),rgba(0,156,154,.6) 55%,rgba(0,91,92,.12))}.mall .hero-content{height:100%}.mall .hero-title{font-size:51rpx;font-weight:800}.hero-subtitle{display:block;margin-top:7rpx;color:#dffbfa;font-size:23rpx}.hero-trust{display:block;margin-top:18rpx;color:#e3fbfa;font-size:18rpx}.mall .hero-search{position:absolute;left:0;right:0;bottom:14rpx;height:62rpx}.mall .hero-search-input{font-size:21rpx}.mall-catalog{display:flex;align-items:stretch;min-height:660rpx}.cats{width:150rpx;min-width:150rpx;height:660rpx;padding:0;background:#fff;border-right:1rpx solid #dbe7e6}.cat{width:150rpx;height:100rpx;padding:0;display:flex;align-items:center;justify-content:center;gap:8rpx;border-radius:0;color:#536f71;box-sizing:border-box;position:relative}.cat.active{background:#eff9f8;color:#08a4a1}.cat.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6rpx;background:#08aaa6}.cat-icon{display:none}.cat-name{font-size:23rpx}.goods-grid{flex:1;min-width:0;margin:0;padding:10rpx;display:flex;flex-direction:column;gap:10rpx}.goods{height:142rpx;padding:10rpx;display:grid;grid-template-columns:128rpx 1fr 60rpx;grid-template-rows:35rpx 33rpx 38rpx 22rpx;column-gap:12rpx;border:1rpx solid #dce8e7;border-radius:11rpx;background:#fff}.goods-cover{grid-row:1/5;width:128rpx;height:120rpx;border-radius:8rpx;overflow:hidden}.goods-name{grid-column:2/4;font-size:23rpx}.goods-subtitle{grid-column:2/4;font-size:18rpx}.goods-foot{grid-column:2/4;display:flex;align-items:center}.goods-price{font-size:27rpx}.goods-add{margin-left:auto;width:42rpx;height:42rpx;font-size:31rpx}.goods-sales{grid-column:2/4;font-size:16rpx}.goods-cover-emoji{display:none}.cart-fab{display:none}.cart-bar{left:20rpx;right:20rpx;bottom:calc(104rpx + env(safe-area-inset-bottom));height:78rpx;border-radius:99rpx;background:#0aa9a5}.cart-bar-info{flex-direction:row;align-items:center;gap:18rpx}.cart-bar-count{color:#fff}.cart-bar-amount{font-size:27rpx}.cart-bar-btn{border-left:1rpx solid rgba(255,255,255,.45);background:transparent}
+.catalog-state{flex:1;min-width:0;min-height:660rpx;padding:72rpx 28rpx;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;background:#f7fbfb}.catalog-empty .catalog-state{width:100%}.catalog-state .empty-mark{margin-top:18rpx}.empty-desc{display:block;max-width:460rpx;margin-top:12rpx;color:#718486;font-size:22rpx;line-height:1.6}.retry-btn{height:70rpx;margin-top:26rpx;padding:0 42rpx;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#0aa9a5;color:#fff;font-size:24rpx;font-weight:700}.state-spinner{width:52rpx;height:52rpx;margin:34rpx 0 24rpx;border:6rpx solid #d6eeec;border-top-color:#08aaa6;border-radius:50%;animation:mall-spin .8s linear infinite}.error-mark::after{display:none}.error-mark::before{left:44rpx;right:auto;top:22rpx;width:7rpx;height:42rpx;border:0;border-radius:99rpx;background:#f0a500;box-shadow:0 51rpx 0 -1rpx #f0a500}@keyframes mall-spin{to{transform:rotate(360deg)}}
 </style>
