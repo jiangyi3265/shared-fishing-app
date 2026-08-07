@@ -39,27 +39,32 @@
 		<view class="footer">
 			<button class="btn ghost" @click="goOrders">订单列表</button>
 			<button v-if="canRefund" class="btn warn" @click="goRefund">申请退款</button>
-			<button class="btn primary" @click="goMall">继续选购</button>
+			<button v-if="order.status === MALL_ORDER_STATUS.UNPAID" class="btn primary" :disabled="paying" @click="continuePay">{{ paying ? '支付中…' : '继续支付' }}</button>
+			<button v-else class="btn primary" @click="goMall">继续选购</button>
 		</view>
 		</view>
 		<view v-else class="empty voucher-empty">
-			<text class="empty-title">正在读取订单凭证</text>
-			<text class="empty-desc">请稍候，或返回补给订单重新进入</text>
+			<text class="empty-title">{{ loadError ? '订单凭证加载失败' : '正在读取订单凭证' }}</text>
+			<text class="empty-desc">{{ loadError || '请稍候，或返回补给订单重新进入' }}</text>
+			<view v-if="loadError" class="voucher-retry" @click="loadOrder(false)">重新加载</view>
 		</view>
 	</view>
 </template>
 
 <script>
-	import { fetchMallOrderDetail, MALL_ORDER_STATUS } from '../../utils/mallStore.js'
+	import { fetchMallOrderDetail, payMallOrder, MALL_ORDER_STATUS } from '../../utils/mallStore.js'
 	import { formatMoney, formatDatetime } from '../../utils/fishingStore.js'
 
 	export default {
 		data() {
 			return {
 				order: null,
+				paying: false,
+				loadError: '', refreshLeft: 10,
+				MALL_ORDER_STATUS,
 				refreshTimer: null,
 				statusLabel: {
-					[MALL_ORDER_STATUS.UNPAID]: '支付处理中',
+					[MALL_ORDER_STATUS.UNPAID]: '待支付',
 					[MALL_ORDER_STATUS.PAID]: '可直接使用',
 					[MALL_ORDER_STATUS.REDEEMED]: '已领取',
 					[MALL_ORDER_STATUS.CANCELED]: '已取消'
@@ -72,14 +77,14 @@
 			},
 			ticketMain() {
 				if (!this.order) return ''
-				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '等待支付确认'
+				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '订单待支付'
 				if (this.order.status === MALL_ORDER_STATUS.CANCELED) return '订单已取消'
 				if (this.order.status === MALL_ORDER_STATUS.REDEEMED) return '商品已领取'
 				return '到店直接领取'
 			},
 			ticketSub() {
 				if (!this.order) return ''
-				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '支付回调确认后自动更新'
+				if (this.order.status === MALL_ORDER_STATUS.UNPAID) return '点击下方按钮继续完成微信支付'
 				return '向工作人员展示订单号即可'
 			}
 		},
@@ -94,16 +99,33 @@
 			formatMoney,
 			formatDatetime,
 			loadOrder(autoRefresh) {
+				this.loadError = ''
 				fetchMallOrderDetail(this.mallOrderId).then((o) => {
 					if (!o) { uni.showToast({ title: '订单不存在', icon: 'none' }); return }
 					this.order = o
-					if (autoRefresh && o.status === MALL_ORDER_STATUS.UNPAID) {
+					if (autoRefresh && o.status === MALL_ORDER_STATUS.UNPAID && this.refreshLeft > 0) {
+						this.refreshLeft--
 						this.refreshTimer = setTimeout(() => this.loadOrder(true), 1500)
 					}
+				}).catch((error) => {
+					this.order = null
+					this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
 				})
 			},
 			goOrders() { uni.redirectTo({ url: '/pages/mall/orders' }) },
 			goMall() { uni.redirectTo({ url: '/pages/mall/index' }) },
+			continuePay() {
+				if (this.paying || !this.order) return
+				this.paying = true
+				if (this.refreshTimer) clearTimeout(this.refreshTimer)
+				payMallOrder(this.order.mallOrderId).then((order) => {
+					if (order) this.order = order
+					uni.showToast({ title: '支付成功', icon: 'success' })
+					this.loadOrder(false)
+				}).catch((error) => {
+					uni.showToast({ title: (error && (error.msg || error.message)) || '支付未完成', icon: 'none' })
+				}).finally(() => { this.paying = false })
+			},
 			goRefund() {
 				uni.navigateTo({ url: '/pages/refund/apply?orderType=mall&mallOrderId=' + this.order.mallOrderId })
 			}
@@ -150,4 +172,5 @@
 
 <style>
 .voucher{min-height:100vh;padding:14rpx 20rpx calc(144rpx + env(safe-area-inset-bottom));background:#f7fbfb}.voucher .hero{margin:0;padding:24rpx 0;background:transparent;text-align:center}.voucher .hero-status{font-size:35rpx;color:#079f9d}.voucher .hero-no{margin-top:7rpx;color:#697d7f;font-size:22rpx}.voucher .card{margin:0 0 14rpx;padding:22rpx;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff}.voucher .use-card .card-title{text-align:center}.voucher .ticket{margin-top:17rpx;padding:24rpx;border-radius:10rpx;background:#f5f9f8;text-align:center}.voucher .ticket-main{color:#0a8382;font-size:42rpx;letter-spacing:4rpx}.voucher .line-cover{width:80rpx;height:80rpx;border-radius:8rpx;overflow:hidden}.voucher .footer{padding:10rpx 20rpx calc(10rpx + env(safe-area-inset-bottom));display:flex;gap:10rpx}.voucher .btn{padding:16rpx 8rpx;border-radius:10rpx}
+.voucher-retry{margin:26rpx auto 0;width:210rpx;height:68rpx;display:flex;align-items:center;justify-content:center;border-radius:9rpx;background:#0aa9a5;color:#fff;font-size:23rpx;font-weight:700}
 </style>

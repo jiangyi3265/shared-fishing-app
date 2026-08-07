@@ -1,18 +1,23 @@
 <template>
 	<view class="app ad-detail has-brand-header">
 		<brand-header title="活动详情" theme="teal" layout="stacked" :back-on-title="true" />
-		<image class="detail-photo" src="/static/hero-fishing-v2.jpg" mode="aspectFill" />
-		<view class="ad-header" :style="{ background: ad.bgColor || '#eef8f7' }">
+		<view v-if="loading || loadError" class="detail-state">
+			<text class="state-title">{{ loading ? '正在读取活动详情' : '活动详情加载失败' }}</text>
+			<text class="state-desc">{{ loadError || '请稍候…' }}</text>
+			<view v-if="loadError" class="state-retry" @click="loadAd">重新加载</view>
+		</view>
+		<image v-if="!loading && !loadError" class="detail-photo" :src="ad.image || '/static/hero-fishing-v2.jpg'" mode="aspectFill" />
+		<view v-if="!loading && !loadError" class="ad-header" :style="{ background: ad.bgColor || '#eef8f7' }">
 			<text class="ad-title">{{ ad.title }}</text>
 			<text class="ad-desc">{{ ad.description || ad.desc }}</text>
 		</view>
-		<view class="ad-body">
+		<view v-if="!loading && !loadError" class="ad-body">
 			<text class="ad-content">{{ ad.content }}</text>
 		</view>
 		<view v-if="couponTemplate && !claimed" class="coupon-section">
 			<view class="coupon-card">
-				<text class="coupon-value" v-if="couponTemplate.couponType === 'duration'">{{ couponTemplate.couponValue }}分钟</text>
-				<text class="coupon-value" v-else>¥{{ formatMoney(couponTemplate.couponValue) }}</text>
+				<text class="coupon-value" v-if="couponTemplate.couponType === 'duration' && couponTemplate.couponValue">{{ couponTemplate.couponValue }}分钟</text>
+				<text class="coupon-value" v-else-if="couponTemplate.couponValue">¥{{ formatMoney(couponTemplate.couponValue) }}</text>
 				<text class="coupon-title">{{ couponTemplate.title }}</text>
 			</view>
 			<view class="claim-btn" @click="claimCoupon">领取优惠券</view>
@@ -20,7 +25,7 @@
 		<view v-if="claimed" class="coupon-section">
 			<text class="claimed-text">优惠券已领取</text>
 		</view>
-		<view class="ad-footer">
+		<view v-if="!loading && !loadError" class="ad-footer">
 			<view class="back-btn" @click="goBack">返回首页</view>
 			<button class="share-btn" open-type="share">转发给好友</button>
 		</view>
@@ -36,30 +41,36 @@ export default {
 			adId: '',
 			ad: {},
 			couponTemplate: null,
-			claimed: false
+			claimed: false,
+			loading: true,
+			loadError: ''
 		}
 	},
 	onLoad(option) {
 		this.adId = option.id || ''
 		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/adDetail/adDetail?id=' + option.id) }); return }
-		fetchAdById(option.id).then((ad) => {
-			if (!ad) {
-				uni.showToast({ title: '广告不存在', icon: 'none' })
-				setTimeout(() => this.goBack(), 1500)
-				return
-			}
-			this.ad = ad
-			if (ad.couponTemplateId) this.loadCoupon(ad.couponTemplateId)
-		}).catch(() => this.goBack())
+		this.loadAd()
 	},
 	methods: {
+		loadAd() {
+			this.loading = true
+			this.loadError = ''
+			fetchAdById(this.adId).then((ad) => {
+				if (!ad) throw new Error('该活动不存在或已下架')
+				this.ad = ad
+				if (ad.couponTemplateId) this.loadCoupon(ad.couponTemplateId)
+			}).catch((error) => {
+				this.ad = {}
+				this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+			}).finally(() => { this.loading = false })
+		},
 		loadCoupon(templateId) {
 			const user = getUser()
 			if (!user) return
 			fetchMyCoupons(user.userId).then((list) => {
 				const existing = list.find((c) => c.templateId === templateId)
 				if (existing) { this.couponTemplate = existing; this.claimed = true; return }
-				this.couponTemplate = { templateId, title: '领取优惠券', couponType: 'amount', couponValue: 0 }
+				this.couponTemplate = { templateId, title: '活动优惠券', couponType: 'amount', couponValue: 0 }
 			})
 		},
 		claimCoupon() {
@@ -197,6 +208,7 @@ export default {
 
 <style>
 .ad-detail{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))!important}
+.detail-state{margin:18rpx 20rpx;padding:84rpx 30rpx;display:flex;flex-direction:column;align-items:center;border:1rpx solid #d6e5e3;border-radius:14rpx;background:#fff;text-align:center}.detail-state .state-title{font-size:28rpx;font-weight:800;color:#174246}.detail-state .state-desc{margin-top:12rpx;color:#6e8183;font-size:22rpx}.detail-state .state-retry{margin-top:28rpx;width:220rpx;height:72rpx;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#0aa9a5;color:#fff;font-size:24rpx;font-weight:700}
 @media (max-width:360px){.ad-detail .ad-header{margin-left:16rpx;margin-right:16rpx;padding-left:20rpx;padding-right:20rpx}.ad-detail .ad-body{margin-left:16rpx;margin-right:16rpx;padding-left:20rpx;padding-right:20rpx}.ad-detail .ad-footer{flex-wrap:wrap}.ad-detail .back-btn,.ad-detail .share-btn{min-width:240rpx}}
 </style>
 

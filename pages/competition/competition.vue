@@ -18,31 +18,29 @@
 			<view class="official-tag">官方赛</view>
 			<view class="featured-copy">
 				<text class="featured-title">{{ featured.title }}</text>
-				<text>▣ {{ featured.compDate }}（周日）</text>
-				<text>⌖ 共享钓场 · A区</text>
+				<text>▣ {{ featured.compDate }} {{ featured.timeSlot || '' }}</text>
+				<text>⌖ {{ featured.venueName || '共享钓场' }}</text>
 				<text>¥ 报名费：¥{{ featured.entryFeeCents ? (featured.entryFeeCents/100).toFixed(0) : '0' }}</text>
-				<text>♙ 剩余名额：{{ featured.entryCount || 0 }}/{{ featured.maxPlayers || 50 }}</text>
+				<text>♙ 已报名：{{ featured.entryCount || 0 }}/{{ featured.maxPlayers || 0 }}</text>
 			</view>
 		</view>
 		<view v-if="featured" class="featured-rules">
 			<text class="rules-title">赛事规则（简要）</text>
-			<text>✓ 3.6米及以下手竿，单钩单线</text>
-			<text>✓ 尾数重量计成绩，按总重排名</text>
-			<text>✓ 禁止红虫、活饵，限提倡/拉饵</text>
-			<text>✓ 比赛时长4小时，中途不得换位</text>
+			<text v-for="(rule,index) in ruleLines" :key="index">✓ {{ rule }}</text>
+			<text v-if="!ruleLines.length">具体规则请以报名页和现场公告为准</text>
 		</view>
 		<view v-if="featured" class="featured-actions">
 			<view class="feature-btn primary" @click="doEnter(featured)"><view class="cup-mini"></view><text>立即报名</text></view>
 			<view class="feature-btn" @click="showRank(featured)"><view class="bars-mini"></view><text>排行榜</text></view>
 		</view>
 		<view v-if="list.length" class="list-head"><text>赛事列表</text></view>
-		<view v-if="list.length" class="comp-tabs"><text class="active">全部</text><text>报名中</text><text>进行中</text><text>已结束</text></view>
+		<view v-if="list.length" class="comp-tabs"><text v-for="tab in tabs" :key="tab.value" :class="{active:activeStatus===tab.value}" @click="activeStatus=tab.value">{{ tab.label }}</text></view>
 		<view class="comp-list">
-			<view class="comp-card" v-for="c in list" :key="c.compId" @click="goDetail(c)">
+			<view class="comp-card" v-for="c in filteredList" :key="c.compId" @click="goDetail(c)">
 				<image class="comp-thumb" src="/static/hero-lake.jpg" mode="aspectFill" />
 				<view class="comp-card-main">
 					<view class="comp-top"><text class="comp-title">{{ c.title }}</text><text class="comp-status" :class="'s'+c.status">{{ statusMap[c.status] }}</text></view>
-					<view class="comp-meta"><text>{{ c.compDate }}　{{ c.timeSlot }}</text><text>共享钓场 · A区</text></view>
+					<view class="comp-meta"><text>{{ c.compDate }}　{{ c.timeSlot }}</text><text>{{ c.venueName || '共享钓场' }}</text></view>
 					<text class="comp-count">{{ c.entryCount || 0 }}/{{ c.maxPlayers || 50 }}</text>
 				</view>
 			</view>
@@ -53,6 +51,7 @@
 			<view class="ranking-panel">
 				<text class="ranking-title">排行榜</text>
 				<view class="ranking-list">
+					<view v-if="!ranking.length" class="ranking-empty">暂无已录入的比赛成绩</view>
 					<view class="ranking-item" v-for="(e,i) in ranking" :key="e.entryId">
 						<text class="rank-num" :class="'rank-num-'+(i+1)">{{ i+1 }}</text>
 						<text class="rank-name">{{ e.nickname }}</text>
@@ -71,12 +70,22 @@ import { fetchCompetitionList, fetchCompetitionRanking, enterCompetition, getCac
 export default {
 	data() {
 		return {
-			list: [], ranking: [], showRanking: false, loading: true, loadError: '',
+			list: [], ranking: [], showRanking: false, loading: true, loadError: '', activeStatus: 'all',
+			tabs: [{label:'全部',value:'all'},{label:'报名中',value:0},{label:'进行中',value:1},{label:'已结束',value:3}],
 			statusMap: {0:'报名中',1:'进行中',2:'称重中',3:'已结束',4:'已取消'}
 		}
 	},
 	computed: {
-		featured() { return this.list[0] || null }
+		featured() { return this.list.find((item) => Number(item.status) <= 1) || this.list[0] || null },
+		filteredList() {
+			if (this.activeStatus === 'all') return this.list
+			return this.list.filter((item) => Number(item.status) === Number(this.activeStatus))
+		},
+		ruleLines() {
+			const raw = this.featured && this.featured.rules
+			if (!raw) return []
+			return String(raw).split(/[\n；;]/).map((item) => item.trim()).filter(Boolean).slice(0, 5)
+		}
 	},
 	onShow() { this.loadData() },
 	methods: {
@@ -179,4 +188,5 @@ export default {
 
 <style scoped>
 .comp-page{min-height:100vh;padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb;color:#073f45}.featured-comp{position:relative;height:310rpx;overflow:hidden;border-radius:14rpx 14rpx 0 0}.featured-photo,.featured-shade{position:absolute;inset:0;width:100%;height:100%}.featured-shade{background:linear-gradient(90deg,rgba(0,121,119,.98) 0%,rgba(0,124,122,.75) 47%,rgba(0,56,58,.05) 100%)}.official-tag{position:absolute;z-index:2;right:14rpx;top:12rpx;padding:7rpx 12rpx;border-radius:7rpx;background:#ffe19a;color:#8b5b00;font-size:19rpx}.featured-copy{position:absolute;z-index:2;left:24rpx;top:22rpx;display:flex;flex-direction:column;gap:10rpx;color:#fff;font-size:23rpx}.featured-title{font-size:37rpx;font-weight:800;margin-bottom:5rpx}.featured-rules{padding:20rpx 22rpx;display:flex;flex-direction:column;gap:9rpx;border:1rpx solid #dce7e6;border-top:0;border-radius:0 0 14rpx 14rpx;background:#fff;color:#5e7274;font-size:22rpx}.rules-title{color:#153f42;font-size:26rpx;font-weight:800;margin-bottom:2rpx}.featured-actions{display:grid;grid-template-columns:1fr 1fr;gap:15rpx;margin-top:16rpx}.feature-btn{height:76rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;border:1rpx solid #0ba6a3;border-radius:11rpx;background:#fff;color:#099b98;font-size:27rpx;font-weight:800}.feature-btn.primary{background:#0bafab;color:#fff}.cup-mini{width:27rpx;height:25rpx;border-radius:3rpx 3rpx 10rpx 10rpx;background:currentColor;position:relative}.bars-mini{width:31rpx;height:31rpx;border-left:7rpx solid currentColor;border-right:7rpx solid currentColor;position:relative}.bars-mini::after{content:'';position:absolute;left:5rpx;bottom:0;width:7rpx;height:23rpx;background:currentColor}.list-head{margin-top:22rpx;font-size:29rpx;font-weight:800}.comp-tabs{height:64rpx;display:flex;align-items:center;justify-content:space-around;color:#637779;font-size:22rpx}.comp-tabs text{height:64rpx;display:flex;align-items:center;position:relative}.comp-tabs .active{color:#08a6a3;font-weight:800}.comp-tabs .active::after{content:'';position:absolute;left:0;right:0;bottom:0;height:5rpx;border-radius:99rpx;background:#08a6a3}.comp-list{gap:12rpx}.comp-card{min-height:126rpx;padding:12rpx;display:flex;gap:16rpx;border-radius:12rpx}.comp-thumb{width:124rpx;height:102rpx;border-radius:9rpx;flex-shrink:0}.comp-card-main{flex:1;min-width:0;position:relative}.comp-title{font-size:25rpx}.comp-status{font-size:19rpx;padding:3rpx 8rpx}.comp-meta{margin:10rpx 0 0;display:flex;flex-direction:column;gap:5rpx;font-size:20rpx}.comp-count{position:absolute;right:2rpx;bottom:0;font-size:20rpx;color:#6f8183}.comp-enter,.comp-bottom{display:none}
+.ranking-empty{padding:44rpx 16rpx;text-align:center;color:#6f8183;font-size:24rpx}
 </style>

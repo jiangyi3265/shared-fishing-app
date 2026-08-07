@@ -2,12 +2,18 @@
 	<view class="app catch-page has-brand-header">
 		<brand-header title="钓获社区" theme="light" layout="compact" :back="true" />
 		<view class="page-head catch-tabs">
-			<text class="catch-tab active">推荐</text>
-			<text class="catch-tab">最新</text>
+			<text class="catch-tab" :class="{active:activeTab==='featured'}" @click="activeTab='featured'">推荐</text>
+			<text class="catch-tab" :class="{active:activeTab==='latest'}" @click="activeTab='latest'">最新</text>
 			<view class="publish-btn" @click="goPublish">晒一单</view>
 		</view>
 
-		<view v-if="list.length === 0 && !loading" class="empty">
+		<view v-if="loadError && !loading" class="empty">
+			<view class="empty-mark catch-empty-mark"><view class="empty-fish"></view></view>
+			<text class="empty-title">钓获动态加载失败</text>
+			<text class="empty-desc">{{ loadError }}</text>
+			<view class="empty-btn" @click="loadData">重新加载</view>
+		</view>
+		<view v-else-if="displayList.length === 0 && !loading" class="empty">
 			<view class="empty-mark catch-empty-mark"><view class="empty-fish"></view></view>
 			<text class="empty-title">还没有钓友晒单</text>
 			<text class="empty-desc">记录鱼种、重量和钓位，分享今天的第一份渔获</text>
@@ -15,15 +21,15 @@
 		</view>
 
 		<view class="catch-list">
-			<view class="catch-card" v-for="(item, itemIndex) in list" :key="item.catchId">
+			<view class="catch-card" v-for="(item, itemIndex) in displayList" :key="item.catchId">
 				<view class="catch-user">
 					<image class="catch-avatar" :src="item.avatar || '/static/logo-mark.svg'" />
-					<view class="catch-user-copy"><view class="catch-name-row"><text class="catch-nick">{{ item.nickname }}</text><text v-if="item.isFeatured" class="catch-featured">精选</text></view><text class="catch-venue">共享钓场 · A区</text></view>
+					<view class="catch-user-copy"><view class="catch-name-row"><text class="catch-nick">{{ item.nickname }}</text><text v-if="item.isFeatured" class="catch-featured">精选</text></view><text class="catch-venue">{{ item.venueName || '共享钓场' }}</text></view>
 					<text class="catch-time">{{ formatTime(item.createTime) }}</text>
 				</view>
 				<view class="catch-cover" @click="previewImg([primaryImage(item, itemIndex)], 0)">
 					<image :src="primaryImage(item, itemIndex)" class="catch-img" mode="aspectFill" />
-					<text v-if="item.fishSpecies || item.weightJin" class="catch-weight">{{ item.fishSpecies || '渔获' }} {{ item.weightJin ? item.weightJin + 'kg' : '' }}</text>
+					<text v-if="item.fishSpecies || item.weightJin" class="catch-weight">{{ item.fishSpecies || '渔获' }} {{ item.weightJin ? item.weightJin + '斤' : '' }}</text>
 				</view>
 				<text v-if="item.content" class="catch-content">{{ item.content }}</text>
 				<view class="catch-tags">
@@ -95,18 +101,29 @@ import { uploadFile } from '../../utils/request.js'
 export default {
 	data() {
 		return {
-			list: [], loading: true, showPublish: false,
+			list: [], loading: true, loadError: '', activeTab: 'featured', showPublish: false,
 			pubForm: { fishSpecies: '', weightJin: '', fishingMethod: '', content: '' },
 			pubImages: [],
 			pubUploaded: [],
 			showComments: false, comments: [], commentText: '', currentCatchId: null, replyTo: null
 		}
 	},
+	computed: {
+		displayList() {
+			const rows = this.list.slice()
+			if (this.activeTab === 'latest') return rows.sort((a, b) => String(b.createTime || '').localeCompare(String(a.createTime || '')))
+			return rows.sort((a, b) => Number(!!b.isFeatured) - Number(!!a.isFeatured) || String(b.createTime || '').localeCompare(String(a.createTime || '')))
+		}
+	},
 	onShow() { this.loadData() },
 	methods: {
 		loadData() {
 			this.loading = true
-			fetchCatchList().then(rows => { this.list = rows; this.loading = false }).catch(() => { this.loading = false })
+			this.loadError = ''
+			fetchCatchList().then(rows => { this.list = rows || [] }).catch((error) => {
+				this.list = []
+				this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+			}).finally(() => { this.loading = false })
 		},
 		formatTime(t) { return t ? t.replace('T', ' ').substring(0, 16) : '' },
 		primaryImage(item, index) {

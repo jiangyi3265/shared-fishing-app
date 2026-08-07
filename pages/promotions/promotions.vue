@@ -2,18 +2,19 @@
 	<view class="app promotions has-brand-header">
 		<brand-header title="优惠活动" theme="teal" layout="stacked" :back-on-title="true" />
 
-		<view v-if="!ads.length" class="empty">
+		<view v-if="loading || loadError || !ads.length" class="empty">
 			<view class="empty-emoji hic-gift"></view>
-			<text class="empty-title">暂无活动</text>
-			<text class="empty-desc">敬请期待更多精彩活动</text>
+			<text class="empty-title">{{ loading ? '正在读取活动' : (loadError ? '活动加载失败' : '暂无活动') }}</text>
+			<text class="empty-desc">{{ loadError || (keyword ? '没有找到匹配的活动' : '后台发布活动后会在这里展示') }}</text>
+			<view v-if="loadError" class="empty-retry" @click="loadAds">重新加载</view>
 		</view>
 
 		<view v-for="(ad,index) in ads" :key="ad.id" class="ad-card" :class="{ featured: index === 0 }" @click="onAdClick(ad)">
-			<view class="ad-photo-wrap"><image class="ad-photo" :src="ad.image || ad.cover || (index === 0 ? '/static/hero-fishing-v2.jpg' : '/static/hero-lake.jpg')" mode="aspectFill" /><text class="ad-status">{{ ad.type === 'activity' ? '报名中' : index === 1 ? '进行中' : '已结束' }}</text><view v-if="index===0" class="photo-copy"><text class="ad-title">{{ ad.title }}</text><text class="ad-desc">{{ ad.desc }}</text></view></view>
+			<view class="ad-photo-wrap"><image class="ad-photo" :src="ad.image || ad.cover || (index === 0 ? '/static/hero-fishing-v2.jpg' : '/static/hero-lake.jpg')" mode="aspectFill" /><text class="ad-status">{{ ad.type === 'activity' ? '开放报名' : '活动公告' }}</text><view v-if="index===0" class="photo-copy"><text class="ad-title">{{ ad.title }}</text><text class="ad-desc">{{ ad.desc }}</text></view></view>
 			<view class="ad-body-copy">
-				<view v-if="index!==0"><text class="ad-title">{{ ad.title }}</text><text class="ad-desc">{{ ad.desc }}</text><text class="ad-period">活动时间：06.01-06.30</text></view>
-				<view v-else class="featured-meta"><text>◷ 06.21 周六 08:00-12:00</text><text>⌖ 共享钓场 · 一号塘（竞赛区）</text></view>
-				<text class="ad-action">{{ ad.type === 'activity' ? '去报名' : index === 1 ? '去使用' : '查看详情' }}</text>
+				<view v-if="index!==0"><text class="ad-title">{{ ad.title }}</text><text class="ad-desc">{{ ad.desc }}</text><text v-if="activityDate(ad)" class="ad-period">活动时间：{{ activityDate(ad) }}</text></view>
+				<view v-else-if="ad.type==='activity'" class="featured-meta"><text>◷ {{ activityDate(ad) || '时间待公布' }}</text><text>⌖ {{ activityLocation(ad) || '地点待公布' }}</text></view>
+				<text class="ad-action">{{ ad.type === 'activity' ? '去报名' : '查看详情' }}</text>
 			</view>
 		</view>
 	</view>
@@ -24,18 +25,29 @@
 
 	export default {
 		data() {
-			return { ads: [], allAds: [], keyword: '' }
+			return { ads: [], allAds: [], keyword: '', loading: true, loadError: '' }
 		},
 		onLoad(option) {
 			if (option && option.keyword) this.keyword = decodeURIComponent(option.keyword)
 		},
 		onShow() {
+			this.loadAds()
+		},
+		methods: {
+			loadAds() {
+				this.loading = true
+				this.loadError = ''
 			fetchAds().then((list) => {
 				this.allAds = list
 				this.filterAds()
-			}).catch(() => {})
-		},
-		methods: {
+			}).catch((error) => {
+				this.ads = []
+				this.allAds = []
+				this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+			}).finally(() => { this.loading = false })
+			},
+			activityDate(ad) { return ad && ad.activityInfo && ad.activityInfo.date ? ad.activityInfo.date : '' },
+			activityLocation(ad) { return ad && ad.activityInfo && ad.activityInfo.location ? ad.activityInfo.location : '' },
 			filterAds() {
 				if (!this.keyword) {
 					this.ads = this.allAds
@@ -185,6 +197,7 @@
 
 <style>
 .promotions{padding-bottom:calc(50rpx + env(safe-area-inset-bottom))!important}
+.promotions .empty-retry{margin:26rpx auto 0;width:210rpx;height:68rpx;display:flex;align-items:center;justify-content:center;border-radius:9rpx;background:#0aa9a5;color:#fff;font-size:23rpx;font-weight:700}
 @media (max-width:360px){.promotions{padding-left:16rpx!important;padding-right:16rpx!important}.featured .ad-photo-wrap{height:320rpx}.ad-photo-wrap{width:38%}.ad-body-copy{padding:14rpx}.ad-action{position:static;align-self:flex-start;margin-top:12rpx}}
 </style>
 

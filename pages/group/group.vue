@@ -4,17 +4,24 @@
 		<view class="page-head">
 			<view class="create-btn" @click="showCreate = true"><text>＋</text> 发起拼场</view>
 		</view>
-		<view class="group-filters"><view>06月01日（周日）⌄</view><view>全天⌄</view></view>
+		<view class="group-filters">
+			<picker mode="date" :start="today" @change="filterDate = $event.detail.value"><view>{{ filterDateLabel }}⌄</view></picker>
+			<picker :range="filterSlots" @change="filterSlot = filterSlots[$event.detail.value]"><view>{{ filterSlot }}⌄</view></picker>
+		</view>
 
-		<view v-if="list.length === 0 && !loading" class="empty">
+		<view v-if="loadError && !loading" class="empty">
 			<view class="empty-mark"><view class="empty-people"></view></view>
-			<text class="empty-title">今天还没有拼场</text>
+			<text class="empty-title">拼场信息加载失败</text><text class="empty-desc">{{ loadError }}</text><view class="empty-btn" @click="loadData">重新加载</view>
+		</view>
+		<view v-else-if="filteredList.length === 0 && !loading" class="empty">
+			<view class="empty-mark"><view class="empty-people"></view></view>
+			<text class="empty-title">所选日期还没有拼场</text>
 			<text class="empty-desc">约好日期、时段和人数，附近钓友就能加入</text>
 			<view class="empty-btn" @click="showCreate = true">发起第一个拼场</view>
 		</view>
 
 		<view class="group-list">
-			<view class="group-card" v-for="g in list" :key="g.groupId" @click="goDetail(g)">
+			<view class="group-card" v-for="g in filteredList" :key="g.groupId">
 				<image class="group-avatar" src="/static/logo-mark.svg" mode="aspectFill" />
 				<view class="group-main">
 					<view class="group-top"><text class="group-title">{{ g.title }}</text><view class="group-count-block"><text>{{ g.currentCount }}/{{ g.maxMembers }}人</text><text>{{ g.status === 0 ? '可加入' : statusMap[g.status] }}</text></view></view>
@@ -47,28 +54,45 @@
 </template>
 
 <script>
-import { fetchGroupList, joinGroup, createGroup, getCachedVenue } from '../../utils/fishingStore.js'
+import { fetchGroupList, joinGroup, createGroup, getCachedVenue, loadDefaultVenue } from '../../utils/fishingStore.js'
 
 export default {
 	data() {
 		return {
-			list: [], loading: true, showCreate: false,
+			list: [], loading: true, loadError: '', showCreate: false,
 			today: new Date().toISOString().slice(0, 10),
 			timeSlots: ['06:00-12:00', '12:00-18:00', '06:00-18:00', '全天'],
+			filterSlots: ['全天', '06:00-12:00', '12:00-18:00', '06:00-18:00'],
+			filterDate: new Date().toISOString().slice(0, 10), filterSlot: '全天',
 			statusMap: { 0: '招募中', 1: '已满员', 2: '已完成', 3: '已取消' },
 			createForm: { title: '', fishingDate: '', timeSlot: '', maxMembers: '', description: '' }
+		}
+	},
+	computed: {
+		filterDateLabel() {
+			const date = new Date(this.filterDate + 'T00:00:00')
+			const weekdays = ['周日','周一','周二','周三','周四','周五','周六']
+			return `${String(date.getMonth()+1).padStart(2,'0')}月${String(date.getDate()).padStart(2,'0')}日（${weekdays[date.getDay()]}）`
+		},
+		filteredList() {
+			return this.list.filter((item) => String(item.fishingDate || '').slice(0,10) === this.filterDate && (this.filterSlot === '全天' || item.timeSlot === this.filterSlot))
 		}
 	},
 	onShow() { this.loadData() },
 	methods: {
 		loadData() {
 			this.loading = true
+			this.loadError = ''
 			const cached = getCachedVenue()
-			const venueId = cached && cached.venue ? cached.venue.venueId : null
-			fetchGroupList(venueId).then(rows => { this.list = rows; this.loading = false }).catch(() => { this.loading = false })
-		},
-		goDetail(g) {
-			// 可扩展为独立详情页
+			const venueTask = cached && cached.venue && cached.venue.venueId ? Promise.resolve(cached) : loadDefaultVenue()
+			venueTask.then((data) => {
+				const venueId = data && data.venue ? data.venue.venueId : null
+				if (!venueId) throw new Error('未获取到有效钓场')
+				return fetchGroupList(venueId)
+			}).then(rows => { this.list = rows || [] }).catch((error) => {
+				this.list = []
+				this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+			}).finally(() => { this.loading = false })
 		},
 		doJoin(g) {
 			joinGroup(g.groupId).then(() => {
@@ -80,12 +104,12 @@ export default {
 			if (!this.createForm.title) { uni.showToast({ title: '请输入标题', icon: 'none' }); return }
 			if (!this.createForm.fishingDate) { uni.showToast({ title: '请选择日期', icon: 'none' }); return }
 			const cached = getCachedVenue()
-			const data = {
-				...this.createForm,
-				venueId: cached && cached.venue ? cached.venue.venueId : 1,
-				maxMembers: parseInt(this.createForm.maxMembers) || 4
-			}
-			createGroup(data).then(() => {
+			const venueTask = cached && cached.venue && cached.venue.venueId ? Promise.resolve(cached) : loadDefaultVenue()
+			venueTask.then((venueData) => {
+				const venueId = venueData && venueData.venue ? venueData.venue.venueId : null
+				if (!venueId) throw new Error('未获取到有效钓场')
+				return createGroup({ ...this.createForm, venueId, maxMembers: parseInt(this.createForm.maxMembers) || 4 })
+			}).then(() => {
 				uni.showToast({ title: '发起成功' })
 				this.showCreate = false
 				this.createForm = { title: '', fishingDate: '', timeSlot: '', maxMembers: '', description: '' }

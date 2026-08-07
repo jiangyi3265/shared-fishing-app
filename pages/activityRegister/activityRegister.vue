@@ -1,12 +1,17 @@
 <template>
 	<view class="app activity-reg has-brand-header">
 		<brand-header title="活动报名" theme="teal" layout="stacked" :back-on-title="true" />
-		<view class="reg-header">
-			<image class="reg-cover" src="/static/hero-fishing-v2.jpg" mode="aspectFill" />
-			<view class="reg-summary"><text class="reg-title">{{ ad.title || '周末钓友赛' }}</text><text class="reg-desc">{{ ad.desc || '竞技切磋 · 好友同乐' }}</text><text class="reg-meta">◷ 06.21 周六 08:00-12:00</text><text class="reg-meta">⌖ 共享钓场 · 一号塘（竞赛区）</text><text class="reg-fee">报名费：¥{{ formatMoney(activity.feeCents) }} / 人</text></view>
+		<view v-if="loading || loadError" class="activity-state">
+			<text class="state-title">{{ loading ? '正在读取活动信息' : '活动信息加载失败' }}</text>
+			<text class="state-desc">{{ loadError || '请稍候…' }}</text>
+			<view v-if="loadError" class="state-retry" @click="loadActivity">重新加载</view>
+		</view>
+		<view v-if="!loading && !loadError" class="reg-header">
+			<image class="reg-cover" :src="ad.image || '/static/hero-fishing-v2.jpg'" mode="aspectFill" />
+			<view class="reg-summary"><text class="reg-title">{{ ad.title }}</text><text v-if="ad.desc" class="reg-desc">{{ ad.desc }}</text><text class="reg-meta">◷ {{ activity.date || '时间待钓场公布' }}</text><text class="reg-meta">⌖ {{ activity.location || '地点待钓场公布' }}</text><text class="reg-fee">报名费：¥{{ formatMoney(activity.feeCents || 0) }} / 人</text></view>
 		</view>
 
-		<view class="reg-info compact-info">
+		<view v-if="!loading && !loadError" class="reg-info compact-info">
 			<view class="info-row">
 				<text class="info-label">活动日期</text>
 				<text class="info-value">{{ activity.date }}</text>
@@ -29,7 +34,7 @@
 			</view>
 		</view>
 
-		<view class="reg-form">
+		<view v-if="!loading && !loadError" class="reg-form">
 			<text class="form-title">填写报名信息</text>
 			<view class="form-item">
 				<text class="form-label">姓名</text>
@@ -46,7 +51,7 @@
 			</view>
 		</view>
 
-		<view class="reg-footer">
+		<view v-if="!loading && !loadError" class="reg-footer">
 			<view class="submit-btn" @click="onSubmit">
 				提交报名
 			</view>
@@ -62,22 +67,32 @@ export default {
 		return {
 			ad: {},
 			activity: {},
+			adId: '', loading: true, loadError: '',
 			form: { name: '', phone: '', remark: '' }
 		}
 	},
 	onLoad(option) {
 		if (!isLoggedIn()) { uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/activityRegister/activityRegister?id=' + option.id) }); return }
-		fetchAdById(option.id).then((ad) => {
+		this.adId = option.id
+		this.loadActivity()
+	},
+	methods: {
+		loadActivity() {
+			this.loading = true
+			this.loadError = ''
+			fetchAdById(this.adId).then((ad) => {
 			if (ad && ad.type === 'activity') {
 				this.ad = ad
 				this.activity = ad.activityInfo || {}
 			} else {
-				uni.showToast({ title: '活动不存在', icon: 'none' })
-				setTimeout(() => this.goBack(), 1500)
+				throw new Error('该活动不存在或已下架')
 			}
-		}).catch(() => this.goBack())
-	},
-	methods: {
+			}).catch((error) => {
+				this.ad = {}
+				this.activity = {}
+				this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+			}).finally(() => { this.loading = false })
+		},
 		onSubmit() {
 			if (!this.form.name.trim()) {
 				uni.showToast({ title: '请输入姓名', icon: 'none' })
@@ -258,5 +273,6 @@ export default {
 
 <style>
 .activity-reg{padding:14rpx 20rpx 40rpx;background:#f7fbfb}.activity-reg .reg-header{min-height:238rpx;padding:20rpx;box-sizing:border-box;display:flex;flex-direction:row;align-items:stretch;gap:20rpx;border:1rpx solid #d6e5e3;border-radius:14rpx;background:#fff!important}.reg-cover{width:190rpx;border-radius:10rpx;flex-shrink:0}.reg-summary{flex:1;display:flex;flex-direction:column}.activity-reg .reg-title{font-size:31rpx;color:#153f42}.activity-reg .reg-desc{margin-top:6rpx;font-size:21rpx;color:#667a7c}.reg-meta{display:block;margin-top:12rpx;font-size:20rpx;color:#536e70}.reg-fee{display:block;margin-top:auto;color:#163f42;font-size:23rpx;font-weight:700}.compact-info{display:none}.activity-reg .reg-form{margin:16rpx 0;padding:24rpx;border:1rpx solid #d6e5e3;border-radius:14rpx}.activity-reg .form-title{font-size:28rpx;font-weight:800}.activity-reg .form-item{display:block;border:0;padding:13rpx 0}.activity-reg .form-label{display:block;margin-bottom:10rpx;font-size:23rpx;color:#173f42}.activity-reg .form-input{height:76rpx;padding:0 18rpx;border:1rpx solid #d4e3e2;border-radius:9rpx;background:#fbfdfd;font-size:22rpx}.activity-reg .reg-footer{position:static;padding:0}.activity-reg .submit-btn{height:82rpx;padding:0;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#0aa9a5;font-size:27rpx}.activity-reg::after{content:'我们将严格保护您的个人信息，仅用于活动报名及相关通知';display:block;margin-top:14rpx;padding-left:28rpx;color:#798b8c;font-size:18rpx;line-height:1.5}
+.activity-state{margin-top:14rpx;padding:72rpx 30rpx;display:flex;flex-direction:column;align-items:center;border:1rpx solid #d6e5e3;border-radius:14rpx;background:#fff;text-align:center}.state-title{font-size:28rpx;font-weight:800;color:#174246}.state-desc{margin-top:12rpx;color:#6e8183;font-size:22rpx}.state-retry{margin-top:28rpx;width:220rpx;height:72rpx;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#0aa9a5;color:#fff;font-size:24rpx;font-weight:700}
 .optional{color:#879697;font-size:19rpx}.activity-reg .remark-input{height:130rpx;padding:18rpx;box-sizing:border-box}.remark-count{display:block;margin-top:-31rpx;margin-right:12rpx;text-align:right;color:#93a0a1;font-size:18rpx}
 </style>

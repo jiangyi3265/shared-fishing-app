@@ -19,7 +19,7 @@
 				v-for="(s, index) in spots.slice(0, 20)"
 				:key="s.spotId"
 				class="pond-spot"
-				:class="['spot-pos-' + ((index % 20) + 1), { selected: selected === s.spotId, booked: s.status === 1, vip: s.spotType === 'vip' }]"
+				:class="['spot-pos-' + ((index % 20) + 1), { selected: selected === s.spotId, booked: Number(s.status) === 1, vip: s.spotType === 'vip' }]"
 				@click="selectSpot(s)"
 			>
 				<text>{{ formatSpot(s, index) }}</text>
@@ -106,11 +106,12 @@ export default {
 	},
 	computed: {
 		quickDates() {
-			const labels = ['今天', '明天', '后天', '周五', '周六']
-			return labels.map((label, index) => {
+			const weekdays = ['周日','周一','周二','周三','周四','周五','周六']
+			return [0,1,2,3,4].map((offset, index) => {
 				const d = new Date()
-				d.setDate(d.getDate() + index)
+				d.setDate(d.getDate() + offset)
 				const value = d.toISOString().slice(0, 10)
+				const label = index === 0 ? '今天' : index === 1 ? '明天' : index === 2 ? '后天' : weekdays[d.getDay()]
 				return { label, value, short: `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 			})
 		},
@@ -119,7 +120,7 @@ export default {
 		},
 		estimatedFee() {
 			const fee = this.selectedSpot && Number(this.selectedSpot.extraFeeCents)
-			return ((Number.isFinite(fee) && fee > 0 ? fee : 6000) / 100).toFixed(0)
+			return ((Number.isFinite(fee) && fee > 0 ? fee : 0) / 100).toFixed(2)
 		}
 	},
 	onShow() { this.loadData() },
@@ -147,7 +148,7 @@ export default {
 			}
 		},
 		selectSpot(s) {
-			if (s.status === 1) return
+			if (Number(s.status) === 1) return
 			this.selected = s.spotId
 		},
 		formatSpot(s, index) {

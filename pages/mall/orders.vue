@@ -1,14 +1,16 @@
 <template>
 	<view class="app mall-orders has-brand-header">
 		<brand-header title="补给订单" theme="light" layout="compact" :back="true" />
-		<view class="order-tabs"><text class="active">全部</text><text>待支付</text><text>待领取</text><text>已完成</text></view>
-		<view v-if="!list.length" class="empty">
+		<view class="order-tabs"><text v-for="tab in tabs" :key="tab.value" :class="{active:activeStatus===tab.value}" @click="activeStatus=tab.value">{{ tab.label }}</text></view>
+		<view v-if="loading || loadError || !filteredList.length" class="empty">
 			<view class="empty-emoji hic-shop"></view>
-			<text class="empty-title">暂无商品订单</text>
-			<button class="empty-btn" @click="goMall">去选购</button>
+			<text class="empty-title">{{ loading ? '正在读取补给订单' : (loadError ? '订单加载失败' : (activeStatus === 'all' ? '暂无商品订单' : '当前分类暂无订单')) }}</text>
+			<text v-if="loadError" class="empty-desc">{{ loadError }}</text>
+			<button v-if="loadError" class="empty-btn" @click="loadOrders">重新加载</button>
+			<button v-else-if="!loading" class="empty-btn" @click="goMall">去选购</button>
 		</view>
 
-		<view v-for="o in list" :key="o.mallOrderId" class="order" @click="goVoucher(o)">
+		<view v-for="o in filteredList" :key="o.mallOrderId" class="order" @click="goVoucher(o)">
 			<view class="order-head">
 				<text class="order-no">订单号：{{ o.mallOrderNo }}</text>
 				<view class="pill" :class="pillClass(o.status)">{{ statusLabel[o.status] || '未知' }}</view>
@@ -20,20 +22,26 @@
 				<text class="order-time">共 {{ o.items.length }} 件商品</text>
 				<text class="order-amount">¥{{ formatMoney(o.totalCents) }}</text>
 			</view>
-			<view class="order-actions"><view class="order-action" @click.stop="goVoucher(o)">{{ o.status === 0 ? '立即支付' : '查看凭证' }}</view></view>
+			<view class="order-actions"><view class="order-action" @click.stop="handleOrder(o)">{{ o.status === 0 ? (payingId===o.mallOrderId?'支付中…':'继续支付') : '查看凭证' }}</view></view>
 		</view>
 		<mall-tabbar active="mall" />
 	</view>
 </template>
 
 <script>
-	import { fetchMyMallOrders, MALL_ORDER_STATUS } from '../../utils/mallStore.js'
+	import { fetchMyMallOrders, payMallOrder, MALL_ORDER_STATUS } from '../../utils/mallStore.js'
 	import { formatMoney, formatDatetime } from '../../utils/fishingStore.js'
 
 	export default {
 		data() {
 			return {
-				list: [],
+				list: [], activeStatus: 'all', payingId: null, loading: true, loadError: '',
+				tabs: [
+					{label:'全部',value:'all'},
+					{label:'待支付',value:MALL_ORDER_STATUS.UNPAID},
+					{label:'待领取',value:MALL_ORDER_STATUS.PAID},
+					{label:'已完成',value:MALL_ORDER_STATUS.REDEEMED}
+				],
 				statusLabel: {
 					[MALL_ORDER_STATUS.UNPAID]: '待支付',
 					[MALL_ORDER_STATUS.PAID]: '可使用',
@@ -42,10 +50,24 @@
 				}
 			}
 		},
-		onShow() { fetchMyMallOrders().then((rows) => this.list = rows) },
+		computed: {
+			filteredList() {
+				if (this.activeStatus === 'all') return this.list
+				return this.list.filter((order) => Number(order.status) === Number(this.activeStatus))
+			}
+		},
+		onShow() { this.loadOrders() },
 		methods: {
 			formatMoney,
 			formatDatetime,
+			loadOrders() {
+				this.loading = true
+				this.loadError = ''
+				fetchMyMallOrders().then((rows) => { this.list = rows || [] }).catch((error) => {
+					this.list = []
+					this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+				}).finally(() => { this.loading = false })
+			},
 			pillClass(s) {
 				if (s === MALL_ORDER_STATUS.UNPAID) return 'pill-pending'
 				if (s === MALL_ORDER_STATUS.PAID) return 'pill-running'
@@ -54,6 +76,17 @@
 			},
 			goVoucher(o) {
 				uni.navigateTo({ url: '/pages/mall/voucher?mallOrderId=' + o.mallOrderId })
+			},
+			handleOrder(o) {
+				if (o.status !== MALL_ORDER_STATUS.UNPAID) { this.goVoucher(o); return }
+				if (this.payingId) return
+				this.payingId = o.mallOrderId
+				payMallOrder(o.mallOrderId).then(() => {
+					uni.showToast({ title: '支付成功', icon: 'success' })
+					this.goVoucher(o)
+				}).catch((error) => {
+					uni.showToast({ title: (error && (error.msg || error.message)) || '支付未完成', icon: 'none' })
+				}).finally(() => { this.payingId = null })
 			},
 			goMall() { uni.redirectTo({ url: '/pages/mall/index' }) }
 		}

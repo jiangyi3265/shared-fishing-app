@@ -4,13 +4,16 @@
 		<view class="points-header">
 			<view class="points-card">
 				<text class="points-label">可用积分</text>
-				<view class="points-line"><text class="points-value">{{ myPoints }}</text><text class="points-unit">积分</text><view class="detail-btn">积分明细</view></view>
+				<view class="points-line"><text class="points-value">{{ myPoints }}</text><text class="points-unit">积分</text><view class="detail-btn" @click="activeTab='records'">兑换记录</view></view>
 				<text class="month-points">消费每满 1 元赠 5 积分，支付成功后到账</text>
 			</view>
 		</view>
 
-		<view class="points-tabs"><text class="active">积分兑换</text><text>兑换记录</text></view>
-		<view class="goods-list">
+		<view class="points-tabs"><text :class="{active:activeTab==='goods'}" @click="activeTab='goods'">积分兑换</text><text :class="{active:activeTab==='records'}" @click="activeTab='records'">兑换记录</text></view>
+		<view v-if="loading" class="points-state">正在读取积分信息…</view>
+		<view v-else-if="loadError" class="points-state state-error" @click="loadData">{{ loadError }} · 点击重试</view>
+		<view v-else-if="activeTab==='goods' && !goods.length" class="points-state">暂无可兑换商品，商品由后台上架后显示</view>
+		<view v-if="!loading && !loadError && activeTab==='goods' && goods.length" class="goods-list">
 			<view class="goods-card" v-for="g in goods" :key="g.goodsId">
 				<image v-if="g.image" :src="g.image" class="goods-img" mode="aspectFill" />
 				<view class="goods-img goods-img-placeholder" v-else><view class="hic-gift"></view></view>
@@ -22,8 +25,8 @@
 			</view>
 		</view>
 
-		<view class="section-title" v-if="exchanges.length">兑换记录</view>
-		<view class="exchange-list">
+		<view v-if="!loading && !loadError && activeTab==='records' && !exchanges.length" class="points-state">暂无兑换记录</view>
+		<view v-if="!loading && !loadError && activeTab==='records' && exchanges.length" class="exchange-list">
 			<view class="exchange-item" v-for="e in exchanges" :key="e.exchangeId">
 				<text class="ex-name">{{ e.goodsName }}</text>
 				<text class="ex-cost">-{{ e.pointsCost }}积分</text>
@@ -38,16 +41,20 @@ import { fetchMyPoints, fetchPointsGoods, doCheckin, exchangePoints } from '../.
 
 export default {
 	data() {
-		return { myPoints: 0, goods: [], exchanges: [], checkedIn: false }
+		return { myPoints: 0, goods: [], exchanges: [], checkedIn: false, activeTab: 'goods', loading: true, loadError: '' }
 	},
 	onShow() { this.loadData() },
 	methods: {
 		loadData() {
-			fetchMyPoints().then(data => {
+			this.loading = true
+			this.loadError = ''
+			Promise.all([fetchMyPoints(), fetchPointsGoods()]).then(([data, rows]) => {
 				this.myPoints = data.points || 0
 				this.exchanges = data.exchanges || []
-			}).catch(() => {})
-			fetchPointsGoods().then(rows => { this.goods = rows })
+				this.goods = Array.isArray(rows) ? rows : []
+			}).catch((error) => {
+				this.loadError = (error && (error.msg || error.message)) || '积分信息加载失败'
+			}).finally(() => { this.loading = false })
 		},
 		doCheckinAction() {
 			if (this.checkedIn) return
@@ -109,5 +116,6 @@ export default {
 
 <style scoped>
 .points-page{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))}
+.points-state{min-height:190rpx;padding:48rpx 30rpx;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;border:1rpx solid #d8e6e5;border-top:0;border-radius:0 0 13rpx 13rpx;background:#fff;color:#6c8082;font-size:22rpx}.points-state.state-error{color:#95600b;background:#fffaf0}.exchange-list{margin-top:0;border-top:0;border-radius:0 0 13rpx 13rpx}
 @media (max-width:360px){.points-card{height:auto;min-height:190rpx;padding-left:22rpx;padding-right:22rpx}.points-value{font-size:54rpx}.detail-btn{padding-left:12rpx;padding-right:12rpx}.goods-card{gap:12rpx}.goods-btn{padding-left:16rpx;padding-right:16rpx}}
 </style>

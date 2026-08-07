@@ -4,14 +4,16 @@
 		<view class="member-card" :class="'level-' + (myLevel.levelName || 'none')">
 			<view class="member-badge"><view class="badge-crown">★</view></view>
 			<view class="member-card-main">
-				<view class="member-top"><text class="member-name">{{ myLevel.levelName || '黄金会员' }}</text><text class="current-level">当前等级</text></view>
-				<text class="member-upgrade">再消费 ¥{{ nextAmount }} 升级为{{ nextName }}</text>
+				<view class="member-top"><text class="member-name">{{ myLevel.levelName || '普通会员' }}</text><text class="current-level">当前等级</text></view>
+				<text class="member-upgrade">{{ upgradeText }}</text>
 				<view class="member-progress"><view :style="{ width: progressPercent + '%' }"></view></view>
 				<text class="member-progress-text">{{ consumeYuan }} / {{ nextThreshold }}</text>
 			</view>
 		</view>
 		<view class="consume-row"><text>累计消费</text><text>¥{{ consumeYuan }}</text></view>
-		<view class="benefit-section"><text class="benefit-title">会员权益</text><view class="benefit-grid"><view><view class="benefit-icon">折</view><text>{{ myLevel.discountRate ? myLevel.discountRate / 10 : 9.5 }}折</text><text>订单支付</text></view><view><view class="benefit-icon lock-benefit"></view><text>免押金</text><text>免除押金</text></view><view><view class="benefit-icon star-benefit">★</view><text>优先订位</text><text>专属优先权</text></view></view></view>
+		<view class="benefit-section"><text class="benefit-title">会员权益</text><view class="benefit-grid"><view><view class="benefit-icon">折</view><text>{{ discountText }}</text><text>订单支付</text></view><view><view class="benefit-icon lock-benefit"></view><text>{{ Number(myLevel.freeDeposit)===1 ? '免押金' : '按规则收取' }}</text><text>装备押金</text></view><view><view class="benefit-icon star-benefit">★</view><text>{{ Number(myLevel.priorityReserve)===1 ? '优先订位' : '标准订位' }}</text><text>钓位权益</text></view></view><text v-if="myLevel.extraBenefits" class="extra-benefit">{{ myLevel.extraBenefits }}</text></view>
+		<view v-if="loading" class="member-state">正在读取会员等级…</view>
+		<view v-else-if="loadError" class="member-state state-error" @click="loadData">{{ loadError }} · 点击重试</view>
 
 		<view class="section-title">等级体系</view>
 		<view class="level-list">
@@ -32,20 +34,33 @@ import { fetchMemberLevels, fetchMyMember } from '../../utils/fishingStore.js'
 
 export default {
 	data() {
-		return { levels: [], myLevel: {} }
+		return { levels: [], myLevel: {}, loading: true, loadError: '' }
 	},
 	computed: {
-		consumeCents() { return Number(this.myLevel.totalConsumeCents || this.myLevel.consumeCents || 618000) },
+		consumeCents() { return Number(this.myLevel.totalConsumeCents || this.myLevel.consumeCents || 0) },
 		consumeYuan() { return (this.consumeCents / 100).toFixed(2) },
-		nextLevel() { return this.levels.find((item) => Number(item.minConsumeCents) > this.consumeCents) || this.levels[this.levels.length - 1] || {} },
-		nextName() { return this.nextLevel.levelName || '黑金会员' },
-		nextThreshold() { return ((Number(this.nextLevel.minConsumeCents) || 756000) / 100).toFixed(0) },
-		nextAmount() { return (Math.max(0, (Number(this.nextLevel.minConsumeCents) || 756000) - this.consumeCents) / 100).toFixed(2) },
-		progressPercent() { return Math.min(100, Math.round(this.consumeCents / Math.max(1, Number(this.nextLevel.minConsumeCents) || 756000) * 100)) }
+		nextLevel() { return this.levels.find((item) => Number(item.minConsumeCents) > this.consumeCents) || {} },
+		nextName() { return this.nextLevel.levelName || '' },
+		nextThreshold() { return this.nextName ? (Number(this.nextLevel.minConsumeCents || 0) / 100).toFixed(0) : this.consumeYuan },
+		nextAmount() { return (Math.max(0, Number(this.nextLevel.minConsumeCents || 0) - this.consumeCents) / 100).toFixed(2) },
+		progressPercent() { return this.nextName ? Math.min(100, Math.round(this.consumeCents / Math.max(1, Number(this.nextLevel.minConsumeCents)) * 100)) : 100 },
+		upgradeText() { return this.nextName ? `再消费 ¥${this.nextAmount} 升级为${this.nextName}` : '已达到当前最高会员等级' },
+		discountText() { return Number(this.myLevel.discountRate) > 0 && Number(this.myLevel.discountRate) < 100 ? (Number(this.myLevel.discountRate) / 10) + '折' : '会员价' }
 	},
 	onShow() {
-		fetchMemberLevels().then(rows => { this.levels = rows })
-		fetchMyMember().then(data => { this.myLevel = data || {} }).catch(() => {})
+		this.loadData()
+	},
+	methods: {
+		loadData() {
+			this.loading = true
+			this.loadError = ''
+			Promise.all([fetchMemberLevels(), fetchMyMember()]).then(([rows, data]) => {
+				this.levels = Array.isArray(rows) ? rows : []
+				this.myLevel = data || {}
+			}).catch((error) => {
+				this.loadError = (error && (error.msg || error.message)) || '会员信息加载失败'
+			}).finally(() => { this.loading = false })
+		}
 	}
 }
 </script>
@@ -76,5 +91,6 @@ export default {
 
 <style scoped>
 .member-page{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))}
+.member-state{margin-top:18rpx;padding:32rpx;border:1rpx solid #d8e6e5;border-radius:12rpx;background:#fff;text-align:center;color:#6b8082;font-size:22rpx}.member-state.state-error{color:#95600b;background:#fffaf0}.extra-benefit{display:block;margin-top:16rpx;color:#5f7476;font-size:21rpx;line-height:1.6}
 @media (max-width:360px){.member-card{height:auto;min-height:204rpx;gap:16rpx}.member-badge{width:104rpx;height:104rpx}.badge-crown{width:76rpx;height:76rpx}.member-name{font-size:30rpx}.benefit-grid{grid-template-columns:1fr;gap:14rpx}.benefit-grid>view{min-height:56rpx}.level-current{position:static;display:inline-flex;margin-top:7rpx}}
 </style>

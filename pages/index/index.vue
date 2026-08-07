@@ -6,7 +6,7 @@
 		:pending-order="pendingOrder"
 		:running-order="runningOrder"
 		:live-seconds="liveSeconds"
-		:estimate="estimate"
+		:venue="venue"
 		:weather="weather"
 		:stocking="homeStocking"
 		:competition="homeCompetition"
@@ -38,7 +38,6 @@
 		fetchRunningOrder,
 		fetchPendingOrder,
 		calcAmount,
-		fetchAds,
 		fetchWeather,
 		fetchStockingList,
 		fetchCompetitionList,
@@ -55,14 +54,6 @@
 
 	const FALLBACK_VENUE = { name: '共享钓场', address: '--', notice: '', venueId: null }
 	const FALLBACK_RULE = { stepMinutes: 30, minDurationMinutes: 30, pricePerStepCents: 300, capAmountCents: 0 }
-	const FALLBACK_ADS = [{
-		id: 'fallback-open',
-		type: 'fallback',
-		title: '今日开放营业',
-		desc: '下竿计时 · 实时计费 · 收竿结算',
-		bgColor: 'linear-gradient(135deg, #eef8f7 0%, #fff7e6 100%)'
-	}]
-
 	export default {
 		data() {
 			return {
@@ -74,7 +65,6 @@
 				venue: FALLBACK_VENUE,
 				rule: FALLBACK_RULE,
 				keyword: '',
-				ads: [],
 				weather: null,
 				homeStocking: null,
 				homeCompetition: null,
@@ -87,9 +77,6 @@
 			}
 		},
 		computed: {
-			stepPriceYuan() {
-				return formatMoney(this.rule.pricePerStepCents)
-			},
 			runningStartMillis() {
 				if (!this.runningOrder || !this.runningOrder.startTime) return 0
 				return typeof this.runningOrder.startTime === 'number'
@@ -103,9 +90,6 @@
 			estimate() {
 				if (!this.runningStartMillis) return { amountCents: 0 }
 				return calcAmount(this.now - this.runningStartMillis, this.rule)
-			},
-			bannerAds() {
-				return this.ads.length ? this.ads : FALLBACK_ADS
 			},
 			profileIncomplete() {
 				if (!this.user) return false
@@ -207,7 +191,6 @@
 			},
 			refreshData() {
 				this.user = getUser()
-				fetchAds().then((list) => { this.ads = list }).catch(() => {})
 				fetchWeather().then((w) => { this.weather = w }).catch(() => {})
 				this.loadHomeContent()
 				this.now = Date.now()
@@ -244,20 +227,6 @@
 			onSearch() {
 				if (!this.keyword) return
 				uni.navigateTo({ url: '/pages/promotions/promotions?keyword=' + encodeURIComponent(this.keyword) })
-			},
-			onAdClick(ad) {
-				if (ad.type === 'fallback') {
-					this.goVenue()
-					return
-				}
-				if (ad.type === 'activity') {
-					uni.navigateTo({ url: '/pages/activityRegister/activityRegister?id=' + ad.id })
-				} else {
-					uni.navigateTo({ url: '/pages/adDetail/adDetail?id=' + ad.id })
-				}
-			},
-			onBannerImageError(ad) {
-				if (ad) ad.image = ''
 			},
 			getShareConfig() {
 				const name = this.venue && this.venue.name ? this.venue.name : '共享钓场'

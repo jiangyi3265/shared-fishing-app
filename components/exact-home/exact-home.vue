@@ -8,7 +8,7 @@
 				<text>共享钓场</text>
 			</view>
 			<view class="hero-status">
-				<view class="open-status"><view class="open-dot"></view><text>开放中</text></view>
+				<view class="open-status"><view class="open-dot" :class="{ muted: !venueReady }"></view><text>{{ venueStatusText }}</text></view>
 				<view class="weather-line"><view class="weather-icon"></view><text>{{ weatherLine }}</text></view>
 			</view>
 		</view>
@@ -105,16 +105,24 @@
 			liveSeconds: { type: Number, default: 0 },
 			estimate: { type: Object, default: () => ({ amountCents: 0 }) },
 			weather: { type: Object, default: null },
+			venue: { type: Object, default: null },
 			stocking: { type: Object, default: null },
 			competition: { type: Object, default: null }
 		},
 		computed: {
+			venueReady() {
+				return !!(this.venue && this.venue.venueId)
+			},
+			venueStatusText() {
+				if (!this.venueReady) return '钓场信息加载中'
+				return String(this.venue.status == null ? '0' : this.venue.status) === '0' ? '正常开放' : '暂停开放'
+			},
 			weatherLine() {
 				const data = this.weather || {}
-				const temp = data.temp != null && data.temp !== '' ? data.temp : '26'
-				const wind = data.windDir || '东南风'
-				const scale = data.windScale != null && data.windScale !== '' ? data.windScale : '2'
-				return `今日 ${temp}°C · ${wind}${scale}级`
+				if (data.temp == null || data.temp === '') return '天气信息暂未更新'
+				const wind = data.windDir || ''
+				const scale = data.windScale != null && data.windScale !== '' ? `${data.windScale}级` : ''
+				return `今日 ${data.temp}°C${wind || scale ? ` · ${wind}${scale}` : ''}`
 			},
 			stockingImage() {
 				return (this.stocking && this.stocking.image) || '/static/stocking-carp-v1.jpg'
@@ -124,10 +132,10 @@
 				return weight > 0 ? `${weight}斤` : '查看最新动态'
 			},
 			competitionTitle() {
-				return (this.competition && this.competition.title) || '周末钓王赛'
+				return (this.competition && this.competition.title) || '暂无赛事'
 			},
 			competitionStatus() {
-				if (!this.competition) return '报名中'
+				if (!this.competition) return '等待后台发布'
 				return ({ 0: '报名中', 1: '进行中', 2: '称重中', 3: '已结束', 4: '已取消' })[this.competition.status] || '查看赛事'
 			}
 		},
@@ -171,4 +179,5 @@
 	.event-feature{padding:24rpx 18rpx;background:#fff0d5;color:#8c5206;box-sizing:border-box}.event-copy{position:relative;z-index:3}.event-title{display:block;overflow:hidden;font-size:25rpx;font-weight:900;line-height:1.25;white-space:nowrap;text-overflow:ellipsis}.event-status{display:inline-flex;margin-top:12rpx;padding:7rpx 12rpx;border-radius:7rpx;background:#dc8320;color:#fff8ed;font-size:18rpx;font-weight:800}.event-trophy{position:absolute;z-index:2;right:25rpx;bottom:32rpx;width:62rpx;height:56rpx;border-radius:8rpx 8rpx 18rpx 18rpx;background:#dba13d;color:#dba13d}.event-trophy::before,.event-trophy::after{content:'';position:absolute;top:7rpx;width:18rpx;height:28rpx;border:6rpx solid currentColor}.event-trophy::before{left:-18rpx;border-right:0;border-radius:14rpx 0 0 14rpx}.event-trophy::after{right:-18rpx;border-left:0;border-radius:0 14rpx 14rpx 0}.trophy-star{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff0bd;font-size:25rpx}.event-water{position:absolute;left:0;right:0;bottom:0;height:66rpx;opacity:.42}.event-water view{position:absolute;left:-15%;width:130%;height:45rpx;border-radius:50%;border-top:3rpx solid #ce9f55}.event-water view:nth-child(1){bottom:-14rpx}.event-water view:nth-child(2){bottom:-27rpx;transform:translateX(12%)}.event-water view:nth-child(3){bottom:-40rpx;transform:translateX(-10%)}
 	.home-tabbar{position:fixed;z-index:20;left:0;right:0;bottom:0;height:calc(112rpx + env(safe-area-inset-bottom));padding:5rpx 72rpx env(safe-area-inset-bottom);display:flex;align-items:flex-start;justify-content:space-between;border-top:1rpx solid #dce6e5;background:rgba(251,253,252,.98);box-sizing:border-box}.tab{width:112rpx;height:96rpx;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6rpx;color:#7e8e90;font-size:20rpx}.tab.active{color:#079f9c;font-weight:800}.tab-icon{width:32rpx;height:32rpx;position:relative;color:currentColor}.home-icon{margin-top:8rpx;height:25rpx;border:4rpx solid currentColor;border-top:0}.home-icon::before{content:'';position:absolute;left:1rpx;top:-11rpx;width:21rpx;height:21rpx;border:4rpx solid currentColor;border-right:0;border-bottom:0;transform:rotate(45deg)}.user-icon::before{content:'';position:absolute;left:9rpx;top:0;width:14rpx;height:14rpx;border:4rpx solid currentColor;border-radius:50%}.user-icon::after{content:'';position:absolute;left:2rpx;bottom:0;width:28rpx;height:15rpx;border:4rpx solid currentColor;border-bottom:0;border-radius:18rpx 18rpx 0 0}.settle{position:relative;color:#16494b;font-weight:800}.settle-button{width:80rpx;height:80rpx;margin-top:-30rpx;display:flex;align-items:center;justify-content:center;border:7rpx solid #f7faf9;border-radius:50%;background:#08aaa6;color:#f8fbfa;box-shadow:0 6rpx 18rpx rgba(6,92,93,.18);box-sizing:border-box}.tab-scan-icon{width:32rpx;height:32rpx;position:relative;background:linear-gradient(currentColor,currentColor) left top/11rpx 3rpx no-repeat,linear-gradient(currentColor,currentColor) left top/3rpx 11rpx no-repeat,linear-gradient(currentColor,currentColor) right top/11rpx 3rpx no-repeat,linear-gradient(currentColor,currentColor) right top/3rpx 11rpx no-repeat,linear-gradient(currentColor,currentColor) left bottom/11rpx 3rpx no-repeat,linear-gradient(currentColor,currentColor) left bottom/3rpx 11rpx no-repeat,linear-gradient(currentColor,currentColor) right bottom/11rpx 3rpx no-repeat,linear-gradient(currentColor,currentColor) right bottom/3rpx 11rpx no-repeat}.tab-scan-icon::after{content:'';position:absolute;left:6rpx;right:6rpx;top:14rpx;height:3rpx;border-radius:99rpx;background:currentColor}
 	@media (max-width:360px){.home-hero{height:470rpx}.control-sheet{margin-left:16rpx;margin-right:16rpx}.primary-actions{padding-left:16rpx;padding-right:16rpx}.settle-action{margin-left:15rpx;padding-left:15rpx;font-size:23rpx}.shortcut-section,.news-section{padding-left:18rpx;padding-right:18rpx}.shortcut-grid{row-gap:24rpx}.shortcut-item{font-size:19rpx}.news-layout{height:246rpx}.event-feature{padding-left:14rpx;padding-right:14rpx}.event-title{font-size:22rpx}.home-tabbar{padding-left:56rpx;padding-right:56rpx}}
+	.open-dot.muted{background:#f0b53c;box-shadow:0 0 0 5rpx rgba(240,181,60,.16)}
 </style>

@@ -16,11 +16,9 @@
 		</view>
 
 		<view class="card">
-			<view class="spec-row"><text>规格</text><text>{{ goods.subtitle }}</text></view>
-			<view class="spec-row"><text>适用鱼种</text><text>鲫鱼、鲤鱼、草鱼等</text></view>
-			<view class="spec-row"><text>饵料状态</text><text>粉饵</text></view>
-			<view class="spec-row"><text>使用方法</text><text>{{ goods.desc }}</text></view>
-			<view class="spec-row"><text>保质期</text><text>18个月</text></view>
+			<view v-if="goods.subtitle" class="spec-row"><text>规格</text><text>{{ goods.subtitle }}</text></view>
+			<view class="spec-row"><text>库存</text><text>{{ goods.stock > 0 ? goods.stock + ' 件' : '暂时售罄' }}</text></view>
+			<view v-if="goods.desc" class="spec-row desc-row"><text>商品说明</text><text>{{ goods.desc }}</text></view>
 		</view>
 
 		<view class="footer">
@@ -29,13 +27,14 @@
 				<text class="qty-num">{{ qty }}</text>
 				<view class="qty-btn" @click="inc">+</view>
 			</view>
-			<button class="btn ghost" @click="addCart">加入补给车</button>
-			<button class="btn primary" @click="buyNow">立即下单</button>
+			<button class="btn ghost" :disabled="goods.stock <= 0" @click="addCart">加入补给车</button>
+			<button class="btn primary" :disabled="goods.stock <= 0" @click="buyNow">{{ goods.stock > 0 ? '立即下单' : '暂时售罄' }}</button>
 		</view>
 		</view>
 		<view v-else class="empty detail-empty">
-			<text class="empty-title">正在加载补给信息</text>
-			<text class="empty-desc">如果商品已下架，可返回补给商城重新选择</text>
+			<text class="empty-title">{{ loading ? '正在加载补给信息' : '补给信息加载失败' }}</text>
+			<text class="empty-desc">{{ loadError || '如果商品已下架，可返回补给商城重新选择' }}</text>
+			<view v-if="!loading" class="empty-retry" @click="loadGoods">重新加载</view>
 		</view>
 	</view>
 </template>
@@ -45,16 +44,24 @@
 	import { formatMoney } from '../../utils/fishingStore.js'
 
 	export default {
-		data() { return { goods: null, qty: 1, goodsId: null } },
+		data() { return { goods: null, qty: 1, goodsId: null, loading: true, loadError: '' } },
 		onLoad(query) {
 			this.goodsId = query.goodsId
-			fetchGoodsDetail(query.goodsId).then((g) => {
-				if (!g) { uni.showToast({ title: '补给不存在', icon: 'none' }); return }
-				this.goods = g
-			})
+			this.loadGoods()
 		},
 		methods: {
 			formatMoney,
+			loadGoods() {
+				this.loading = true
+				this.loadError = ''
+				fetchGoodsDetail(this.goodsId).then((g) => {
+					if (!g || String(g.status) !== '0') throw new Error('该商品已下架')
+					this.goods = g
+				}).catch((error) => {
+					this.goods = null
+					this.loadError = (error && (error.msg || error.message)) || '请检查网络后重试'
+				}).finally(() => { this.loading = false })
+			},
 			inc() { if (this.qty < (this.goods.stock || 99)) this.qty++ },
 			dec() { if (this.qty > 1) this.qty-- },
 			addCart() {
@@ -100,6 +107,10 @@
 	.btn { flex: 1; height: 80rpx; border-radius: var(--r-pill); font-size: 28rpx; font-weight: 600; }
 	.btn.ghost { background: transparent; color: var(--jade); border: 1rpx solid var(--g-200); }
 	.btn.primary { background: var(--g-600); color: #fff; }
+</style>
+
+<style>
+.detail .btn[disabled]{opacity:.45}.detail .desc-row{align-items:flex-start;padding:18rpx 0;line-height:1.6}.detail .empty-retry{margin:28rpx auto 0;width:220rpx;height:72rpx;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#0aa9a5;color:#fff;font-size:24rpx;font-weight:700}
 </style>
 
 <style>

@@ -13,7 +13,7 @@
 					<text class="metric-label">目标进度</text>
 					<view class="progress-number"><text>{{ progressPercent }}</text><text>%</text></view>
 					<view class="progress-track"><view :style="{ width: progressPercent + '%' }"></view></view>
-					<text class="metric-note">目标：进入前三</text><text class="metric-note">结束：31天后</text>
+					<text class="metric-note">目标：进入前三</text><text class="metric-note">本月剩余：{{ daysLeft }} 天</text>
 				</view>
 				<view class="goal-metric current-score">
 					<text class="metric-label">当前成绩</text>
@@ -26,18 +26,14 @@
 
 		<view class="goal-panel advice-panel">
 			<text class="goal-panel-title">本周建议</text>
-			<view class="advice-row"><text class="check-dot">✓</text><text>再称重 2.80kg 可超过第4名</text></view>
-			<view class="advice-row"><text class="check-dot">✓</text><text>优先选择大鱼放流较少的时段</text></view>
-			<view class="advice-row"><text class="check-dot">✓</text><text>尝试早晚时段，鱼情更活跃</text></view>
+			<view class="advice-row"><text class="check-dot">✓</text><text>{{ gapText }}</text></view>
+			<view class="advice-row"><text class="check-dot">✓</text><text>{{ type === 'weight' ? '称鱼记录审核通过后自动计入钓王榜' : '消费、签到与活动积分到账后自动计入积分榜' }}</text></view>
+			<view class="advice-row"><text class="check-dot">✓</text><text>榜单只统计本月后台确认的真实数据</text></view>
 		</view>
 
-		<view class="goal-panel reward-preview">
-			<view class="goal-panel-head"><text class="goal-panel-title">奖励预览 <text class="small-note">（本月）</text></text><text class="rule-link" @click="scrollToRule">规则说明 ›</text></view>
-			<view class="reward-cards">
-				<view class="reward-card gold"><text class="reward-name">冠军</text><view class="trophy"><text>★</text></view><text class="reward-note">限定挂件 + ¥50券</text></view>
-				<view class="reward-card silver"><text class="reward-name">亚军</text><view class="trophy"><text>★</text></view><text class="reward-note">限定挂件 + ¥30券</text></view>
-				<view class="reward-card bronze"><text class="reward-name">季军</text><view class="trophy"><text>★</text></view><text class="reward-note">限定挂件 + ¥20券</text></view>
-			</view>
+		<view class="goal-panel rule-panel">
+			<view class="goal-panel-head"><text class="goal-panel-title">排行说明</text></view>
+			<text class="rule-panel-text">钓王榜按本月累计审核称鱼重量排序；积分榜按本月到账积分排序。若钓场发布奖励活动，以活动详情和后台配置为准。</text>
 		</view>
 
 		<view class="goal-actions">
@@ -60,7 +56,9 @@ export default {
 			type: 'weight',
 			rows: [],
 			user: null,
-			statusBarHeight: 20
+			statusBarHeight: 20,
+			loading: true,
+			loadError: ''
 		}
 	},
 	computed: {
@@ -93,7 +91,7 @@ export default {
 		},
 		myIndex() {
 			if (!this.user) return -1
-			return this.rows.findIndex((r) => r.userId === this.user.userId)
+			return this.rows.findIndex((r) => String(r.userId) === String(this.user.userId))
 		},
 		myRankText() {
 			if (!this.user) return '登录后同步战绩'
@@ -117,19 +115,11 @@ export default {
 			return '距离目标还差 ' + this.formatNumber(gap) + this.unit
 		},
 		progressPercent() {
-			const top = Math.max(1, this.valueNumber(this.champion))
-			const value = this.myIndex >= 0 ? this.myValue : Math.round(top * 0.42)
-			return Math.min(99, Math.max(12, Math.round((value / top) * 100)))
+			if (this.myIndex < 0 || !this.rows.length) return 0
+			const target = Math.max(1, this.valueNumber(this.rows[Math.min(2, this.rows.length - 1)]))
+			return Math.min(100, Math.max(0, Math.round((this.myValue / target) * 100)))
 		},
-		weeklyGoal() {
-			return this.type === 'weight' ? '再增 12.5斤' : '再拿 860分'
-		},
-		rewardHint() {
-			return this.type === 'weight' ? '钓王券包' : '积分加速卡'
-		},
-		dockTitle() {
-			return this.type === 'weight' ? '录入今日称鱼成绩' : '去签到或完成补给任务'
-		}
+		daysLeft() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() }
 	},
 	onLoad() {
 		try {
@@ -144,11 +134,17 @@ export default {
 	},
 	methods: {
 		load() {
+			this.loading = true
+			this.loadError = ''
 			const cached = getCachedVenue()
 			const venueId = cached && cached.venue ? cached.venue.venueId : null
 			fetchLeaderboard(this.type, venueId).then((rows) => {
 				this.rows = rows || []
-			})
+			}).catch((error) => {
+				this.rows = []
+				this.loadError = (error && (error.msg || error.message)) || '榜单加载失败'
+				uni.showToast({ title: this.loadError, icon: 'none' })
+			}).finally(() => { this.loading = false })
 		},
 		switchType(nextType) {
 			if (this.type === nextType) return
@@ -1151,5 +1147,6 @@ export default {
 
 <style scoped>
 .goal-page{min-height:100vh;padding:14rpx 20rpx calc(130rpx + env(safe-area-inset-bottom));box-sizing:border-box;background:#f7fbfb;color:#073f45;overflow-x:hidden}.goal-tabs{width:100%;height:66rpx;margin:0 0 16rpx;padding:5rpx;display:flex;box-sizing:border-box;border:1rpx solid #dbe7e6;border-radius:12rpx;background:#edf3f3}.goal-tab{flex:1;display:flex;align-items:center;justify-content:center;border-radius:9rpx;color:#738385;font-size:24rpx}.goal-tab.active{background:#fff;color:#153f42;font-weight:800;box-shadow:0 2rpx 7rpx rgba(10,64,65,.08)}.goal-panel{margin-top:14rpx;padding:20rpx;border:1rpx solid #cfe2e0;border-radius:15rpx;background:#fff}.goal-panel-head{display:flex;align-items:center;gap:12rpx}.goal-panel-title{font-size:28rpx;font-weight:800;color:#113f43}.target-icon{width:34rpx;height:34rpx;border:5rpx solid #0ba8a5;border-radius:50%;box-sizing:border-box;position:relative}.target-icon::before{content:'';position:absolute;left:6rpx;top:6rpx;width:8rpx;height:8rpx;border-radius:50%;background:#0ba8a5}.target-icon::after{content:'';position:absolute;right:-7rpx;top:-7rpx;width:14rpx;height:4rpx;border-radius:99rpx;background:#0ba8a5;transform:rotate(-45deg)}.current-rank{margin-left:auto;font-size:21rpx;color:#6a7d7f}.current-rank text{color:#09a4a1;font-size:27rpx;font-weight:800}.goal-metrics{display:grid;grid-template-columns:1fr 1fr;margin-top:16rpx;border:1rpx solid #dce7e6;border-radius:12rpx;overflow:hidden}.goal-metric{min-height:210rpx;padding:20rpx;box-sizing:border-box}.goal-metric+.goal-metric{border-left:1rpx solid #dce7e6}.metric-label,.metric-note{display:block}.metric-label{font-size:22rpx;color:#6d8082}.progress-number,.score-number{display:flex;align-items:baseline;margin:12rpx 0}.progress-number text:first-child{font-size:54rpx;line-height:1;color:#08aaa6;font-weight:800}.progress-number text:last-child{font-size:29rpx;color:#08aaa6;font-weight:700}.progress-track{height:12rpx;border-radius:99rpx;background:#e5eeee;overflow:hidden;margin-bottom:14rpx}.progress-track view{height:100%;border-radius:99rpx;background:#0aaaa6}.metric-note{font-size:20rpx;line-height:1.55;color:#637779}.score-number text:first-child{font-size:43rpx;line-height:1;color:#143f42;font-weight:800}.score-number text:last-child{margin-left:5rpx;font-size:20rpx;color:#617577}.score-divider{height:1rpx;background:#dce7e6;margin:17rpx 0 11rpx}.gap-number{display:block;margin-top:4rpx;color:#09a4a1;font-size:27rpx;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.advice-panel{padding:20rpx 22rpx}.advice-row{display:flex;align-items:center;gap:11rpx;margin-top:16rpx;color:#5d7173;font-size:22rpx}.check-dot{width:22rpx;height:22rpx;border:2rpx solid #0ba6a3;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#0ba6a3;font-size:14rpx;font-weight:800;box-sizing:border-box}.small-note{font-size:20rpx;color:#76888a;font-weight:400}.rule-link{margin-left:auto;font-size:21rpx;color:#697d7f}.reward-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:16rpx}.reward-card{height:178rpx;padding:13rpx 8rpx 10rpx;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;border:1rpx solid #dce7e6;border-radius:11rpx;background:#fbfdfd}.reward-name{font-size:22rpx;font-weight:800}.trophy{width:52rpx;height:51rpx;margin-top:10rpx;border-radius:6rpx 6rpx 16rpx 16rpx;background:#e2a400;position:relative;display:flex;align-items:center;justify-content:center}.trophy::before,.trophy::after{content:'';position:absolute;top:7rpx;width:15rpx;height:22rpx;border:5rpx solid currentColor}.trophy::before{left:-15rpx;border-right:0;border-radius:12rpx 0 0 12rpx}.trophy::after{right:-15rpx;border-left:0;border-radius:0 12rpx 12rpx 0}.trophy text{color:#fff4c9;font-size:21rpx}.silver .trophy{background:#aebcbf;color:#aebcbf}.bronze .trophy{background:#bc784d;color:#bc784d}.gold .trophy{color:#e2a400}.reward-note{margin-top:auto;color:#65787a;font-size:17rpx;white-space:nowrap}.goal-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:18rpx}.goal-action{height:164rpx;padding:15rpx 8rpx;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;border:1rpx solid #dce7e6;border-radius:13rpx;background:#fff}.action-symbol{width:48rpx;height:48rpx;margin-bottom:8rpx;display:flex;align-items:center;justify-content:center;color:#0aa6a3;font-size:22rpx;font-weight:800;position:relative}.goal-action>text:nth-child(2){font-size:23rpx;font-weight:800}.goal-action>text:nth-child(3){margin-top:5rpx;font-size:18rpx;color:#728486}.scale-symbol{border:7rpx solid #0aa6a3;border-radius:50% 50% 11rpx 11rpx;box-sizing:border-box}.scale-symbol::after{content:'';position:absolute;top:9rpx;width:4rpx;height:13rpx;background:#0aa6a3;transform:rotate(30deg);transform-origin:bottom}.medal-symbol{border:6rpx solid #0aa6a3;border-radius:50%;box-sizing:border-box}.people-symbol::before,.people-symbol::after{content:'';position:absolute;border-radius:50%;background:#0aa6a3}.people-symbol::before{width:18rpx;height:18rpx;left:4rpx;top:5rpx;box-shadow:23rpx 3rpx 0 #0aa6a3}.people-symbol::after{left:0;right:0;bottom:4rpx;height:23rpx;border-radius:20rpx 20rpx 7rpx 7rpx}.goal-primary-btn{height:76rpx;margin-top:16rpx;display:flex;align-items:center;justify-content:center;border-radius:11rpx;background:#0bafab;color:#fff;font-size:28rpx;font-weight:800}.goal-rule-note{margin-top:14rpx;padding:15rpx 4rpx;color:#7e9091;font-size:19rpx;line-height:1.5}
+.rule-panel-text{display:block;margin-top:14rpx;color:#607476;font-size:21rpx;line-height:1.7}
 @media (max-height:700px){.goal-panel{padding:16rpx;margin-top:10rpx}.goal-metric{min-height:178rpx;padding:15rpx}.reward-card{height:150rpx}.goal-action{height:140rpx}.goal-primary-btn{height:68rpx}}
 </style>

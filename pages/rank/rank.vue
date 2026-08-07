@@ -7,9 +7,10 @@
 				<view class="rank-tab" :class="{ active: type === 'weight' }" @click="switchType('weight')">钓王榜</view>
 				<view class="rank-tab" :class="{ active: type === 'points' }" @click="switchType('points')">积分榜</view>
 			</view>
-			<view class="rank-filter"><text>本月排行⌄</text><text>2025年5月</text></view>
+			<view class="rank-filter"><text>本月排行</text><text>{{ currentMonth }}</text></view>
+			<view v-if="loading || loadError" class="rank-load-state" @click="load"><text>{{ loading ? '正在同步真实榜单…' : loadError + ' · 点击重试' }}</text></view>
 
-			<view class="podium">
+			<view v-if="rows.length" class="podium">
 				<view class="podium-col" v-if="podium[0]">
 					<view class="podium-avatar rank2"><text class="podium-avatar-text">{{ avatarText(podium[0]) }}</text></view>
 					<text class="podium-name">{{ podium[0].nickname }}</text>
@@ -41,7 +42,7 @@
 
 		</view>
 
-		<view class="rank-list">
+		<view v-if="rows.length" class="rank-list">
 			<view class="rank-row" v-for="(r, i) in restList" :key="r.userId">
 				<text class="rank-row-no">{{ i + 4 }}</text>
 				<view class="rank-row-avatar"><text>{{ avatarText(r) }}</text></view>
@@ -53,10 +54,11 @@
 			</view>
 			<view v-if="!restList.length" class="rank-empty"><text>暂无更多上榜数据</text></view>
 		</view>
+		<view v-else-if="!loading && !loadError" class="rank-empty standalone-empty"><text>本月还没有上榜记录，完成称鱼或积分任务后即可参与排行</text></view>
 
 		<view class="rank-reward-callout">
 			<view class="gift-icon"></view>
-			<text>前三名得限定挂件与优惠券</text>
+			<text>榜单仅展示后台审核后的真实称鱼与积分数据</text>
 			<text class="callout-arrow">›</text>
 		</view>
 
@@ -76,7 +78,7 @@ import { fetchLeaderboard, getUser, getCachedVenue, seedHomeIfAlone } from '../.
 
 export default {
 	data() {
-		return { type: 'weight', rows: [], user: null }
+		return { type: 'weight', rows: [], user: null, loading: true, loadError: '' }
 	},
 	computed: {
 		unit() { return this.type === 'weight' ? '斤' : '分' },
@@ -84,9 +86,10 @@ export default {
 		restList() { return this.rows.slice(3) },
 		myRankText() {
 			if (!this.user) return '登录后查看'
-			const idx = this.rows.findIndex((r) => r.userId === this.user.userId)
+			const idx = this.rows.findIndex((r) => String(r.userId) === String(this.user.userId))
 			return idx >= 0 ? '第 ' + (idx + 1) + ' 名' : '未上榜'
-		}
+		},
+		currentMonth() { const d = new Date(); return `${d.getFullYear()}年${d.getMonth() + 1}月` }
 	},
 	onShow() {
 		if (seedHomeIfAlone('/pages/rank/rank')) return
@@ -95,9 +98,14 @@ export default {
 	},
 	methods: {
 		load() {
+			this.loading = true
+			this.loadError = ''
 			const cached = getCachedVenue()
 			const venueId = cached && cached.venue ? cached.venue.venueId : null
-			fetchLeaderboard(this.type, venueId).then((rows) => { this.rows = rows || [] })
+			fetchLeaderboard(this.type, venueId).then((rows) => { this.rows = rows || [] }).catch((error) => {
+				this.rows = []
+				this.loadError = (error && (error.msg || error.message)) || '榜单加载失败'
+			}).finally(() => { this.loading = false })
 		},
 		switchType(t) {
 			if (this.type === t) return
@@ -547,5 +555,7 @@ export default {
 
 <style scoped>
 .rank-page{padding-bottom:calc(124rpx + env(safe-area-inset-bottom));background:#f7fbfb;color:#073f45}.rank-hero{margin:0 20rpx;padding:14rpx 0 0;background:transparent;border-radius:0;overflow:visible}.rank-hero-glow{display:none}.rank-tabs{width:100%;height:68rpx;padding:5rpx;box-sizing:border-box;border:1rpx solid #dce8e7;background:#eef4f4;border-radius:13rpx}.rank-tab{color:#6f8082;border-radius:10rpx;font-size:25rpx}.rank-tab.active{background:#fff;color:#153f43;box-shadow:0 2rpx 6rpx rgba(10,65,67,.08)}.rank-filter{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx;font-size:23rpx;color:#607476}.rank-filter text:first-child{padding:10rpx 16rpx;border-radius:10rpx;background:#ebf2f2;color:#244e51}.rank-title,.rank-sub,.rank-rewards{display:none}.podium{height:340rpx;margin:14rpx 0 0;gap:0;align-items:flex-end}.podium-col{max-width:none}.podium-avatar{width:92rpx;height:92rpx;background:#cce8e8;border:4rpx solid #8abfc0;box-shadow:none}.podium-avatar.rank1{width:110rpx;height:110rpx;border-color:#eda900;background:#f2dfb6}.podium-avatar.rank3{border-color:#d68762;background:#f4ddd2}.podium-avatar-text{color:#174b4e;font-size:33rpx}.podium-name{font-size:23rpx;color:#173f42;margin-top:8rpx}.podium-first{transform:none}.podium-crown{width:38rpx;height:26rpx;margin-bottom:6rpx;position:relative;background:#eca600;clip-path:polygon(0 100%,0 18%,28% 54%,50% 0,72% 54%,100% 18%,100% 100%)}.podium-stand{width:100%;margin-top:8rpx;border-radius:15rpx 15rpx 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:12rpx;box-sizing:border-box}.stand-2{height:136rpx;background:#d7f2f3}.stand-1{height:190rpx;background:#fff0cd;border:1rpx solid #e6b550}.stand-3{height:126rpx;background:#f9e2d8}.podium-rankno{order:2;font-size:29rpx;color:#718082}.podium-value{font-size:27rpx;color:#163f42}.podium-unit{font-size:18rpx}.rank-list{margin:0 20rpx;padding:0 20rpx;border-radius:0 0 14rpx 14rpx;border:1rpx solid #dbe7e6;border-top:0;background:#fff;box-shadow:none}.rank-row{height:74rpx;padding:0;border-bottom:1rpx solid #e1eae9}.rank-row-no{font-size:24rpx;color:#173f42}.rank-row-avatar{width:46rpx;height:46rpx;background:#dcefee}.rank-row-avatar text{font-size:20rpx}.rank-row-name{font-size:24rpx;color:#153f42}.rank-row-sub{font-size:18rpx}.rank-row-value{font-size:26rpx;color:#173f42}.rank-row-unit{font-size:17rpx}.rank-reward-callout{height:94rpx;margin:22rpx 20rpx 0;padding:0 22rpx;display:flex;align-items:center;gap:18rpx;border:1rpx solid #eed8a1;border-radius:14rpx;background:#fffaf0;color:#264a4c;font-size:25rpx}.gift-icon{width:44rpx;height:38rpx;border-radius:5rpx;background:#efa900;position:relative}.gift-icon::before{content:'';position:absolute;left:19rpx;top:-9rpx;width:7rpx;height:54rpx;background:#fff3cc}.gift-icon::after{content:'';position:absolute;left:-4rpx;top:7rpx;width:52rpx;height:7rpx;background:#fff3cc}.callout-arrow{margin-left:auto;font-size:34rpx}.rank-me{position:static;margin:18rpx 20rpx 0;padding:0;background:transparent;box-shadow:none}.rank-me-info{display:none}.rank-me-btn{width:100%;height:84rpx;border-radius:12rpx;display:flex;align-items:center;justify-content:center;background:#0bafab;color:#fff;font-size:29rpx;font-weight:800}.rank-empty{padding:34rpx 0;text-align:center;color:#879899;font-size:22rpx}
+.rank-load-state{height:120rpx;margin-top:14rpx;display:flex;align-items:center;justify-content:center;border:1rpx solid #dce8e7;border-radius:12rpx;background:#fff;color:#687d7f;font-size:22rpx}.rank-reward-callout text:nth-child(2){flex:1;font-size:21rpx;line-height:1.5}
+.standalone-empty{margin:16rpx 20rpx 0;padding:54rpx 32rpx;border:1rpx solid #dce8e7;border-radius:13rpx;background:#fff;line-height:1.7}
 @media (max-height:700px){.podium{height:300rpx}.stand-1{height:160rpx}.stand-2{height:116rpx}.stand-3{height:108rpx}.rank-row{height:66rpx}}
 </style>

@@ -6,7 +6,7 @@
 			<view class="hero-content">
 				<image class="logo" src="/static/logo-mark.svg" mode="aspectFit"></image>
 				<text class="app-name">共享钓场</text>
-				<text class="app-version">v1.0.0</text>
+				<text class="app-version">v{{ version }}</text>
 			</view>
 		</view>
 
@@ -31,7 +31,7 @@
 		<view class="card">
 			<view class="kv-row">
 				<text class="kv-key">版本号</text>
-				<text class="kv-val">v1.0.0</text>
+				<text class="kv-val">v{{ version }}</text>
 			</view>
 			<view class="kv-row">
 				<text class="kv-key">技术支持</text>
@@ -39,7 +39,7 @@
 			</view>
 		</view>
 
-		<view class="footer-text">© 2025 共享钓场 · All Rights Reserved</view>
+		<view class="footer-text">© {{ currentYear }} 共享钓场 · All Rights Reserved</view>
 		<account-tabbar active="mine" />
 	</view>
 </template>
@@ -48,6 +48,8 @@
 	export default {
 		data() {
 			return {
+				version: '1.0.3',
+				currentYear: new Date().getFullYear(),
 				features: [
 					{ icon: 'hic-scanin', title: '下竿计时', desc: '首页直接开始，也可扫描钓场码快捷进入' },
 					{ icon: 'hic-timer', title: '实时计费', desc: '透明计费，随时查看费用明细' },

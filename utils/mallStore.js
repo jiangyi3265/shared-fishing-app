@@ -1,9 +1,6 @@
 import { http } from './request.js'
 import { normalizePaymentError } from './fishingStore.js'
 
-// 后端 API 已接通；如需脱机演示改回 false
-export const MALL_API_ENABLED = true
-
 const CART_KEY = 'fishpond_cart'
 
 export const MALL_ORDER_STATUS = {
@@ -14,34 +11,6 @@ export const MALL_ORDER_STATUS = {
 }
 
 // ---------------- 分类 + 商品 ----------------
-
-const MOCK_CATEGORIES = [
-	{ catId: 1, name: '热卖', icon: '🔥' },
-	{ catId: 2, name: '鱼饵', icon: '🪱' },
-	{ catId: 3, name: '渔具', icon: '🎣' },
-	{ catId: 4, name: '饮料', icon: '🥤' },
-	{ catId: 5, name: '小吃', icon: '🍢' }
-]
-
-const MOCK_PRODUCTS = [
-	{ goodsId: 101, catId: 2, name: '红虫(冻干)', subtitle: '40g · 经典款', priceCents: 1500, stock: 88, sales: 326, cover: '🪱', desc: '低温冷冻保存红虫，开袋即用，鲫鱼、鲤鱼通杀。' },
-	{ goodsId: 102, catId: 2, name: '玉米饵', subtitle: '300g · 散装', priceCents: 800, stock: 120, sales: 412, cover: '🌽', desc: '甜玉米发酵饵，野钓大鱼利器。' },
-	{ goodsId: 103, catId: 2, name: '蚯蚓鲜虫', subtitle: '一盒 · 现挖', priceCents: 1000, stock: 50, sales: 198, cover: '🐛', desc: '当日新鲜蚯蚓，活力强、上钩率高。' },
-	{ goodsId: 201, catId: 3, name: '碳素鱼竿 5.4米', subtitle: '高碳素 · 28调', priceCents: 28800, stock: 12, sales: 47, cover: '🎣', desc: '5.4 米高碳素台钓竿，重量 145g，腰力十足。' },
-	{ goodsId: 202, catId: 3, name: '鱼线 0.8号', subtitle: '500m · 主线', priceCents: 3500, stock: 36, sales: 89, cover: '🧵', desc: '日本进口尼龙线，柔软耐磨，结节强度高。' },
-	{ goodsId: 203, catId: 3, name: '伊势尼鱼钩', subtitle: '6号 · 一包10枚', priceCents: 1200, stock: 200, sales: 612, cover: '🪝', desc: '黑色高碳钢，倒刺结实，鲫鱼必备。' },
-	{ goodsId: 301, catId: 4, name: '冰镇可乐', subtitle: '330ml', priceCents: 400, stock: 200, sales: 1245, cover: '🥤', desc: '冰柜直取，钓累了来一罐。' },
-	{ goodsId: 302, catId: 4, name: '矿泉水', subtitle: '550ml', priceCents: 200, stock: 500, sales: 2134, cover: '💧', desc: '5 元 3 瓶，户外解渴必备。' },
-	{ goodsId: 303, catId: 4, name: '红牛功能饮料', subtitle: '250ml', priceCents: 700, stock: 80, sales: 320, cover: '🐂', desc: '夜钓提神。' },
-	{ goodsId: 401, catId: 5, name: '现烤鸡翅', subtitle: '一份 · 4个', priceCents: 1800, stock: 30, sales: 156, cover: '🍗', desc: '炭火现烤，外脆里嫩。' },
-	{ goodsId: 402, catId: 5, name: '泡面套餐', subtitle: '康师傅红烧牛肉', priceCents: 800, stock: 100, sales: 432, cover: '🍜', desc: '附热水、火腿肠、卤蛋。' },
-	{ goodsId: 403, catId: 5, name: '关东煮拼盘', subtitle: '8 串', priceCents: 1500, stock: 40, sales: 211, cover: '🍢', desc: '萝卜、海带结、鱼丸、墨鱼丸。' }
-]
-
-// 热卖：按销量取前 6
-function buildHot() {
-	return MOCK_PRODUCTS.slice().sort((a, b) => b.sales - a.sales).slice(0, 6)
-}
 
 function normalizeGoods(g) {
 	if (!g) return null
@@ -61,28 +30,21 @@ function normalizeGoods(g) {
 }
 
 export function fetchCategories() {
-	if (MALL_API_ENABLED) return http.get('/app/mall/category/list').then((rows) => {
+	return http.get('/app/mall/category/list').then((rows) => {
 		const list = rows || []
 		// 顶部追加"热卖"虚拟分类
 		return [{ catId: 0, name: '热卖', icon: '🔥' }, ...list]
 	})
-	return Promise.resolve([{ catId: 1, name: '热卖', icon: '🔥' }, ...MOCK_CATEGORIES.slice(1)])
 }
 
 export function fetchGoodsByCategory(catId) {
-	if (MALL_API_ENABLED) {
-		// catId 为 0 → 不传，后端按销量排序返回全部上架
-		const params = catId && catId !== 0 ? { catId } : null
-		return http.get('/app/mall/goods/list' + (params ? '' : ''), params).then((rows) => (rows || []).map(normalizeGoods))
-	}
-	if (catId === 1 || catId === 0) return Promise.resolve(buildHot())
-	return Promise.resolve(MOCK_PRODUCTS.filter((p) => p.catId === catId))
+	// catId 为 0 → 不传，后端按销量排序返回全部上架
+	const params = catId && catId !== 0 ? { catId } : null
+	return http.get('/app/mall/goods/list', params).then((rows) => (rows || []).map(normalizeGoods))
 }
 
 export function fetchGoodsDetail(goodsId) {
-	if (MALL_API_ENABLED) return http.get('/app/mall/goods/' + goodsId).then(normalizeGoods)
-	const p = MOCK_PRODUCTS.find((g) => g.goodsId === Number(goodsId))
-	return Promise.resolve(p || null)
+	return http.get('/app/mall/goods/' + goodsId).then(normalizeGoods)
 }
 
 // ---------------- 购物车（本地） ----------------
@@ -134,20 +96,42 @@ export function cartTotalCents(items) {
 	return list.reduce((acc, i) => acc + (i.priceCents || 0) * (i.qty || 0), 0)
 }
 
-// ---------------- 商城订单（mock 缓存到本地） ----------------
-
-const MALL_ORDER_KEY = 'fishpond_mall_orders'
-
-function readMallOrders() {
-	try {
-		const raw = uni.getStorageSync(MALL_ORDER_KEY)
-		if (!raw) return []
-		if (Array.isArray(raw)) return raw
-		return JSON.parse(raw) || []
-	} catch (e) { return [] }
+/**
+ * 结算前必须重新读取服务端商品快照。
+ * 本地购物车只保存选择结果，价格、上下架状态和库存始终以后端为准。
+ */
+export function refreshCartItems() {
+	const cached = readCart()
+	if (!cached.length) return Promise.resolve([])
+	return Promise.all(cached.map((item) => fetchGoodsDetail(item.goodsId).then((goods) => {
+		if (!goods || String(goods.status) !== '0') {
+			const error = new Error(`「${item.name || '商品'}」已下架，请移除后再结算`)
+			error.msg = error.message
+			throw error
+		}
+		const stock = Math.max(0, Number(goods.stock) || 0)
+		if (stock < Number(item.qty || 0)) {
+			const error = new Error(`「${goods.name}」库存仅剩 ${stock} 件，请调整数量`)
+			error.msg = error.message
+			throw error
+		}
+		return {
+			goodsId: goods.goodsId,
+			name: goods.name,
+			subtitle: goods.subtitle || '',
+			priceCents: Number(goods.priceCents) || 0,
+			cover: goods.cover,
+			stock,
+			status: goods.status,
+			qty: Math.max(1, Number(item.qty) || 1)
+		}
+	}))).then((items) => {
+		writeCart(items)
+		return items
+	})
 }
 
-function writeMallOrders(orders) { uni.setStorageSync(MALL_ORDER_KEY, orders) }
+// ---------------- 商城订单（仅使用正式后端） ----------------
 
 function normalizeMallOrder(o) {
 	if (!o) return null
@@ -176,56 +160,44 @@ function normalizeMallOrder(o) {
 	}
 }
 
-export function submitMallOrder({ items, remark, useBalance, pointsToUse }) {
-	if (MALL_API_ENABLED) {
-		return http.post('/app/mall/order/submit', {
-			items: items.map((i) => ({ goodsId: i.goodsId, qty: i.qty })),
-			remark,
-			useBalance: !!useBalance,
-			pointsToUse: pointsToUse || 0
-		}).then((data) => {
-			if (!data) return null
-			const order = normalizeMallOrder(data.order)
-			if (data.needWxPay && data.pay && !data.pay.mock) {
-				return new Promise((resolve, reject) => {
-					uni.requestPayment({
-						provider: 'wxpay',
-						timeStamp: String(data.pay.timeStamp || ''),
-						nonceStr: data.pay.nonceStr || '',
-						package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
-						signType: data.pay.signType || 'RSA',
-						paySign: data.pay.paySign || '',
-						success: () => waitMallOrderPaid(order && order.mallOrderId).then(resolve).catch(() => resolve(order)),
-						fail: (err) => reject(normalizePaymentError(err))
-					})
-				})
+function requestMallPayment(data) {
+	if (!data) return Promise.resolve(null)
+	const order = normalizeMallOrder(data.order)
+	if (!data.needWxPay || !data.pay || data.pay.mock) return Promise.resolve(order)
+	return new Promise((resolve, reject) => {
+		uni.requestPayment({
+			provider: 'wxpay',
+			timeStamp: String(data.pay.timeStamp || ''),
+			nonceStr: data.pay.nonceStr || '',
+			package: data.pay.package || ('prepay_id=' + (data.pay.prepayId || '')),
+			signType: data.pay.signType || 'RSA',
+			paySign: data.pay.paySign || '',
+			success: () => waitMallOrderPaid(order && order.mallOrderId).then(resolve).catch(() => resolve(order)),
+			fail: (err) => {
+				const error = normalizePaymentError(err)
+				error.order = order
+				reject(error)
 			}
-			return order
 		})
-	}
-	// mock 本地：伪造一单，直接置为可领取
-	const totalCents = cartTotalCents(items)
-	const now = Date.now()
-	const order = {
-		mallOrderId: now,
-		mallOrderNo: 'M' + now,
-		items: items.map((i) => ({ ...i })),
-		totalCents,
-		status: MALL_ORDER_STATUS.PAID,
-		remark: remark || '',
-		redeemCode: String(now).slice(-8),
-		createTime: new Date(now).toISOString(),
-		paidTime: new Date(now).toISOString()
-	}
-	const all = readMallOrders()
-	all.unshift(order)
-	writeMallOrders(all)
-	return Promise.resolve(order)
+	})
+}
+
+export function submitMallOrder({ items, remark, useBalance, pointsToUse }) {
+	return http.post('/app/mall/order/submit', {
+		items: items.map((i) => ({ goodsId: i.goodsId, qty: i.qty })),
+		remark,
+		useBalance: !!useBalance,
+		pointsToUse: pointsToUse || 0
+	}).then(requestMallPayment)
+}
+
+/** 复用原订单继续支付，避免重复下单和重复扣库存。 */
+export function payMallOrder(mallOrderId) {
+	return http.post('/app/mall/order/' + mallOrderId + '/pay', {}).then(requestMallPayment)
 }
 
 export function fetchMyMallOrders() {
-	if (MALL_API_ENABLED) return http.get('/app/mall/order/my').then((rows) => (rows || []).map(normalizeMallOrder))
-	return Promise.resolve(readMallOrders())
+	return http.get('/app/mall/order/my').then((rows) => (rows || []).map(normalizeMallOrder))
 }
 
 /** 待支付商城订单（用于钓场结算合并支付） */
@@ -234,9 +206,7 @@ export function fetchUnpaidMallOrders() {
 }
 
 export function fetchMallOrderDetail(mallOrderId) {
-	if (MALL_API_ENABLED) return http.get('/app/mall/order/' + mallOrderId).then(normalizeMallOrder)
-	const found = readMallOrders().find((o) => String(o.mallOrderId) === String(mallOrderId))
-	return Promise.resolve(found || null)
+	return http.get('/app/mall/order/' + mallOrderId).then(normalizeMallOrder)
 }
 
 function waitMallOrderPaid(mallOrderId, left = 6) {
