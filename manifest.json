@@ -60,11 +60,28 @@
                 {
                     "type" : "folder",
                     "value" : "docs"
+                },
+                {
+                    "type" : "file",
+                    "value" : "static/stocking-crucian-v1.jpg"
+                },
+                {
+                    "type" : "file",
+                    "value" : "static/goal-hero.jpg"
+                },
+                {
+                    "type" : "file",
+                    "value" : "static/hero-scene.svg"
+                },
+                {
+                    "type" : "file",
+                    "value" : "static/logo.svg"
                 }
             ]
         },
         "setting" : {
-            "urlCheck" : true
+            "urlCheck" : true,
+            "minified" : true
         },
         "usingComponents" : true
     },
