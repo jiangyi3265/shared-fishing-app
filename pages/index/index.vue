@@ -24,6 +24,7 @@
 		@competition="goCompetition"
 		@member="goMember"
 		@mall="goMall"
+		@weigh="goWeighFish"
 		@services="goServices"
 		@checkout="settleFishing"
 		@mine="goMine"

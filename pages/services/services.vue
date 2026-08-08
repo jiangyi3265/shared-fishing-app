@@ -44,6 +44,16 @@
 					</view>
 				</view>
 
+				<view v-if="weighItem" class="weigh-service-entry" @click="openService(weighItem)">
+					<view class="weigh-service-icon"><view class="weigh-service-scale"><view></view></view></view>
+					<view class="weigh-service-copy">
+						<text>鱼获称重</text>
+						<text>录入电子秤重量，自动计算鱼获金额</text>
+					</view>
+					<text class="weigh-service-tag">现场结算</text>
+					<text class="weigh-service-arrow">›</text>
+				</view>
+
 				<view class="directory-section">
 					<view class="section-heading"><text class="section-title">钓场与社区</text></view>
 					<view class="icon-directory">
@@ -99,6 +109,7 @@
 	const DISPLAY_LABELS = {
 		'/pages/rank/rank': '钓王排行',
 		'/pages/fishCard/fishCard': '鱼卡图鉴',
+		'/pages/weighFish/weighFish': '鱼获称重',
 		'/pages/coupons/coupons': '优惠券',
 		'/pages/mall/index': '补给商城',
 		'/pages/staff/workbench': '商家工作台'
@@ -113,6 +124,7 @@
 		'/pages/group/group': 'icon-group',
 		'/pages/fishCard/fishCard': 'icon-fish-card',
 		'/pages/competition/competition': 'icon-crown',
+		'/pages/weighFish/weighFish': 'icon-scale',
 		'/pages/member/member': 'icon-person',
 		'/pages/points/points': 'icon-star',
 		'/pages/checkin/checkin': 'icon-calendar',
@@ -155,11 +167,16 @@
 						]
 					},
 					{
-						title: '鱼卡比赛', desc: '鱼种识别、称鱼和赛事参与',
+						title: '鱼卡比赛', desc: '鱼种识别和赛事参与',
 						items: [
 							{ name: '极智鱼鉴', desc: '识别鱼种并生成电子鱼卡', mark: '卡', url: '/pages/fishCard/fishCard', auth: true },
-							{ name: '钓王争霸', desc: '查看赛事并在线报名参赛', mark: '赛', url: '/pages/competition/competition', auth: true },
-							{ name: '称鱼结算', desc: '录入重量并完成称鱼计费', mark: '称', url: '/pages/weighFish/weighFish', auth: true }
+							{ name: '钓王争霸', desc: '查看赛事并在线报名参赛', mark: '赛', url: '/pages/competition/competition', auth: true }
+						]
+					},
+					{
+						title: '鱼获称重', desc: '现场称重与鱼获结算',
+						items: [
+							{ name: '鱼获称重', desc: '录入重量并完成鱼获计价', mark: '称', url: '/pages/weighFish/weighFish', auth: true }
 						]
 					},
 					{
@@ -224,6 +241,7 @@
 				return this.groups.reduce((items, group) => items.concat(group.items || []), [])
 			},
 			coreItems() { return this.groups[0].items },
+			weighItem() { return this.findItem('/pages/weighFish/weighFish') },
 			venueCommunityItems() {
 				return this.pickItems([
 					'/pages/venue/venue', '/pages/reserve/reserve', '/pages/stocking/stocking', '/pages/catch/catch',
@@ -238,7 +256,7 @@
 			},
 			activityHelpItems() {
 				return this.pickItems([
-					'/pages/promotions/promotions', '/pages/mall/orders', '/pages/weighFish/weighFish', '/pages/refund/list',
+					'/pages/promotions/promotions', '/pages/mall/orders', '/pages/refund/list',
 					'/pages/contact/contact', '/pages/settings/settings', '/pages/guide/guide', '/pages/rateInfo/rateInfo'
 				])
 			},
@@ -294,6 +312,7 @@
 	.icon-rental .icon-shape{width:44rpx;height:40rpx}.icon-rental .icon-shape::before{content:'';position:absolute;left:4rpx;top:18rpx;width:40rpx;height:4rpx;border-radius:99rpx;background:currentColor;transform:rotate(-45deg)}.icon-rental .icon-shape::after{content:'';position:absolute;right:0;bottom:0;width:11rpx;height:15rpx;border:3rpx solid currentColor;border-top:0;border-left:0;border-radius:0 0 10rpx 0}
 	.icon-bag .icon-shape{width:36rpx;height:35rpx;border:4rpx solid currentColor;border-radius:5rpx}.icon-bag .icon-shape::before{content:'';position:absolute;left:7rpx;top:-13rpx;width:13rpx;height:13rpx;border:4rpx solid currentColor;border-bottom:0;border-radius:10rpx 10rpx 0 0;box-sizing:border-box}
 	.icon-grid .icon-shape{width:38rpx;height:38rpx;border:4rpx solid currentColor;border-radius:6rpx}.icon-grid .icon-shape::after{content:'···';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26rpx;font-weight:900}
+	.weigh-service-entry{min-height:118rpx;margin:0 24rpx 8rpx;padding:16rpx 18rpx;display:flex;align-items:center;border:1rpx solid #cde3e1;border-radius:16rpx;background:#edf8f6;color:#143f42;box-sizing:border-box}.weigh-service-entry:active{background:#e2f2f0}.weigh-service-icon{width:74rpx;height:74rpx;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:16rpx;background:#0aa5a2;color:#f7fbfa}.weigh-service-scale{width:44rpx;height:42rpx;position:relative;box-sizing:border-box}.weigh-service-scale::before{content:'';position:absolute;left:2rpx;right:2rpx;bottom:0;height:28rpx;border:4rpx solid currentColor;border-radius:7rpx;box-sizing:border-box}.weigh-service-scale::after{content:'';position:absolute;left:11rpx;top:0;width:22rpx;height:22rpx;border:4rpx solid currentColor;border-radius:50%;background:#0aa5a2;box-sizing:border-box}.weigh-service-scale view{position:absolute;z-index:1;left:21rpx;top:5rpx;width:3rpx;height:9rpx;border-radius:99rpx;background:currentColor;transform:rotate(35deg);transform-origin:bottom}.weigh-service-copy{flex:1;min-width:0;margin-left:18rpx;display:flex;flex-direction:column}.weigh-service-copy text:first-child{font-size:26rpx;font-weight:900}.weigh-service-copy text:last-child{margin-top:5rpx;overflow:hidden;color:#657d7f;font-size:19rpx;white-space:nowrap;text-overflow:ellipsis}.weigh-service-tag{margin-left:12rpx;padding:6rpx 10rpx;border-radius:7rpx;background:#d6eeeb;color:#087c7a;font-size:17rpx;font-weight:800}.weigh-service-arrow{margin-left:10rpx;color:#789091;font-size:32rpx;font-weight:300}
 	.compact-section{padding-bottom:18rpx}.compact-list{margin-top:18rpx;border-top:1rpx solid #e0e8e7}.two-columns{display:grid;grid-template-columns:1fr 1fr}.compact-row{min-width:0;height:76rpx;padding:0 10rpx;display:flex;align-items:center;border-bottom:1rpx solid #e0e8e7;box-sizing:border-box}.two-columns .compact-row:nth-child(odd){padding-right:18rpx;border-right:1rpx solid #e0e8e7}.two-columns .compact-row:nth-child(even){padding-left:18rpx}.row-mark{width:38rpx;height:38rpx;margin-right:11rpx;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:11rpx;background:#eaf6f5;color:#078f8d;font-size:17rpx;font-weight:900}.row-title{flex:1;min-width:0;overflow:hidden;font-size:21rpx;font-weight:750;white-space:nowrap;text-overflow:ellipsis}.row-arrow{margin-left:8rpx;color:#91a2a3;font-size:28rpx;font-weight:300}.more-section{padding-top:26rpx}
 	.merchant-entry{height:86rpx;margin:24rpx;display:flex;align-items:center;padding:0 20rpx;border:1rpx solid #e9bd7d;border-radius:13rpx;background:#fff5e8;color:#9d5707;box-sizing:border-box}.merchant-icon{width:42rpx;height:42rpx;margin-right:15rpx;display:flex;align-items:center;justify-content:center}.merchant-icon view{width:34rpx;height:27rpx;border:4rpx solid currentColor;border-radius:4rpx;position:relative;box-sizing:border-box}.merchant-icon view::before{content:'';position:absolute;left:-5rpx;right:-5rpx;top:-11rpx;height:10rpx;border-radius:5rpx 5rpx 2rpx 2rpx;background:currentColor}.merchant-title{font-size:25rpx;font-weight:900}.merchant-tag{margin-left:17rpx;padding:5rpx 10rpx;border-radius:7rpx;background:#ffe9ca;color:#a86616;font-size:17rpx;font-weight:750}.merchant-arrow{margin-left:auto;font-size:31rpx;font-weight:300}
 	.search-results-section{min-height:620rpx;padding:34rpx 24rpx}.search-result-list{margin-top:22rpx}.search-result-list .compact-row{height:92rpx}.row-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4rpx}.row-copy text:first-child{font-size:23rpx;font-weight:800}.row-copy text:last-child{overflow:hidden;color:#7a8c8d;font-size:18rpx;white-space:nowrap;text-overflow:ellipsis}.search-empty{padding:120rpx 20rpx;display:flex;flex-direction:column;align-items:center;color:#7c8e90;text-align:center}.search-empty text:nth-child(2){margin-top:22rpx;color:#31585a;font-size:26rpx;font-weight:850}.search-empty text:nth-child(3){margin-top:8rpx;font-size:19rpx}.empty-search-icon{width:62rpx;height:62rpx;border:5rpx solid #9eb1b1;border-radius:50%;position:relative;box-sizing:border-box}.empty-search-icon::after{content:'';position:absolute;right:-18rpx;bottom:-9rpx;width:26rpx;height:5rpx;border-radius:99rpx;background:#9eb1b1;transform:rotate(45deg)}
