@@ -22,7 +22,7 @@
 		@catch="goCatch"
 		@rank="goLeaderboard"
 		@competition="goCompetition"
-		@member="goMember"
+		@fish-card="goFishCard"
 		@mall="goMall"
 		@weigh="goWeighFish"
 		@services="goServices"

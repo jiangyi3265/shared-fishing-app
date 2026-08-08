@@ -39,15 +39,12 @@
 
 		<view v-if="showPoints" class="pts-inline">
 			<view class="pts-card">
-				<text class="pts-title">本次获得</text>
+				<text class="pts-title">积分已自动到账</text>
 				<view class="pts-gain">
 					<text class="pts-gain-num">{{ earnedPoints }}</text>
 					<text class="pts-gain-label">积分</text>
 				</view>
 				<text class="pts-sub">线上实付每 1 元奖励 5 积分</text>
-				<button class="pts-btn" :disabled="claiming" @click="claimPoints">
-					{{ claiming ? '领取中…' : '收入囊中' }}
-				</button>
 			</view>
 		</view>
 
@@ -89,8 +86,7 @@
 				returnUrl: '',
 				showPoints: false,
 				earnedPoints: 0,
-				reward: null,
-				claiming: false
+				reward: null
 			}
 		},
 		computed: {
@@ -128,23 +124,17 @@
 				const sourceNo = this.sourceNo || (this.order && this.order.orderNo)
 				if (!this.success || !sourceNo) return
 				fetchConsumePointsReward(sourceNo).then((reward) => {
+					if (reward && Number(reward.status) === 0) {
+						return claimConsumePointsReward(sourceNo).then((result) => (result && result.reward) || reward)
+					}
+					return reward
+				}).then((reward) => {
 					this.reward = reward
-					if (reward && reward.status === 0 && reward.points > 0) {
+					if (reward && reward.points > 0) {
 						this.earnedPoints = reward.points
 						this.showPoints = true
 					}
 				}).catch(() => {})
-			},
-			claimPoints() {
-				const sourceNo = this.sourceNo || (this.order && this.order.orderNo)
-				if (this.claiming || !sourceNo) return
-				this.claiming = true
-				claimConsumePointsReward(sourceNo).then(() => {
-					this.showPoints = false
-					uni.showToast({ title: '积分已收入囊中', icon: 'success' })
-				}).catch((e) => {
-					uni.showToast({ title: (e && (e.msg || e.message)) || '领取失败，请重试', icon: 'none' })
-				}).finally(() => { this.claiming = false })
 			},
 			goHome() { uni.reLaunch({ url: '/pages/index/index' }) },
 			goOrders() {
@@ -177,7 +167,6 @@
 .sheet-head{height:54rpx;display:flex;align-items:center;justify-content:space-between}.sheet-title{font-size:25rpx;font-weight:900}.sheet-tag{padding:4rpx 10rpx;border-radius:5rpx;background:#e7f7f1;color:#078f78;font-size:18rpx}.sheet-tag-fail{background:#feeeee;color:#cf4d48}
 .sheet-row{min-height:56rpx;display:flex;align-items:center;justify-content:space-between;gap:18rpx;border-top:1rpx solid #e3eceb}.sheet-key{color:#667c7e;font-size:21rpx}.sheet-val{max-width:70%;overflow:hidden;color:#213f42;font-size:21rpx;text-align:right;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
 .pts-inline{margin:14rpx 16rpx 0}.pts-card{padding:21rpx 22rpx 19rpx;border:1rpx solid #bee0dd;border-radius:13rpx;background:linear-gradient(180deg,#f2fbfa,#eaf8f7);text-align:center}.pts-title{font-size:23rpx;font-weight:800}.pts-gain{margin-top:3rpx;display:flex;align-items:baseline;justify-content:center;gap:8rpx;color:#ec8b00}.pts-gain-num{font-size:56rpx;font-weight:900}.pts-gain-label{color:#0b3134;font-size:25rpx;font-weight:800}.pts-sub{display:block;margin-top:2rpx;color:#6f8385;font-size:19rpx}
-.pts-btn{height:76rpx;margin-top:16rpx;display:flex;align-items:center;justify-content:center;border-radius:10rpx;background:#08aaa6;color:#fff;font-size:26rpx;font-weight:900}.pts-btn:after{border:0}
 .spacer{display:none}.dock{margin:14rpx 16rpx 0;padding:0;display:flex;flex-direction:column-reverse;gap:10rpx;background:transparent}.dock-primary,.dock-ghost{width:100%;height:74rpx;margin:0;display:flex;align-items:center;justify-content:center;border-radius:10rpx;font-size:25rpx;font-weight:900}.dock-primary{background:#08aaa6;color:#fff}.dock-ghost{border:1rpx solid #079e9b;background:#fff;color:#078f91}.dock-primary:after,.dock-ghost:after{border:0}
 @media (max-width:360px){.hero{padding-top:22rpx}.hero-icon{width:68rpx;height:68rpx}.hero-number{font-size:51rpx}.sheet-row{min-height:52rpx}.pts-card{padding-top:17rpx}.dock-primary,.dock-ghost{height:68rpx}}
 </style>

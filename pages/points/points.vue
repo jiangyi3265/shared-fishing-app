@@ -5,7 +5,7 @@
 			<view class="points-card">
 				<text class="points-label">可用积分</text>
 				<view class="points-line"><text class="points-value">{{ myPoints }}</text><text class="points-unit">积分</text><view class="detail-btn" @click="activeTab='records'">兑换记录</view></view>
-				<text class="month-points">消费每满 1 元赠 5 积分，支付成功后到账</text>
+				<text class="month-points">消费每满 1 元赠 5 积分，支付成功自动到账</text>
 			</view>
 		</view>
 
