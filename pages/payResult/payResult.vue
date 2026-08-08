@@ -44,7 +44,7 @@
 					<text class="pts-gain-num">{{ earnedPoints }}</text>
 					<text class="pts-gain-label">积分</text>
 				</view>
-				<text class="pts-sub">线上实付每 1 元奖励 5 积分</text>
+				<text class="pts-sub">实际消费每满 1 元奖励 5 积分</text>
 			</view>
 		</view>
 
