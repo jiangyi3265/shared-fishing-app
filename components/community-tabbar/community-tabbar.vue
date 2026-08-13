@@ -14,7 +14,7 @@ export default {
 		return {
 			items: [
 				{ key: 'home', label: '首页', url: '/pages/index/index' },
-				{ key: 'catch', label: '钓获社区', url: '/pages/catch/catch' },
+				{ key: 'catch', label: '我的钓获', url: '/pages/catch/catch' },
 				{ key: 'rank', label: '钓王榜', url: '/pages/rank/rank' },
 				{ key: 'mine', label: '我的', url: '/pages/mine/mine' }
 			]

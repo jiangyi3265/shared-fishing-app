@@ -381,7 +381,10 @@
 			goVenue() { uni.navigateTo({ url: '/pages/venue/venue' }) },
 			goStocking() { uni.navigateTo({ url: '/pages/stocking/stocking' }) },
 			goReserve() { uni.navigateTo({ url: '/pages/reserve/reserve' }) },
-			goCatch() { uni.navigateTo({ url: '/pages/catch/catch' }) },
+			goCatch() {
+				if (!this.user) { this.goLogin('/pages/catch/catch'); return }
+				uni.navigateTo({ url: '/pages/catch/catch' })
+			},
 			goFishCard() {
 				if (!this.user) { this.goLogin('/pages/fishCard/fishCard'); return }
 				uni.navigateTo({ url: '/pages/fishCard/fishCard' })
@@ -391,7 +394,6 @@
 				uni.navigateTo({ url: '/pages/member/member' })
 			},
 			goPoints() { uni.navigateTo({ url: '/pages/points/points' }) },
-			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
 			goRental() { uni.navigateTo({ url: '/pages/rental/rental' }) },
 			goContact() { uni.navigateTo({ url: '/pages/contact/contact' }) },
 			goCoupons() {

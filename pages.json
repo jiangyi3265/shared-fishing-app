@@ -81,7 +81,7 @@
 		{
 			"path": "pages/catch/catch",
 			"style": {
-				"navigationBarTitleText": "钓获社区",
+				"navigationBarTitleText": "我的钓获",
 				"navigationStyle": "custom"
 			}
 		},
@@ -103,13 +103,6 @@
 			"path": "pages/points/points",
 			"style": {
 				"navigationBarTitleText": "我的积分",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/group/group",
-			"style": {
-				"navigationBarTitleText": "拼场约钓",
 				"navigationStyle": "custom"
 			}
 		},

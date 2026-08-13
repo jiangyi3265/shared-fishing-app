@@ -39,7 +39,7 @@
 		<view class="goal-actions">
 			<view class="goal-action" @click="goWeigh"><view class="action-symbol scale-symbol"></view><text>称鱼冲榜</text><text>去称重计成绩</text></view>
 			<view class="goal-action" @click="goPoints"><view class="action-symbol medal-symbol">★</view><text>赚积分</text><text>做任务换积分</text></view>
-			<view class="goal-action" @click="goGroup"><view class="action-symbol people-symbol"></view><text>约钓搭子</text><text>组队一起冲榜</text></view>
+			<view class="goal-action" @click="goReserve"><view class="action-symbol people-symbol"></view><text>预订钓位</text><text>提前选好钓位</text></view>
 		</view>
 		<view class="goal-primary-btn" @click="goWeigh">去钓鱼，完成目标</view>
 		<view id="goal-rule" class="goal-rule-note">钓王榜按当月累计钓获重量排序，积分榜按当月获得积分排序；数据每日更新。</view>
@@ -188,8 +188,8 @@ export default {
 		goPoints() {
 			uni.navigateTo({ url: '/pages/points/points' })
 		},
-		goGroup() {
-			uni.navigateTo({ url: '/pages/group/group' })
+		goReserve() {
+			uni.navigateTo({ url: '/pages/reserve/reserve' })
 		},
 		goMall() {
 			uni.navigateTo({ url: '/pages/mall/index' })

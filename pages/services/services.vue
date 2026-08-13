@@ -119,9 +119,8 @@
 		'/pages/venue/venue': 'icon-location',
 		'/pages/reserve/reserve': 'icon-calendar',
 		'/pages/stocking/stocking': 'icon-fish',
-		'/pages/catch/catch': 'icon-chat',
+		'/pages/catch/catch': 'icon-record',
 		'/pages/rank/rank': 'icon-trophy',
-		'/pages/group/group': 'icon-group',
 		'/pages/fishCard/fishCard': 'icon-fish-card',
 		'/pages/competition/competition': 'icon-crown',
 		'/pages/weighFish/weighFish': 'icon-scale',
@@ -158,12 +157,11 @@
 						]
 					},
 					{
-						title: '社区排行', desc: '分享钓获并参与钓友排行',
+						title: '钓获成绩', desc: '查看个人钓获与真实成绩排行',
 						items: [
-							{ name: '钓获社区', desc: '浏览和发布真实钓获动态', mark: '社', url: '/pages/catch/catch' },
+							{ name: '我的钓获', desc: '仅查看自己的称重与审核记录', mark: '获', url: '/pages/catch/catch', auth: true },
 							{ name: '钓王排行榜', desc: '查看重量榜与积分榜', mark: '榜', url: '/pages/rank/rank' },
-							{ name: '冲榜目标', desc: '查看个人目标与冲榜进度', mark: '标', url: '/pages/goal/goal', auth: true },
-							{ name: '拼场约钓', desc: '创建或加入钓友组局', mark: '约', url: '/pages/group/group', auth: true }
+							{ name: '冲榜目标', desc: '查看个人目标与冲榜进度', mark: '标', url: '/pages/goal/goal', auth: true }
 						]
 					},
 					{
@@ -245,7 +243,7 @@
 			venueCommunityItems() {
 				return this.pickItems([
 					'/pages/venue/venue', '/pages/reserve/reserve', '/pages/stocking/stocking', '/pages/catch/catch',
-					'/pages/rank/rank', '/pages/group/group', '/pages/fishCard/fishCard', '/pages/competition/competition'
+					'/pages/rank/rank', '/pages/fishCard/fishCard', '/pages/competition/competition'
 				])
 			},
 			memberAssetItems() {
@@ -301,6 +299,7 @@
 	.icon-calendar .icon-shape{width:35rpx;height:33rpx;border:4rpx solid currentColor;border-radius:5rpx}.icon-calendar .icon-shape::before{content:'';position:absolute;left:3rpx;right:3rpx;top:7rpx;border-top:4rpx solid currentColor}.icon-calendar .icon-shape::after{content:'';position:absolute;left:6rpx;top:-8rpx;width:4rpx;height:10rpx;background:currentColor;box-shadow:15rpx 0 0 currentColor}
 	.icon-fish .icon-shape{width:38rpx;height:22rpx;border-radius:60% 45% 45% 60%;background:currentColor}.icon-fish .icon-shape::before{content:'';position:absolute;left:-14rpx;top:2rpx;border-top:9rpx solid transparent;border-bottom:9rpx solid transparent;border-right:15rpx solid currentColor}.icon-fish .icon-shape::after{content:'';position:absolute;right:8rpx;top:7rpx;width:4rpx;height:4rpx;border-radius:50%;background:#fbfdfc}
 	.icon-chat .icon-shape{width:39rpx;height:31rpx;border:4rpx solid currentColor;border-radius:11rpx}.icon-chat .icon-shape::before{content:'';position:absolute;left:6rpx;bottom:-10rpx;border-top:11rpx solid currentColor;border-right:11rpx solid transparent}.icon-chat .icon-shape::after{content:'···';position:absolute;left:2rpx;right:2rpx;top:-13rpx;text-align:center;font-size:26rpx;font-weight:900}
+	.icon-record .icon-shape{width:36rpx;height:42rpx;border:4rpx solid currentColor;border-radius:5rpx}.icon-record .icon-shape::before{content:'';position:absolute;left:7rpx;right:7rpx;top:11rpx;border-top:3rpx solid currentColor;box-shadow:0 8rpx 0 currentColor,0 16rpx 0 currentColor}
 	.icon-trophy .icon-shape{width:33rpx;height:28rpx;border-radius:4rpx 4rpx 12rpx 12rpx;background:currentColor}.icon-trophy .icon-shape::before,.icon-trophy .icon-shape::after{content:'';position:absolute;top:4rpx;width:12rpx;height:17rpx;border:4rpx solid currentColor}.icon-trophy .icon-shape::before{left:-11rpx;border-right:0;border-radius:8rpx 0 0 8rpx}.icon-trophy .icon-shape::after{right:-11rpx;border-left:0;border-radius:0 8rpx 8rpx 0}
 	.icon-crown .icon-shape{width:40rpx;height:31rpx;background:currentColor;clip-path:polygon(0 10%,25% 62%,50% 0,75% 62%,100% 10%,88% 100%,12% 100%)}
 	.icon-group .icon-shape{width:46rpx;height:42rpx}.icon-group .icon-shape::before{content:'';position:absolute;left:16rpx;top:1rpx;width:15rpx;height:15rpx;border:4rpx solid currentColor;border-radius:50%;box-sizing:border-box;box-shadow:-15rpx 7rpx 0 -3rpx #fbfdfc,-15rpx 7rpx 0 0 currentColor,15rpx 7rpx 0 -3rpx #fbfdfc,15rpx 7rpx 0 0 currentColor}.icon-group .icon-shape::after{content:'';position:absolute;left:6rpx;right:6rpx;bottom:0;height:20rpx;border:4rpx solid currentColor;border-bottom:0;border-radius:22rpx 22rpx 0 0}

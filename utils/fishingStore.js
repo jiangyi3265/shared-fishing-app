@@ -446,24 +446,9 @@ export function fetchWeather(location) {
 	return http.get('/app/weather', params)
 }
 
-// ===== 钓获打卡 =====
-export function fetchCatchList() {
-	return http.get('/app/catch/list').then(rows => rows || [])
-}
+// ===== 我的钓获（仅当前登录用户可见） =====
 export function fetchMyCatch() {
 	return http.get('/app/catch/mine').then(rows => rows || [])
-}
-export function publishCatch(data) {
-	return http.post('/app/catch/publish', data)
-}
-export function toggleCatchLike(catchId) {
-	return http.post('/app/catch/like/' + catchId)
-}
-export function fetchCatchComments(catchId) {
-	return http.get('/app/catch/comments/' + catchId).then(rows => rows || [])
-}
-export function addCatchComment(data) {
-	return http.post('/app/catch/comment', data)
 }
 
 // ===== 会员等级 =====
@@ -508,30 +493,6 @@ export function fetchFishCardGame() {
 
 export function submitFishCard(speciesId, videoUrl) {
 	return http.post('/app/fish-card/submit', { speciesId, videoUrl })
-}
-
-// ===== 拼场约钓 =====
-export function fetchGroupList(venueId) {
-	const params = venueId ? { venueId } : {}
-	return http.get('/app/group/list', params).then(rows => rows || [])
-}
-export function fetchGroupDetail(groupId) {
-	return http.get('/app/group/' + groupId)
-}
-export function fetchMyGroups() {
-	return http.get('/app/group/mine').then(rows => rows || [])
-}
-export function createGroup(data) {
-	return http.post('/app/group/create', data)
-}
-export function joinGroup(groupId) {
-	return http.post('/app/group/join/' + groupId)
-}
-export function quitGroup(groupId) {
-	return http.post('/app/group/quit/' + groupId)
-}
-export function cancelGroup(groupId) {
-	return http.post('/app/group/cancel/' + groupId)
 }
 
 // ===== 称鱼结算 =====

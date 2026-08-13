@@ -135,7 +135,6 @@
 			goReserve() { uni.navigateTo({ url: '/pages/reserve/reserve' }) },
 			goRental() { uni.navigateTo({ url: '/pages/rental/rental' }) },
 			goCompetition() { uni.navigateTo({ url: '/pages/competition/competition' }) },
-			goGroup() { uni.navigateTo({ url: '/pages/group/group' }) },
 			handleTool(item) {
 				const action = item && item.action
 				if (action && typeof this[action] === 'function') this[action]()
