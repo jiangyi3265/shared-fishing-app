@@ -118,4 +118,5 @@ export default {
 .points-page{padding-bottom:calc(40rpx + env(safe-area-inset-bottom))}
 .points-state{min-height:190rpx;padding:48rpx 30rpx;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;border:1rpx solid #d8e6e5;border-top:0;border-radius:0 0 13rpx 13rpx;background:#fff;color:#6c8082;font-size:22rpx}.points-state.state-error{color:#95600b;background:#fffaf0}.exchange-list{margin-top:0;border-top:0;border-radius:0 0 13rpx 13rpx}
 @media (max-width:360px){.points-card{height:auto;min-height:190rpx;padding-left:22rpx;padding-right:22rpx}.points-value{font-size:54rpx}.detail-btn{padding-left:12rpx;padding-right:12rpx}.goods-card{gap:12rpx}.goods-btn{padding-left:16rpx;padding-right:16rpx}}
+.points-line .points-value{flex:0 0 auto;white-space:nowrap}
 </style>
