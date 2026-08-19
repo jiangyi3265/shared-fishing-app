@@ -3,7 +3,7 @@
 		<brand-header title="隐私政策" theme="light" layout="compact" :back="true" />
 		<view class="protocol-section">
 			<text class="section-title">一、我们收集的信息</text>
-			<text class="section-text">在用户主动授权登录或使用相关服务时，我们可能收集微信 openid、订单信息、支付状态、活动报名信息、联系电话和用户主动提交的备注内容。昵称、头像仅在用户主动提供时用于账号展示。</text>
+			<text class="section-text">在用户主动授权登录或使用相关服务时，我们可能收集微信 openid、订单信息、支付状态、活动报名信息、联系电话和用户主动提交的备注内容。昵称、头像仅在用户主动填写或选择后用于账号、订单、积分及排行榜展示，小程序不会在未经操作的情况下静默读取微信昵称。</text>
 		</view>
 
 		<view class="protocol-section">

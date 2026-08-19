@@ -147,6 +147,16 @@ export function loginWithCode(code, profile = {}) {
 	return loginRequest({ code, nickname: profile.nickName, avatar: profile.avatarUrl })
 }
 
+export function updateNickname(nickname) {
+	const value = String(nickname || '').trim()
+	if (!value) return Promise.reject({ msg: '请填写昵称' })
+	return http.post('/app/profile', { nickname: value }).then((user) => {
+		if (!user) throw { msg: '昵称保存失败' }
+		setUser(user)
+		return getUser()
+	})
+}
+
 export function saveChosenAvatar(filePath) {
 	if (!filePath) return Promise.resolve(getUser())
 	return uploadProfileAvatar(filePath).then((data) => {
@@ -186,12 +196,23 @@ function attachScanPayload(payload, scan = {}) {
 	return payload
 }
 
-export function startOrder(userId, venueId, scan = {}) {
-	return http.post('/app/order/start', attachScanPayload({ userId, venueId }, scan))
+export const SAFETY_AGREEMENT_VERSION = '2026-08-16'
+
+export function startOrder(userId, venueId, scan = {}, safety = {}) {
+	return http.post('/app/order/start', attachScanPayload({
+		userId,
+		venueId,
+		safetyAgreed: safety.agreed === true,
+		safetyAgreementVersion: safety.version || ''
+	}, scan))
 }
 
 export function finishOrder(userId, scan = {}) {
 	return http.post('/app/order/finish', attachScanPayload({ userId }, scan))
+}
+
+export function resumeOrder(userId, orderId) {
+	return http.post('/app/order/resume', { userId, orderId })
 }
 
 export function payOrder(userId, orderId, couponId, mallOrderIds, useBalance) {

@@ -52,6 +52,13 @@
 			}
 		},
 		{
+			"path": "pages/protocol/safety",
+			"style": {
+				"navigationBarTitleText": "垂钓安全协议",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/start/start",
 			"style": {
 				"navigationBarTitleText": "准备开始",

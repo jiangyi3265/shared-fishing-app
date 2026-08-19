@@ -7,10 +7,11 @@
 				<text class="cell-label">用户ID</text>
 				<text class="cell-value">{{ user ? user.userId : '--' }}</text>
 			</view>
-			<view class="cell">
+			<form class="cell" @submit="onNicknameSubmit">
 				<text class="cell-label">昵称</text>
-				<text class="cell-value">{{ user ? (user.nickname || user.name || '--') : '--' }}</text>
-			</view>
+				<input class="nickname-editor" type="nickname" name="nickname" v-model="nicknameDraft" maxlength="20" placeholder="点击选择微信昵称" />
+				<button class="nickname-save" form-type="submit" :disabled="savingNickname">{{ savingNickname ? '保存中' : '保存' }}</button>
+			</form>
 		</view>
 		<view class="section-title">通用设置</view>
 		<view class="card"><view class="cell"><text class="cell-label">消息通知</text><text class="cell-arrow">›</text></view><view class="cell"><text class="cell-label">隐私设置</text><text class="cell-arrow">›</text></view><view class="cell"><text class="cell-label">支付设置</text><text class="cell-arrow">›</text></view></view>
@@ -22,12 +23,14 @@
 </template>
 
 <script>
-	import { getUser, logout, isLoggedIn } from '../../utils/fishingStore.js'
+	import { getUser, logout, isLoggedIn, updateNickname } from '../../utils/fishingStore.js'
 
 	export default {
 		data() {
 			return {
 				user: null,
+				nicknameDraft: '',
+				savingNickname: false,
 				cacheSize: '计算中...'
 			}
 		},
@@ -37,9 +40,30 @@
 				return
 			}
 			this.user = getUser()
+			this.nicknameDraft = (this.user && (this.user.nickname || this.user.name)) || ''
 			this.calcCache()
 		},
 		methods: {
+			// 昵称填写能力：手输的值要 blur 才提交，交给 form submit 取最终值
+			onNicknameSubmit(e) {
+				const value = e && e.detail && e.detail.value ? e.detail.value.nickname : ''
+				if (value) this.nicknameDraft = String(value)
+				this.saveNickname()
+			},
+			saveNickname() {
+				if (this.savingNickname) return
+				const nickname = String(this.nicknameDraft || '').trim()
+				if (!nickname) {
+					uni.showToast({ title: '请填写昵称', icon: 'none' })
+					return
+				}
+				this.savingNickname = true
+				updateNickname(nickname).then((user) => {
+					this.user = user
+					this.nicknameDraft = user.nickname || nickname
+					uni.showToast({ title: '昵称已更新', icon: 'success' })
+				}).catch(() => {}).finally(() => { this.savingNickname = false })
+			},
 			calcCache() {
 				try {
 					const info = uni.getStorageInfoSync()
@@ -156,4 +180,5 @@
 
 <style>
 .settings{min-height:100vh;padding:14rpx 20rpx calc(122rpx + env(safe-area-inset-bottom));background:#f7fbfb}.settings .section-title{margin:0 0 8rpx;padding:0 2rpx;font-size:22rpx}.settings .card{margin:0 0 14rpx;padding:0 20rpx;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff}.settings .cell{height:72rpx;padding:0;border-bottom:1rpx solid #dfe9e8}.settings .cell-label{font-size:22rpx}.settings .cell-value{font-size:20rpx}.settings .cell-arrow{font-size:30rpx}.settings .misc-card{margin-top:18rpx}.settings .logout-btn{height:76rpx;margin-top:16rpx;display:flex;align-items:center;justify-content:center;border:1rpx solid #d7e5e4;border-radius:12rpx;background:#fff;color:#ed4343;font-size:23rpx}
+.nickname-editor{width:300rpx;height:54rpx;padding:0 14rpx;border-radius:10rpx;background:#f1f8f7;color:#123e41;font-size:20rpx;text-align:right;box-sizing:border-box}.nickname-save{width:86rpx;height:54rpx;margin:0 0 0 10rpx;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:10rpx;background:#08aaa6;color:#fff;font-size:18rpx;font-weight:800;line-height:1}.nickname-save:after{border:0}.nickname-save[disabled]{opacity:.58}
 </style>

@@ -23,6 +23,16 @@
 				</view>
 			</view>
 
+			<view class="resume-bar">
+				<view class="resume-copy">
+					<text class="resume-title">还想继续钓？</text>
+					<text class="resume-desc">撤销本次收竿，按原下竿时间继续计时</text>
+				</view>
+				<button class="resume-btn" :disabled="paymentBusy || resumeBusy" @click="resumeFishing">
+					{{ resumeBusy ? '恢复中...' : '继续垂钓' }}
+				</button>
+			</view>
+
 			<view class="ticket-board">
 				<view class="sheet">
 					<view class="sheet-title">
@@ -120,8 +130,8 @@
 					<text class="dock-amount-value">¥{{ formatMoney(wxPayAmount) }}</text>
 					<text v-if="discountText" class="dock-discount">{{ discountText }}</text>
 				</view>
-				<button class="dock-btn" :disabled="paymentBusy" :class="{ disabled: paymentBusy }" @click="payNow">
-					{{ paymentBusy ? '支付中...' : '立即支付' }}
+				<button class="dock-btn" :disabled="paymentBusy || resumeBusy" :class="{ disabled: paymentBusy || resumeBusy }" @click="payNow">
+					{{ resumeBusy ? '恢复计时中...' : (paymentBusy ? '支付中...' : '立即支付') }}
 				</button>
 			</view>
 		</block>
@@ -135,6 +145,7 @@
 		formatDatetime,
 		getUser,
 		fetchPendingOrder,
+		resumeOrder,
 		payOrder,
 		isLoggedIn,
 		fetchAvailableCoupons,
@@ -157,7 +168,8 @@
 				selectedMallIds: [],
 				walletBalance: 0,
 				useBalance: false,
-				paymentBusy: false
+				paymentBusy: false,
+				resumeBusy: false
 			}
 		},
 		computed: {
@@ -256,7 +268,7 @@
 				}
 			},
 			payNow() {
-				if (!this.order || this.paymentBusy) return
+				if (!this.order || this.paymentBusy || this.resumeBusy) return
 				this.paymentBusy = true
 				uni.showLoading({ title: '调起支付' })
 				const user = getUser()
@@ -278,6 +290,39 @@
 							showCancel: false
 						})
 					})
+			},
+			resumeFishing() {
+				if (!this.order || this.paymentBusy || this.resumeBusy) return
+				uni.showModal({
+					title: '继续垂钓',
+					content: '将撤销本次收竿结算，并从原下竿时间继续计时。下次收竿时会重新计算全部时长和费用。',
+					confirmText: '继续计时',
+					cancelText: '暂不处理',
+					success: (res) => {
+						if (!res.confirm || this.resumeBusy) return
+						const user = getUser()
+						if (!user) return
+						this.resumeBusy = true
+						uni.showLoading({ title: '正在恢复计时' })
+						resumeOrder(user.userId, this.order.orderId).then((running) => {
+							uni.hideLoading()
+							this.resumeBusy = false
+							if (!running) throw { msg: '恢复计时失败，请重试' }
+							const stack = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+							const previous = stack && stack.length > 1 ? stack[stack.length - 2] : null
+							if (previous && previous.route === 'pages/session/session') {
+								uni.navigateBack({ delta: 1 })
+							} else {
+								uni.redirectTo({ url: '/pages/session/session' })
+							}
+						}).catch((error) => {
+							uni.hideLoading()
+							this.resumeBusy = false
+							uni.showToast({ title: (error && error.msg) || '恢复计时失败', icon: 'none' })
+							this.refresh()
+						})
+					}
+				})
 			},
 			goHome() { goHomeSafely() },
 			formatMoney,
@@ -968,6 +1013,55 @@
 		font-size: 28rpx;
 		font-weight: 600;
 		line-height: 1.2;
+	}
+
+	.resume-bar {
+		margin: 0 20rpx 14rpx;
+		padding: 22rpx 24rpx;
+		border: 1rpx solid #c7dfdc;
+		border-radius: 14rpx;
+		background: #eef8f6;
+		display: flex;
+		align-items: center;
+		gap: 20rpx;
+	}
+
+	.resume-copy {
+		min-width: 0;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 6rpx;
+	}
+
+	.resume-title {
+		font-size: 27rpx;
+		font-weight: 700;
+		color: #0b3134;
+	}
+
+	.resume-desc {
+		font-size: 21rpx;
+		line-height: 1.45;
+		color: #617b7d;
+	}
+
+	.resume-btn {
+		flex: 0 0 180rpx;
+		margin: 0;
+		height: 72rpx;
+		line-height: 72rpx;
+		padding: 0 20rpx;
+		border: 1rpx solid #078f91;
+		border-radius: 12rpx;
+		background: #f8fcfb;
+		color: #078f91;
+		font-size: 25rpx;
+		font-weight: 700;
+	}
+
+	.resume-btn::after {
+		border: 0;
 	}
 	.channel-logo { background-size: 44rpx 44rpx; }
 	.balance-icon { background-size: 42rpx 42rpx; }

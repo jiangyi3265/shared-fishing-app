@@ -8,7 +8,10 @@
 				<view class="profile-row">
 					<image class="avatar" :src="user && user.avatar ? user.avatar : '/static/logo-mark.svg'" mode="aspectFill" />
 					<view class="profile-copy">
-						<text class="nickname">{{ user ? (user.nickname || user.name || '钓友') : '游客' }}</text>
+						<view class="name-row">
+							<text class="nickname">{{ displayName }}</text>
+							<text v-if="needsNickname" class="nickname-cta">设置昵称</text>
+						</view>
 						<view class="member-tag"><view class="crown"></view><text>{{ loggedIn ? '普通会员' : '登录后查看会员权益' }}</text></view>
 					</view>
 					<text class="arrow">›</text>
@@ -58,6 +61,18 @@
 			stats: { type: Object, default: () => ({ pendingCount: 0, paidCount: 0, totalAmount: 0 }) },
 			tools: { type: Array, default: () => [] }
 		},
+		computed: {
+			displayName() {
+				if (!this.user) return '游客'
+				return this.user.nickname || this.user.name || '钓友'
+			},
+			// 微信不再静默下发昵称，未填写的账号会落到 “钓友_1234”，这里提示去设置页补一次
+			needsNickname() {
+				if (!this.loggedIn || !this.user) return false
+				const name = this.user.nickname || this.user.name || ''
+				return !name || /^钓友_\d+$/.test(name)
+			}
+		},
 		methods: { money(cents) { return (Number(cents || 0) / 100).toFixed(2) } }
 	}
 </script>
@@ -71,7 +86,8 @@
 	.profile-row{height:112rpx;padding:0 19rpx;display:flex;align-items:center}
 	.avatar{width:66rpx;height:66rpx;border:1rpx solid #b9dcda;border-radius:50%;background:#eef9f8}
 	.profile-copy{flex:1;min-width:0;margin-left:15rpx;display:flex;flex-direction:column;gap:7rpx}
-	.nickname{font-size:28rpx;font-weight:900}.member-tag{width:max-content;padding:4rpx 9rpx;display:flex;align-items:center;gap:6rpx;border:1rpx solid #f1c879;border-radius:6rpx;background:#fff8e9;color:#ac6900;font-size:18rpx}
+	.name-row{display:flex;align-items:center;gap:10rpx;min-width:0}
+	.nickname{min-width:0;overflow:hidden;font-size:28rpx;font-weight:900;text-overflow:ellipsis;white-space:nowrap}.nickname-cta{padding:3rpx 10rpx;flex-shrink:0;border:1rpx solid #b6e2df;border-radius:6rpx;background:#e6f7f5;color:#078f91;font-size:17rpx;font-weight:800}.member-tag{width:max-content;padding:4rpx 9rpx;display:flex;align-items:center;gap:6rpx;border:1rpx solid #f1c879;border-radius:6rpx;background:#fff8e9;color:#ac6900;font-size:18rpx}
 	.crown{width:18rpx;height:13rpx;border-radius:0 0 3rpx 3rpx;background:#d79519;position:relative}.crown:before{content:'';position:absolute;left:0;top:-8rpx;border-left:5rpx solid transparent;border-right:5rpx solid transparent;border-bottom:10rpx solid #d79519;box-shadow:8rpx 0 0 -1rpx #d79519}
 	.arrow{color:#83999b;font-size:36rpx}
 	.stats-row{height:88rpx;display:flex;align-items:center;border-top:1rpx solid #dce9e8}

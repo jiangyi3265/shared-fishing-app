@@ -222,6 +222,7 @@
 							{ name: '费率说明', desc: '查看计费单位、起步和封顶规则', mark: '费', url: '/pages/rateInfo/rateInfo' },
 							{ name: '用户服务协议', desc: '查看平台服务条款', mark: '协', url: '/pages/protocol/user' },
 							{ name: '隐私政策', desc: '了解个人信息处理规则', mark: '隐', url: '/pages/protocol/privacy' },
+							{ name: '垂钓安全须知', desc: '下竿前必读的安全与责任确认', mark: '安', url: '/pages/protocol/safety' },
 							{ name: '关于我们', desc: '查看产品信息与版本说明', mark: '关', url: '/pages/about/about' }
 						]
 					},
@@ -259,7 +260,7 @@
 				])
 			},
 			moreItems() {
-				return this.pickItems(['/pages/goal/goal', '/pages/protocol/user', '/pages/protocol/privacy', '/pages/about/about'])
+				return this.pickItems(['/pages/goal/goal', '/pages/protocol/user', '/pages/protocol/privacy', '/pages/protocol/safety', '/pages/about/about'])
 			},
 			merchantItem() { return this.findItem('/pages/staff/workbench') },
 			searchResults() {

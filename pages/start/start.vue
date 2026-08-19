@@ -30,7 +30,35 @@
 			</view>
 
 			<text class="dc-start-summary">{{ rule.summary }}</text>
-			<button class="dc-start-primary" :disabled="starting" @click="startNow">{{ primaryButtonText }}</button>
+
+			<view class="dc-safety-card">
+				<view class="dc-safety-head">
+					<view class="dc-safety-shield"><text>!</text></view>
+					<view class="dc-safety-copy">
+						<text class="dc-safety-title">垂钓安全须知</text>
+						<text class="dc-safety-sub">开始计时前请确认本人健康与现场安全</text>
+					</view>
+					<text class="dc-safety-badge">必读</text>
+				</view>
+				<view class="dc-safety-points">
+					<text>• 仅在指定钓位垂钓，不下水、不跨越护栏</text>
+					<text>• 注意鱼钩、湿滑地面、雷雨和用电风险</text>
+					<text>• 未成年人需由监护人全程陪同</text>
+				</view>
+				<view class="dc-safety-read" @click="openSafetyAgreement">
+					<text>查看完整《垂钓安全须知及责任确认书》</text>
+					<text class="dc-safety-arrow">›</text>
+				</view>
+				<checkbox-group class="dc-safety-check" @change="onSafetyChange">
+					<label class="dc-safety-check-label">
+						<checkbox value="agree" :checked="safetyAgreed" color="#079f9d" />
+						<text>我已完整阅读、理解风险并自愿同意</text>
+					</label>
+				</checkbox-group>
+			</view>
+
+			<!-- 未勾选时只做“锁定”样式：真 disabled 会吞掉点击，用户看不到为什么不能开始 -->
+			<button class="dc-start-primary" :class="{ 'is-locked': !safetyAgreed }" :disabled="starting" @click="startNow">{{ primaryButtonText }}</button>
 			<button class="dc-start-back" @click="backHome">返回</button>
 		</view>
 	</view>
@@ -45,6 +73,7 @@
 		fetchPendingOrder,
 		resolveQrcode,
 		isLoggedIn,
+		SAFETY_AGREEMENT_VERSION,
 		loadDefaultVenue,
 		getCachedVenue,
 		goHomeSafely
@@ -56,7 +85,7 @@
 
 	export default {
 		data() {
-			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE, spot: null, scanQrId: null, scanScene: '', directEntry: false, starting: false }
+			return { venue: FALLBACK_VENUE, rule: FALLBACK_RULE, spot: null, scanQrId: null, scanScene: '', directEntry: false, starting: false, safetyAgreed: false }
 		},
 		computed: {
 			stepPriceYuan() { return formatMoney(this.rule.pricePerStepCents) },
@@ -70,6 +99,10 @@
 			}
 		},
 		onLoad(option = {}) {
+			this._safetyAcceptedHandler = (version) => {
+				if (version === SAFETY_AGREEMENT_VERSION) this.safetyAgreed = true
+			}
+			uni.$on('safety-agreement-accepted', this._safetyAcceptedHandler)
 			this.applyScanOption(option)
 			this.directEntry = String(option.direct || '') === '1'
 			if (!isLoggedIn()) {
@@ -92,7 +125,16 @@
 				})
 			})
 		},
+		onUnload() {
+			if (this._safetyAcceptedHandler) uni.$off('safety-agreement-accepted', this._safetyAcceptedHandler)
+		},
 		methods: {
+			onSafetyChange(e) {
+				this.safetyAgreed = ((e.detail && e.detail.value) || []).includes('agree')
+			},
+			openSafetyAgreement() {
+				uni.navigateTo({ url: '/pages/protocol/safety' })
+			},
 			loadScanInfo() {
 				resolveQrcode(this.currentScan(), { redirectOnUnauthorized: false }).then((data) => {
 					this.spot = data && data.spot ? data.spot : null
@@ -138,6 +180,10 @@
 			},
 			startNow() {
 				if (this.starting) return
+				if (!this.safetyAgreed) {
+					uni.showToast({ title: '请先阅读并同意垂钓安全须知', icon: 'none' })
+					return
+				}
 				const user = getUser()
 				if (!user) {
 					uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildEntryQuery()) })
@@ -159,7 +205,10 @@
 						return
 					}
 					const venueId = this.hasScanProof() ? null : Number(this.venue.venueId)
-					return startOrder(user.userId, venueId, this.currentScan()).then(() => {
+					return startOrder(user.userId, venueId, this.currentScan(), {
+						agreed: true,
+						version: SAFETY_AGREEMENT_VERSION
+					}).then(() => {
 						uni.redirectTo({ url: '/pages/session/session' })
 					})
 				}).catch(() => {}).finally(() => { this.starting = false })
@@ -347,6 +396,30 @@
 		text-align: center;
 	}
 
+	.dc-safety-card {
+		margin-top: 24rpx;
+		padding: 26rpx;
+		border: 1rpx solid #d8e7e5;
+		border-radius: 22rpx;
+		background: #fff;
+		box-shadow: 0 10rpx 28rpx rgba(15, 74, 76, .05);
+	}
+
+	.dc-safety-head { display: flex; align-items: center; gap: 16rpx; }
+	.dc-safety-shield { width: 58rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 22rpx 22rpx 28rpx 28rpx; background: #fff3d8; color: #9a6400; font-size: 30rpx; font-weight: 900; }
+	.dc-safety-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; }
+	.dc-safety-title { color: var(--ink); font-size: 29rpx; font-weight: 900; }
+	.dc-safety-sub { margin-top: 5rpx; color: var(--ink-3); font-size: 20rpx; line-height: 1.45; }
+	.dc-safety-badge { padding: 6rpx 13rpx; border-radius: 999rpx; background: #fff5df; color: #a46b00; font-size: 19rpx; font-weight: 900; flex-shrink: 0; }
+	.dc-safety-points { margin-top: 20rpx; padding: 18rpx 20rpx; display: flex; flex-direction: column; gap: 10rpx; border-radius: 15rpx; background: #f6faf9; }
+	.dc-safety-points text { color: #526e70; font-size: 21rpx; line-height: 1.55; }
+	.dc-safety-read { min-height: 72rpx; display: flex; align-items: center; justify-content: space-between; gap: 16rpx; border-bottom: 1rpx solid #e0ebe9; color: var(--g-800); font-size: 22rpx; font-weight: 800; }
+	.dc-safety-read text:first-child { flex: 1; }
+	.dc-safety-arrow { font-size: 34rpx; font-weight: 500; }
+	.dc-safety-check { margin-top: 18rpx; }
+	.dc-safety-check-label { display: flex; align-items: flex-start; gap: 8rpx; color: #284d50; font-size: 22rpx; font-weight: 700; line-height: 1.55; }
+	.dc-safety-check-label checkbox { margin-top: -4rpx; transform: scale(.82); transform-origin: top left; flex-shrink: 0; }
+
 	.dc-start-primary,
 	.dc-start-back {
 		display: flex;
@@ -372,6 +445,11 @@
 		background: var(--g-800);
 		transform: scale(.985);
 	}
+
+	.dc-start-primary[disabled],
+	.dc-start-primary.is-locked { background: #b8cecc; box-shadow: none; color: #eff5f4; }
+
+	.dc-start-primary.is-locked:active { background: #b8cecc; transform: none; }
 
 	.dc-start-back {
 		height: 76rpx;
