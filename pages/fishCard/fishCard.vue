@@ -33,16 +33,16 @@
 						<view class="card-shade"></view>
 						<view v-if="card.cardStatus === 'obtained'" class="obtained-stamp">已获得</view>
 						<view v-else-if="card.cardStatus === 'pending'" class="pending-stamp">审核中</view>
-						<view v-else class="lock-mark">{{ card.cardStatus === 'rejected' ? '!' : '?' }}</view>
+						<view v-else class="lock-mark">{{ card.cardStatus === 'rejected' ? '!' : card.cardStatus === 'unavailable' ? '锁' : '?' }}</view>
 					</view>
 					<view class="card-copy">
 						<text class="species-name">{{ card.speciesName }}</text>
 						<text class="fish-weight">{{ cardWeight(card, index) }}</text>
-						<text class="card-status">{{ card.cardStatus === 'obtained' ? '已获得' : card.cardStatus === 'pending' ? '审核中' : '未获得' }}</text>
+						<text class="card-status">{{ cardStatusLabel(card) }}</text>
 					</view>
 				</view>
 			</view>
-			<view class="upload-tip"><view class="bulb-icon"></view><text>点鱼卡上传视频，审核通过即可点亮</text></view>
+			<view class="upload-tip"><view class="bulb-icon"></view><text>认证六种常见鱼，审核通过即可点亮</text></view>
 			<view class="atlas-upload-btn" @click="openNextCard"><view class="camera-icon"></view><text>上传认证视频</text></view>
 
 			<view class="rules-panel">
@@ -91,7 +91,7 @@
 		<view v-else class="atlas-state">
 			<view class="atlas-state-mark">鱼</view>
 			<text class="atlas-state-title">{{ loadError ? '鱼鉴暂时加载失败' : '本期鱼鉴正在准备' }}</text>
-			<text class="atlas-state-desc">{{ loadError || '活动开放后，十张鱼卡和本轮奖励会在这里展示' }}</text>
+			<text class="atlas-state-desc">{{ loadError || '活动开放后，六种常见鱼和66元奖励会在这里展示' }}</text>
 			<view class="atlas-state-retry" @click="loadGame">重新加载</view>
 		</view>
 
@@ -157,7 +157,7 @@ export default {
 		this.loadGame()
 	},
 	onShareAppMessage() {
-		return { title: '极智鱼鉴：集齐 10 张电子鱼卡，赢现金奖励', path: '/pages/fishCard/fishCard' }
+		return { title: '极智鱼鉴：集齐6种常见鱼，获得66元奖励', path: '/pages/fishCard/fishCard' }
 	},
 	methods: {
 		loadGame() {
@@ -193,18 +193,30 @@ export default {
 			if (card.cardStatus === 'obtained') return '审核通过 · 已点亮'
 			if (card.cardStatus === 'pending') return '视频审核中'
 			if (card.cardStatus === 'rejected') return card.rejectReason || '未通过 · 可重传'
+			if (card.cardStatus === 'unavailable') return '待解锁'
 			return '待解锁'
+		},
+		cardStatusLabel(card) {
+			if (card.cardStatus === 'obtained') return '已获得'
+			if (card.cardStatus === 'pending') return '审核中'
+			if (card.cardStatus === 'rejected') return '未通过，可重传'
+			if (card.cardStatus === 'unavailable' || card.available === false) return '待解锁'
+			return '待认证'
 		},
 		cardWeight(card, index) {
 			if (card.cardStatus !== 'obtained') return '--'
 			return ['7.65kg','4.32kg','9.18kg','2.85kg','3.40kg','3.08kg','0.68kg','2.15kg','0.46kg','1.20kg'][index] || '--'
 		},
 		openNextCard() {
-			const card = this.game && this.game.cards.find((item) => item.cardStatus !== 'obtained' && item.cardStatus !== 'pending')
+			const card = this.game && this.game.cards.find((item) => item.available !== false && item.cardStatus !== 'obtained' && item.cardStatus !== 'pending')
 			if (card) this.openCard(card)
 			else uni.showToast({ title: '当前没有待认证鱼卡', icon: 'none' })
 		},
 		openCard(card) {
+			if (card.available === false || card.cardStatus === 'unavailable') {
+				uni.showToast({ title: '该鱼种待后续活动解锁', icon: 'none' })
+				return
+			}
 			if (this.game.phase === 'upcoming') {
 				uni.showToast({ title: '活动还未开始，先收藏鱼鉴', icon: 'none' })
 				return
@@ -308,10 +320,11 @@ export default {
 .fish-card { overflow: hidden; border: 1rpx solid var(--ink-4); border-radius: var(--r); background: var(--g-50); }
 .card-art { position: relative; height: 0; padding-top: 100%; background-repeat: no-repeat; }
 .card-shade { position: absolute; inset: 0; background: rgba(30, 39, 35, .06); }
-.card-locked .card-art, .card-pending .card-art, .card-rejected .card-art { -webkit-filter: grayscale(1) saturate(.25); filter: grayscale(1) saturate(.25); }
+.card-locked .card-art, .card-pending .card-art, .card-rejected .card-art, .card-unavailable .card-art { -webkit-filter: grayscale(1) saturate(.25); filter: grayscale(1) saturate(.25); }
 .card-locked .card-art { opacity: .56; }
 .card-pending .card-art { opacity: .74; }
 .card-rejected .card-art { opacity: .64; }
+.card-unavailable .card-art { opacity: .38; }
 .obtained-stamp, .pending-stamp, .lock-mark { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: 600; }
 .obtained-stamp { right: 14rpx; top: 14rpx; padding: 8rpx 13rpx; border-radius: 99rpx; color: #ffd486; background: var(--g-700); font-size: 20rpx; }
 .pending-stamp { right: 14rpx; top: 14rpx; padding: 8rpx 13rpx; border-radius: 99rpx; color: #12383a; background: var(--gold); font-size: 20rpx; }
@@ -322,6 +335,7 @@ export default {
 .card-obtained { border-color: rgba(29, 98, 77, .42); }
 .card-obtained .card-status { color: var(--jade); }
 .card-rejected .card-status { color: var(--danger); }
+.card-unavailable .card-status { color: var(--ink-2); }
 
 .section-head { margin-bottom: 8rpx; }
 .rule-step { display: flex; align-items: flex-start; gap: 18rpx; padding: 20rpx 0; border-bottom: 1rpx solid var(--ink-4); color: var(--jade); font-size: 25rpx; line-height: 1.55; }
