@@ -15,7 +15,7 @@
 		<view v-else-if="activeTab==='goods' && !goods.length" class="points-state">暂无可兑换商品，商品由后台上架后显示</view>
 		<view v-if="!loading && !loadError && activeTab==='goods' && goods.length" class="goods-list">
 			<view class="goods-card" v-for="g in goods" :key="g.goodsId">
-				<image v-if="g.image" :src="g.image" class="goods-img" mode="aspectFill" />
+				<image v-if="g.image && !g.imageLoadError" :src="g.image" class="goods-img" mode="aspectFill" @error="g.imageLoadError = true" />
 				<view class="goods-img goods-img-placeholder" v-else><view class="hic-gift"></view></view>
 				<view class="goods-info">
 					<text class="goods-name">{{ g.name }}</text>

@@ -485,7 +485,11 @@ export function fetchMyPoints() {
 	return http.get('/app/points/my')
 }
 export function fetchPointsGoods() {
-	return http.get('/app/points/goods').then(rows => rows || [])
+	return http.get('/app/points/goods').then(rows => (rows || []).map(item => ({
+		...item,
+		image: resolveAssetUrl(item.image),
+		imageLoadError: false
+	})))
 }
 export function doCheckin() {
 	return http.post('/app/points/checkin')
