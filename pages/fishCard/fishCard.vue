@@ -123,8 +123,8 @@
 </template>
 
 <script>
-import { isLoggedIn, fetchFishCardGame, submitFishCard, formatMoney, formatDuration } from '../../utils/fishingStore.js'
-import { uploadFile, resolveAssetUrl } from '../../utils/request.js'
+import { isLoggedIn, fetchFishCardGame, formatMoney, formatDuration } from '../../utils/fishingStore.js'
+import { submitFishCardVideo, resolveAssetUrl } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
 
@@ -256,8 +256,7 @@ export default {
 			this.submitting = true
 			uni.showLoading({ title: '上传认证视频', mask: true })
 			try {
-				const videoUrl = await uploadFile(this.videoTempPath)
-				await submitFishCard(this.selectedCard.speciesId, videoUrl)
+				await submitFishCardVideo(this.videoTempPath, this.selectedCard.speciesId)
 				this.sheetOpen = false
 				this.videoTempPath = ''
 				uni.showToast({ title: '已提交，等待审核', icon: 'success' })

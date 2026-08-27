@@ -160,7 +160,7 @@ function isValidBaseUrl(baseUrl) {
 	return /^https?:\/\//.test(baseUrl)
 }
 
-function uploadTo(filePath, path) {
+function uploadTo(filePath, path, formData = {}) {
 	return new Promise((resolve, reject) => {
 		const baseUrl = resolveBaseUrl()
 		const token = getToken()
@@ -168,6 +168,7 @@ function uploadTo(filePath, path) {
 			url: baseUrl + path,
 			filePath,
 			name: 'file',
+			formData,
 			header: token ? { Authorization: 'Bearer ' + token } : {},
 			success: (res) => {
 				try {
@@ -193,6 +194,11 @@ function uploadTo(filePath, path) {
 
 export function uploadFile(filePath) {
 	return uploadTo(filePath, '/app/media/upload').then(data => resolveAssetUrl(data.fileName))
+}
+
+/** 上传鱼鉴视频并在同一个请求中创建审核记录，防止只上传文件却未生成审核单。 */
+export function submitFishCardVideo(filePath, speciesId) {
+	return uploadTo(filePath, '/app/fish-card/submit-video', { speciesId: String(speciesId) })
 }
 
 export function uploadProfileAvatar(filePath) {
