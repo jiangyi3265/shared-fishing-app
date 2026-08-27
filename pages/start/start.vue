@@ -104,13 +104,13 @@
 			}
 			uni.$on('safety-agreement-accepted', this._safetyAcceptedHandler)
 			this.applyScanOption(option)
-			this.directEntry = String(option.direct || '') === '1'
+			this.directEntry = false
 			if (!isLoggedIn()) {
 				uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildEntryQuery()) })
 				return
 			}
-			if (!this.hasScanProof() && !this.directEntry) {
-				uni.showToast({ title: '请从首页点击下竿计时，或扫描钓场二维码', icon: 'none' })
+			if (!this.hasScanProof()) {
+				uni.showToast({ title: '请先扫描现场钓位二维码', icon: 'none' })
 				setTimeout(() => this.backHome(), 500)
 				return
 			}
@@ -189,12 +189,8 @@
 					uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/start/start' + this.buildEntryQuery()) })
 					return
 				}
-				if (!this.hasScanProof() && !this.directEntry) {
-					uni.showToast({ title: '请从首页点击下竿计时，或扫描钓场二维码', icon: 'none' })
-					return
-				}
-				if (this.directEntry && (!Number.isSafeInteger(Number(this.venue.venueId)) || Number(this.venue.venueId) <= 0)) {
-					uni.showToast({ title: '钓场信息尚未加载完成，请稍后重试', icon: 'none' })
+				if (!this.hasScanProof() || !this.spot) {
+					uni.showToast({ title: '未识别到有效钓位，请重新扫码', icon: 'none' })
 					return
 				}
 				this.starting = true
@@ -204,8 +200,7 @@
 						uni.redirectTo({ url: '/pages/pay/pay' })
 						return
 					}
-					const venueId = this.hasScanProof() ? null : Number(this.venue.venueId)
-					return startOrder(user.userId, venueId, this.currentScan(), {
+					return startOrder(user.userId, null, this.currentScan(), {
 						agreed: true,
 						version: SAFETY_AGREEMENT_VERSION
 					}).then(() => {

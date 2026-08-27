@@ -142,7 +142,7 @@
 					{
 						title: '计时结算', desc: '从入场到支付完成的核心流程',
 						items: [
-							{ name: '开始计时', desc: '确认钓场和计费规则后下竿', mark: '计', url: '/pages/start/start?direct=1', auth: true },
+							{ name: '扫码下竿', desc: '扫描现场钓位码后开始计时', mark: '扫', url: '/pages/index/index?action=start', auth: true },
 							{ name: '计时状态', desc: '查看已用时长与预估费用', mark: '时', url: '/pages/session/session', auth: true },
 							{ name: '订单结算', desc: '处理待付款账单与优惠抵扣', mark: '结', url: '/pages/pay/pay', auth: true },
 							{ name: '我的订单', desc: '查看计时记录、状态与退款入口', mark: '单', url: '/pages/orders/orders', auth: true }

@@ -242,7 +242,7 @@
 			},
 			async startFishing() {
 				this.user = getUser()
-				if (!this.user) { this.goLogin('/pages/start/start?direct=1'); return }
+				if (!this.user) { this.goLogin('/pages/index/index?action=start'); return }
 				if (this.flowLoading) return
 				this.flowLoading = true
 				try {
@@ -259,12 +259,35 @@
 						this.goSession()
 						return
 					}
-					uni.navigateTo({ url: '/pages/start/start?direct=1' })
+					const raw = await this.scanFishingSpot()
+					if (raw) await this.handleScanResult(raw)
 				} catch (e) {
-					// 请求层已给出可读错误提示。
+					if (!this.isScanCancel(e)) {
+						uni.showToast({ title: '扫码失败，请对准钓位二维码重试', icon: 'none' })
+					}
 				} finally {
 					this.flowLoading = false
 				}
+			},
+			scanFishingSpot() {
+				return new Promise((resolve, reject) => {
+					uni.scanCode({
+						onlyFromCamera: true,
+						scanType: ['qrCode'],
+						success: (result) => {
+							const raw = result && (result.path || result.result)
+							if (!raw) {
+								reject({ errMsg: 'scanCode:fail empty result' })
+								return
+							}
+							resolve(raw)
+						},
+						fail: reject
+					})
+				})
+			},
+			isScanCancel(error) {
+				return String(error && error.errMsg || '').toLowerCase().includes('cancel')
 			},
 			async settleFishing() {
 				this.user = getUser()
@@ -296,10 +319,14 @@
 				const scan = extractScanProof(params)
 				if (!scan) {
 					uni.showToast({ title: '无法识别该钓场二维码', icon: 'none' })
-					return
+					return Promise.resolve()
 				}
-				resolveQrcode(scan, { redirectOnUnauthorized: false }).then((data) => {
+				return resolveQrcode(scan, { redirectOnUnauthorized: false }).then((data) => {
 					if (!data) return
+					if (data.action !== 'end' && (!data.spot || !data.spotId)) {
+						uni.showToast({ title: '该二维码未绑定钓位，请联系现场管理员', icon: 'none' })
+						return
+					}
 					let verifiedScan = scan
 					if (data.qrId !== undefined && data.qrId !== null && data.qrId !== '') {
 						const qrId = Number(data.qrId)
