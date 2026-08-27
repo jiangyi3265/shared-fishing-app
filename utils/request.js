@@ -171,23 +171,28 @@ function uploadTo(filePath, path, formData = {}) {
 			formData,
 			header: token ? { Authorization: 'Bearer ' + token } : {},
 			success: (res) => {
+				const statusCode = Number(res.statusCode || 0)
 				try {
 					const data = JSON.parse(res.data)
-					if (res.statusCode === 401 || Number(data.code) === 401) {
+					if (statusCode === 401 || Number(data.code) === 401) {
 						handleUnauthorized(token)
 						reject({ code: 401, statusCode: 401, msg: data.msg || '登录状态已过期' })
 						return
 					}
-					if (data.code === 200) {
+					if (statusCode >= 200 && statusCode < 300 && Number(data.code) === 200) {
 						resolve(data.data || data)
 					} else {
-						reject({ msg: data.msg || '上传失败' })
+						reject({ statusCode, code: data.code, msg: data.msg || '上传失败' })
 					}
 				} catch (e) {
-					reject({ msg: '上传响应解析失败' })
+					const tooLarge = statusCode === 413
+					reject({
+						statusCode,
+						msg: tooLarge ? '视频超过 50MB，请压缩后重试' : `上传失败（${statusCode || '服务异常'}）`
+					})
 				}
 			},
-			fail: (err) => reject({ msg: '上传失败' })
+			fail: (err) => reject({ msg: (err && err.errMsg) || '上传失败，请检查网络后重试' })
 		})
 	})
 }

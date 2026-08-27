@@ -259,12 +259,13 @@ export default {
 				await submitFishCardVideo(this.videoTempPath, this.selectedCard.speciesId)
 				this.sheetOpen = false
 				this.videoTempPath = ''
-				uni.showToast({ title: '已提交，等待审核', icon: 'success' })
-				this.loadGame()
+				uni.hideLoading()
+				uni.showToast({ title: '提交成功，已进入后台审核', icon: 'none', duration: 2400 })
+				await this.loadGame()
 			} catch (e) {
+				uni.hideLoading()
 				uni.showToast({ title: (e && (e.msg || e.message)) || '提交失败，请重试', icon: 'none' })
 			} finally {
-				uni.hideLoading()
 				this.submitting = false
 			}
 		},
