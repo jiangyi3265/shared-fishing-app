@@ -160,11 +160,11 @@ function isValidBaseUrl(baseUrl) {
 	return /^https?:\/\//.test(baseUrl)
 }
 
-function uploadTo(filePath, path, formData = {}) {
+function uploadTo(filePath, path, formData = {}, onProgress) {
 	return new Promise((resolve, reject) => {
 		const baseUrl = resolveBaseUrl()
 		const token = getToken()
-		uni.uploadFile({
+		const uploadTask = uni.uploadFile({
 			url: baseUrl + path,
 			filePath,
 			name: 'file',
@@ -194,6 +194,12 @@ function uploadTo(filePath, path, formData = {}) {
 			},
 			fail: (err) => reject({ msg: (err && err.errMsg) || '上传失败，请检查网络后重试' })
 		})
+		if (uploadTask && typeof uploadTask.onProgressUpdate === 'function' && typeof onProgress === 'function') {
+			uploadTask.onProgressUpdate((event) => {
+				const progress = Math.max(0, Math.min(100, Number(event && event.progress) || 0))
+				onProgress(progress)
+			})
+		}
 	})
 }
 
@@ -202,8 +208,8 @@ export function uploadFile(filePath) {
 }
 
 /** 上传鱼鉴视频并在同一个请求中创建审核记录，防止只上传文件却未生成审核单。 */
-export function submitFishCardVideo(filePath, speciesId) {
-	return uploadTo(filePath, '/app/fish-card/submit-video', { speciesId: String(speciesId) })
+export function submitFishCardVideo(filePath, speciesId, onProgress) {
+	return uploadTo(filePath, '/app/fish-card/submit-video', { speciesId: String(speciesId) }, onProgress)
 }
 
 export function uploadProfileAvatar(filePath) {

@@ -2,8 +2,8 @@
     "name" : "共享钓场",
     "appid" : "__UNI__58FD288",
     "description" : "共享钓场提供合作钓场的扫码入场、计时计费、离场结算、钓位预订、装备租赁、放鱼动态、现场补给和订单服务。",
-    "versionName" : "1.0.13",
-    "versionCode" : "113",
+    "versionName" : "1.0.14",
+    "versionCode" : "114",
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {

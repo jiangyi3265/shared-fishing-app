@@ -45,6 +45,29 @@
 			<view class="upload-tip"><view class="bulb-icon"></view><text>认证六种常见鱼，审核通过即可点亮</text></view>
 			<view class="atlas-upload-btn" @click="openNextCard"><view class="camera-icon"></view><text>上传认证视频</text></view>
 
+			<view v-if="submittedCards.length" class="submission-panel">
+				<view class="submission-head">
+					<view>
+						<text class="submission-title">我的认证视频</text>
+						<text class="submission-caption">已上传 {{ submittedCards.length }} 条，点击可播放查看</text>
+					</view>
+					<text class="submission-count">{{ submittedCards.length }}</text>
+				</view>
+				<view
+					v-for="card in submittedCards"
+					:key="'video-' + card.speciesId"
+					class="submission-row"
+					@click="previewSubmitted(card)"
+				>
+					<view class="submission-play">▶</view>
+					<view class="submission-copy">
+						<text class="submission-name">{{ card.speciesName }}认证视频</text>
+						<text class="submission-time">{{ formatSubmittedTime(card.submittedTime) }}</text>
+					</view>
+					<text class="submission-status" :class="'status-' + card.cardStatus">{{ cardStatusText(card) }}</text>
+				</view>
+			</view>
+
 			<view class="rules-panel">
 				<view class="section-head">
 					<text class="section-title">认定标准</text>
@@ -105,17 +128,52 @@
 					class="video-preview"
 					:src="videoTempPath"
 					controls
+					show-center-play-btn
+					show-play-btn
 					object-fit="contain"
 				/>
 				<view v-else class="video-placeholder" @click="chooseVideo">
 					<view class="play-mark">▶</view>
 					<text>选择认证视频</text>
 				</view>
-				<button v-if="videoTempPath" class="replace-btn" @click="chooseVideo">重新选择</button>
+				<view v-if="videoTempPath" class="selected-video-state">
+					<view class="selected-check">✓</view>
+					<view class="selected-copy">
+						<text>视频已选择，可先播放检查</text>
+						<text>{{ selectedVideoInfo }}</text>
+					</view>
+					<button class="replace-btn" :disabled="submitting" @click="chooseVideo">重选</button>
+				</view>
+				<view v-if="submitting" class="upload-progress-block">
+					<view class="upload-progress-copy"><text>正在上传到审核后台</text><text>{{ uploadProgress }}%</text></view>
+					<view class="upload-progress-track"><view class="upload-progress-fill" :style="{ width: uploadProgress + '%' }"></view></view>
+				</view>
 				<button class="submit-btn" :disabled="!videoTempPath || submitting" @click="submitVideo">
-					{{ submitting ? '上传并提交中…' : '提交后台审核' }}
+					{{ submitting ? `正在上传 ${uploadProgress}%` : '确认上传并提交审核' }}
 				</button>
 				<text class="sheet-safe">视频仅用于鱼卡认定与争议复核</text>
+			</view>
+		</view>
+
+		<view v-if="playerOpen && playingCard" class="viewer-mask" @click.self="closePlayer">
+			<view class="viewer-panel">
+				<view class="viewer-head">
+					<view>
+						<text class="viewer-title">{{ playingCard.speciesName }}认证视频</text>
+						<text class="viewer-status">{{ cardStatusText(playingCard) }} · {{ formatSubmittedTime(playingCard.submittedTime) }}</text>
+					</view>
+					<view class="viewer-close" @click="closePlayer">×</view>
+				</view>
+				<video
+					class="submitted-video-player"
+					:src="playingCard.videoUrl"
+					controls
+					autoplay
+					show-center-play-btn
+					show-play-btn
+					object-fit="contain"
+				/>
+				<text class="viewer-note">这是已提交到后台的视频，审核状态会在此同步更新。</text>
 			</view>
 		</view>
 		<community-tabbar active="" />
@@ -137,7 +195,11 @@ export default {
 			sheetOpen: false,
 			selectedCard: null,
 			videoTempPath: '',
-			submitting: false
+			videoMeta: { duration: 0, size: 0 },
+			submitting: false,
+			uploadProgress: 0,
+			playerOpen: false,
+			playingCard: null
 		}
 	},
 	computed: {
@@ -147,6 +209,16 @@ export default {
 		},
 		phaseText() {
 			return { upcoming: '即将开始', active: '进行中', ended: '已结束' }[this.game.phase] || '进行中'
+		},
+		submittedCards() {
+			if (!this.game || !Array.isArray(this.game.cards)) return []
+			return this.game.cards.filter(card => card.videoUrl)
+		},
+		selectedVideoInfo() {
+			const parts = []
+			if (this.videoMeta.duration) parts.push(`${Math.ceil(this.videoMeta.duration)} 秒`)
+			if (this.videoMeta.size) parts.push(this.formatFileSize(this.videoMeta.size))
+			return parts.length ? parts.join(' · ') : '已准备好，尚未上传'
 		}
 	},
 	onShow() {
@@ -160,10 +232,11 @@ export default {
 		return { title: '极智鱼鉴：集齐6种常见鱼，获得66元奖励', path: '/pages/fishCard/fishCard' }
 	},
 	methods: {
-		loadGame() {
+		async loadGame() {
 			this.loading = true
 			this.loadError = ''
-			fetchFishCardGame().then((data) => {
+			try {
+				const data = await fetchFishCardGame()
 				if (data && data.cards) {
 					data.cards = data.cards.map((card) => ({
 						...card,
@@ -175,10 +248,12 @@ export default {
 					data.ranking = data.ranking.map(row => ({ ...row, avatar: resolveAssetUrl(row.avatar || '') }))
 				}
 				this.game = data
-			}).catch((e) => {
+			} catch (e) {
 				this.game = null
 				this.loadError = (e && (e.msg || e.message)) || '请检查网络和登录状态后重试'
-			}).finally(() => { this.loading = false })
+			} finally {
+				this.loading = false
+			}
 		},
 		spriteStyle(index) {
 			const col = index % 5
@@ -226,21 +301,27 @@ export default {
 				return
 			}
 			if (card.cardStatus === 'obtained') {
-				uni.showToast({ title: '这张鱼卡已经点亮', icon: 'success' })
+				if (card.videoUrl) this.previewSubmitted(card)
+				else uni.showToast({ title: '这张鱼卡已经点亮', icon: 'success' })
 				return
 			}
 			if (card.cardStatus === 'pending') {
-				uni.showToast({ title: '视频审核中，请耐心等待', icon: 'none' })
+				if (card.videoUrl) this.previewSubmitted(card)
+				else uni.showToast({ title: '视频审核中，请耐心等待', icon: 'none' })
 				return
 			}
 			this.selectedCard = card
 			this.videoTempPath = ''
+			this.videoMeta = { duration: 0, size: 0 }
+			this.uploadProgress = 0
 			this.sheetOpen = true
 		},
 		closeSheet() {
 			if (this.submitting) return
 			this.sheetOpen = false
 			this.videoTempPath = ''
+			this.videoMeta = { duration: 0, size: 0 }
+			this.uploadProgress = 0
 		},
 		chooseVideo() {
 			uni.chooseVideo({
@@ -248,26 +329,61 @@ export default {
 				compressed: true,
 				maxDuration: 60,
 				camera: 'back',
-				success: (res) => { this.videoTempPath = res.tempFilePath }
+				success: (res) => {
+					this.videoTempPath = res.tempFilePath
+					this.videoMeta = { duration: Number(res.duration) || 0, size: Number(res.size) || 0 }
+					this.uploadProgress = 0
+				}
 			})
 		},
 		async submitVideo() {
 			if (!this.videoTempPath || !this.selectedCard || this.submitting) return
 			this.submitting = true
-			uni.showLoading({ title: '上传认证视频', mask: true })
+			this.uploadProgress = 0
 			try {
-				await submitFishCardVideo(this.videoTempPath, this.selectedCard.speciesId)
+				const speciesId = this.selectedCard.speciesId
+				await submitFishCardVideo(this.videoTempPath, speciesId, (progress) => {
+					this.uploadProgress = progress
+				})
+				this.uploadProgress = 100
 				this.sheetOpen = false
 				this.videoTempPath = ''
-				uni.hideLoading()
-				uni.showToast({ title: '提交成功，已进入后台审核', icon: 'none', duration: 2400 })
 				await this.loadGame()
+				uni.showToast({ title: '上传成功，已进入审核', icon: 'success', duration: 2400 })
+				const submitted = this.game && this.game.cards && this.game.cards.find(card => card.speciesId === speciesId && card.videoUrl)
+				if (submitted) this.previewSubmitted(submitted)
 			} catch (e) {
-				uni.hideLoading()
 				uni.showToast({ title: (e && (e.msg || e.message)) || '提交失败，请重试', icon: 'none' })
 			} finally {
 				this.submitting = false
 			}
+		},
+		previewSubmitted(card) {
+			if (!card || !card.videoUrl) {
+				uni.showToast({ title: '暂时找不到已上传视频', icon: 'none' })
+				return
+			}
+			this.playingCard = card
+			this.playerOpen = true
+		},
+		closePlayer() {
+			this.playerOpen = false
+			this.playingCard = null
+		},
+		formatFileSize(bytes) {
+			const size = Number(bytes) || 0
+			if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
+			return `${(size / 1024 / 1024).toFixed(1)} MB`
+		},
+		formatSubmittedTime(value) {
+			if (!value) return '已提交到审核后台'
+			const normalized = typeof value === 'string'
+				? value.replace(/-/g, '/').replace('T', ' ')
+				: value
+			const date = new Date(normalized)
+			if (Number.isNaN(date.getTime())) return String(value)
+			const pad = number => String(number).padStart(2, '0')
+			return `${date.getMonth() + 1}月${date.getDate()}日 ${pad(date.getHours())}:${pad(date.getMinutes())}`
 		},
 		formatDate(value) {
 			if (!value) return '--'
@@ -354,6 +470,23 @@ export default {
 .rank-prize { display: block; margin-top: 5rpx; color: var(--gold-ink); font-size: 19rpx; }
 .ranking-empty { margin-top: 24rpx; padding: 30rpx 12rpx; color: var(--ink-2); font-size: 24rpx; text-align: center; }
 
+.submission-panel { margin-top: 18rpx; overflow: hidden; border: 1rpx solid #cfe2e1; border-radius: 16rpx; background: #fbfdfd; }
+.submission-head { display: flex; align-items: center; justify-content: space-between; padding: 22rpx 24rpx 18rpx; background: #edf7f6; }
+.submission-title, .submission-caption { display: block; }
+.submission-title { color: #123f43; font-size: 28rpx; font-weight: 800; }
+.submission-caption { margin-top: 5rpx; color: #687f81; font-size: 19rpx; }
+.submission-count { min-width: 44rpx; height: 44rpx; padding: 0 8rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-radius: 22rpx; background: #0a9f9c; color: #f8fbfb; font-size: 21rpx; font-weight: 800; }
+.submission-row { min-height: 92rpx; display: flex; align-items: center; gap: 16rpx; padding: 16rpx 20rpx; border-top: 1rpx solid #dce9e8; box-sizing: border-box; }
+.submission-play { flex: 0 0 auto; width: 54rpx; height: 54rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: 2rpx solid #0a9f9c; border-radius: 50%; color: #0a9f9c; font-size: 20rpx; text-indent: 3rpx; }
+.submission-copy { flex: 1; min-width: 0; }
+.submission-name, .submission-time { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.submission-name { color: #123f43; font-size: 24rpx; font-weight: 700; }
+.submission-time { margin-top: 5rpx; color: #718789; font-size: 18rpx; }
+.submission-status { flex: 0 0 auto; max-width: 190rpx; padding: 7rpx 11rpx; border-radius: 7rpx; background: #e7efee; color: #627779; font-size: 18rpx; line-height: 1.25; text-align: center; }
+.submission-status.status-pending { background: #fff0cb; color: #9a6500; }
+.submission-status.status-obtained { background: #def3ea; color: #197655; }
+.submission-status.status-rejected { background: #fde8e5; color: #a74438; }
+
 .sheet-mask { position: fixed; inset: 0; z-index: 999; display: flex; align-items: flex-end; background: rgba(9, 21, 16, .58); }
 .submit-sheet { width: 100%; padding: 18rpx 28rpx calc(28rpx + env(safe-area-inset-bottom)); border-radius: 30rpx 30rpx 0 0; background: var(--g-50); }
 .sheet-handle { width: 70rpx; height: 8rpx; margin: 0 auto 24rpx; border-radius: 99rpx; background: var(--ink-3); }
@@ -362,11 +495,32 @@ export default {
 .video-placeholder, .video-preview { width: 100%; height: 360rpx; margin-top: 24rpx; border-radius: var(--r); background: var(--ink-4); }
 .video-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12rpx; color: var(--jade); font-size: 25rpx; font-weight: 600; }
 .play-mark { width: 76rpx; height: 76rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--g-700); font-size: 28rpx; }
-.replace-btn { margin-top: 14rpx; border: 0; background: transparent; color: var(--jade); font-size: 24rpx; }
+.selected-video-state { min-height: 78rpx; margin-top: 14rpx; padding: 12rpx 12rpx 12rpx 16rpx; display: flex; align-items: center; gap: 12rpx; box-sizing: border-box; border: 1rpx solid #c5e1df; border-radius: 12rpx; background: #edf8f7; }
+.selected-check { flex: 0 0 auto; width: 40rpx; height: 40rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #0a9f9c; color: #f8fbfb; font-size: 24rpx; font-weight: 800; }
+.selected-copy { flex: 1; min-width: 0; }
+.selected-copy text { display: block; color: #123f43; font-size: 21rpx; line-height: 1.4; }
+.selected-copy text + text { margin-top: 2rpx; color: #6b8284; font-size: 18rpx; }
+.replace-btn { flex: 0 0 auto; min-width: 96rpx; height: 56rpx; margin: 0; padding: 0 16rpx; border: 1rpx solid #0a9f9c; border-radius: 8rpx; background: #f8fbfb; color: #087f7c; font-size: 21rpx; line-height: 54rpx; }
+.replace-btn[disabled] { border-color: #b8c8c7; color: #8ca09f; background: #edf2f2; }
 .replace-btn::after, .submit-btn::after { border: 0; }
+.upload-progress-block { margin-top: 16rpx; }
+.upload-progress-copy { display: flex; justify-content: space-between; color: #4f696b; font-size: 20rpx; }
+.upload-progress-copy text:last-child { color: #087f7c; font-weight: 800; }
+.upload-progress-track { height: 12rpx; margin-top: 10rpx; overflow: hidden; border-radius: 6rpx; background: #dce8e7; }
+.upload-progress-fill { height: 100%; border-radius: 6rpx; background: #0a9f9c; transition: width 180ms cubic-bezier(.22, 1, .36, 1); }
 .submit-btn { height: 96rpx; margin-top: 18rpx; border: 0; border-radius: var(--r-sm); color: #fff; background: var(--g-700); font-size: 30rpx; line-height: 96rpx; font-weight: 600; }
 .submit-btn[disabled] { color: #fff; background: var(--ink-3); }
 .sheet-safe { display: block; margin-top: 14rpx; color: var(--ink-2); font-size: 20rpx; text-align: center; }
+
+.viewer-mask { position: fixed; inset: 0; z-index: 1001; display: flex; align-items: center; justify-content: center; padding: 34rpx; box-sizing: border-box; background: rgba(9, 21, 16, .76); }
+.viewer-panel { width: 100%; max-width: 690rpx; overflow: hidden; border-radius: 22rpx; background: #f8fbfb; }
+.viewer-head { min-height: 108rpx; padding: 20rpx 22rpx; display: flex; align-items: center; justify-content: space-between; gap: 18rpx; box-sizing: border-box; }
+.viewer-title, .viewer-status { display: block; }
+.viewer-title { color: #123f43; font-size: 28rpx; font-weight: 800; }
+.viewer-status { margin-top: 5rpx; color: #687f81; font-size: 19rpx; }
+.viewer-close { flex: 0 0 auto; width: 58rpx; height: 58rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #e5eeee; color: #315658; font-size: 38rpx; line-height: 1; }
+.submitted-video-player { width: 100%; height: 720rpx; max-height: 58vh; background: #0b1818; }
+.viewer-note { display: block; padding: 18rpx 22rpx 22rpx; color: #607779; font-size: 20rpx; line-height: 1.55; }
 </style>
 
 <style scoped>
