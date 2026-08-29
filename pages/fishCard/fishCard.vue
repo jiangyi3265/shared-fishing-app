@@ -342,16 +342,26 @@ export default {
 			this.uploadProgress = 0
 			try {
 				const speciesId = this.selectedCard.speciesId
-				await submitFishCardVideo(this.videoTempPath, speciesId, (progress) => {
+				const receipt = await submitFishCardVideo(this.videoTempPath, speciesId, (progress) => {
 					this.uploadProgress = progress
 				})
+				if (!receipt || !receipt.catchId || !receipt.videoUrl) {
+					throw new Error('服务器未返回审核凭证，请勿重复上传并联系工作人员')
+				}
 				this.uploadProgress = 100
+				await this.loadGame()
+				const submitted = this.game && this.game.cards && this.game.cards.find(card => Number(card.speciesId) === Number(speciesId) && card.videoUrl)
+				if (!submitted) {
+					throw new Error(`审核单 #${receipt.catchId} 已创建，但页面回读失败，请联系工作人员`)
+				}
 				this.sheetOpen = false
 				this.videoTempPath = ''
-				await this.loadGame()
-				uni.showToast({ title: '上传成功，已进入审核', icon: 'success', duration: 2400 })
-				const submitted = this.game && this.game.cards && this.game.cards.find(card => card.speciesId === speciesId && card.videoUrl)
-				if (submitted) this.previewSubmitted(submitted)
+				uni.showModal({
+					title: '上传成功',
+					content: `审核单 #${receipt.catchId} 已提交，可在“我的认证视频”中播放查看。`,
+					showCancel: false,
+					success: () => this.previewSubmitted(submitted)
+				})
 			} catch (e) {
 				uni.showToast({ title: (e && (e.msg || e.message)) || '提交失败，请重试', icon: 'none' })
 			} finally {
