@@ -123,7 +123,7 @@
 			<view class="submit-sheet">
 				<view class="sheet-handle"></view>
 				<text class="sheet-title">认证 {{ selectedCard.speciesName }}</text>
-				<text class="sheet-desc">请上传一段连续视频：展示钓获、说出鱼种、完整放流。建议 60 秒内并开启压缩。</text>
+				<text class="sheet-desc">请上传一段连续视频：展示钓获、说出鱼种、完整放流。相册视频最长 5 分钟，文件需小于 48MB。</text>
 				<text class="sheet-runtime">{{ runtimeLabel }} · {{ runtimeInfo.apiBaseUrl }}</text>
 				<video
 					v-if="videoTempPath"
@@ -196,8 +196,9 @@ import {
 } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
-const BUILD_VERSION = '1.0.17'
+const BUILD_VERSION = '1.0.18'
 const MAX_VIDEO_BYTES = 48 * 1024 * 1024
+const MAX_VIDEO_DURATION_SECONDS = 5 * 60
 const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
 
 export default {
@@ -306,7 +307,9 @@ export default {
 			const size = await this.getVideoFileSize(this.videoTempPath)
 			this.videoMeta = { ...this.videoMeta, size }
 			if (size > MAX_VIDEO_BYTES) throw new Error(`视频为 ${this.formatFileSize(size)}，请压缩到 48MB 以内再上传`)
-			if (Number(this.videoMeta.duration) > 65) throw new Error('认证视频请控制在 60 秒以内')
+			if (Number(this.videoMeta.duration) > MAX_VIDEO_DURATION_SECONDS) {
+				throw new Error('认证视频请控制在 5 分钟以内')
+			}
 		},
 		async loadGame() {
 			this.loading = true
@@ -400,41 +403,61 @@ export default {
 			this.uploadProgress = 0
 		},
 		chooseVideo() {
+			const onSuccess = async (res) => {
+				const selected = Array.isArray(res.tempFiles) && res.tempFiles.length ? res.tempFiles[0] : res
+				this.videoTempPath = selected.tempFilePath || selected.path || res.tempFilePath || ''
+				this.videoMeta = { duration: Number(selected.duration) || 0, size: Number(selected.size) || 0 }
+				this.uploadProgress = 0
+				try {
+					await this.validateSelectedVideo()
+				} catch (e) {
+					this.videoTempPath = ''
+					uni.showModal({ title: '视频无法上传', content: e.message || '请重新选择视频', showCancel: false })
+					return
+				}
+				this.saveUploadDiagnostic({
+					status: 'selected',
+					attemptId: '',
+					speciesId: this.selectedCard && this.selectedCard.speciesId,
+					message: `${this.selectedVideoInfo}。请点击“立即上传”才会进入后台。`
+				})
+				uni.showModal({
+					title: '视频已选好（尚未上传）',
+					content: `${this.selectedVideoInfo}\n可先播放检查，也可以现在立即上传。`,
+					cancelText: '先预览',
+					confirmText: '立即上传',
+					success: modal => { if (modal.confirm) this.submitVideo() }
+				})
+			}
+			const onFail = (err) => {
+				const detail = String((err && err.errMsg) || '')
+				if (/cancel/i.test(detail)) return
+				uni.showModal({ title: '未能选择视频', content: detail || '请检查相册权限后重试', showCancel: false })
+			}
+
+			// chooseMedia 的 maxDuration 只限制现场拍摄，不限制相册已有视频；
+			// 因此可以选择接近 5 分钟的认证视频，同时仍把现场拍摄控制在 60 秒内。
+			if (typeof uni.chooseMedia === 'function') {
+				uni.chooseMedia({
+					count: 1,
+					mediaType: ['video'],
+					sourceType: ['album', 'camera'],
+					sizeType: ['compressed'],
+					maxDuration: 60,
+					camera: 'back',
+					success: onSuccess,
+					fail: onFail
+				})
+				return
+			}
+
 			uni.chooseVideo({
-				sourceType: ['camera', 'album'],
+				sourceType: ['album', 'camera'],
 				compressed: true,
 				maxDuration: 60,
 				camera: 'back',
-				success: async (res) => {
-					this.videoTempPath = res.tempFilePath
-					this.videoMeta = { duration: Number(res.duration) || 0, size: Number(res.size) || 0 }
-					this.uploadProgress = 0
-					try {
-						await this.validateSelectedVideo()
-					} catch (e) {
-						this.videoTempPath = ''
-						uni.showModal({ title: '视频无法上传', content: e.message || '请重新选择视频', showCancel: false })
-						return
-					}
-					this.saveUploadDiagnostic({
-						status: 'selected',
-						attemptId: '',
-						speciesId: this.selectedCard && this.selectedCard.speciesId,
-						message: `${this.selectedVideoInfo}。请点击“立即上传”才会进入后台。`
-					})
-					uni.showModal({
-						title: '视频已选好（尚未上传）',
-						content: `${this.selectedVideoInfo}\n可先播放检查，也可以现在立即上传。`,
-						cancelText: '先预览',
-						confirmText: '立即上传',
-						success: modal => { if (modal.confirm) this.submitVideo() }
-					})
-				},
-				fail: (err) => {
-					const detail = String((err && err.errMsg) || '')
-					if (/cancel/i.test(detail)) return
-					uni.showModal({ title: '未能选择视频', content: detail || '请检查相册权限后重试', showCancel: false })
-				}
+				success: onSuccess,
+				fail: onFail
 			})
 		},
 		async submitVideo() {
