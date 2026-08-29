@@ -196,7 +196,7 @@ import {
 } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
-const BUILD_VERSION = '1.0.18'
+const BUILD_VERSION = '1.0.19'
 const MAX_VIDEO_BYTES = 48 * 1024 * 1024
 const MAX_VIDEO_DURATION_SECONDS = 5 * 60
 const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
@@ -435,14 +435,13 @@ export default {
 				uni.showModal({ title: '未能选择视频', content: detail || '请检查相册权限后重试', showCancel: false })
 			}
 
-			// chooseMedia 的 maxDuration 只限制现场拍摄，不限制相册已有视频；
-			// 因此可以选择接近 5 分钟的认证视频，同时仍把现场拍摄控制在 60 秒内。
-			if (typeof uni.chooseMedia === 'function') {
-				uni.chooseMedia({
-					count: 1,
-					mediaType: ['video'],
+			// chooseVideo 的 maxDuration 只限制现场拍摄，相册视频仍可选择到 5 分钟；
+			// 同时 compressed:true 会实际压缩视频。chooseMedia 的 sizeType 对视频不生效，
+			// 容易让相册原片超过上传大小或在弱网下超时，因此只作为兼容兜底。
+			if (typeof uni.chooseVideo === 'function') {
+				uni.chooseVideo({
 					sourceType: ['album', 'camera'],
-					sizeType: ['compressed'],
+					compressed: true,
 					maxDuration: 60,
 					camera: 'back',
 					success: onSuccess,
@@ -451,9 +450,10 @@ export default {
 				return
 			}
 
-			uni.chooseVideo({
+			uni.chooseMedia({
+				count: 1,
+				mediaType: ['video'],
 				sourceType: ['album', 'camera'],
-				compressed: true,
 				maxDuration: 60,
 				camera: 'back',
 				success: onSuccess,

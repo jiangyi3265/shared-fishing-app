@@ -99,7 +99,7 @@
 			}
 		},
 		onLoad(option = {}) {
-			this.afterTarget = option.after || ''
+			this.afterTarget = this.normalizeAfterTarget(option.after)
 			try {
 				const info = uni.getSystemInfoSync()
 				if (info && info.statusBarHeight) this.statusBarHeight = info.statusBarHeight
@@ -128,6 +128,16 @@
 			this.clearSplashTimers()
 		},
 		methods: {
+			normalizeAfterTarget(value) {
+				let target = String(value || '')
+				// 微信会保留 reLaunch 查询参数中的百分号编码；登录回跳必须先还原，
+				// 否则会被当成首页下的相对路径（pages/index/%2Fpages%2F...）。
+				for (let i = 0; i < 2 && /%[0-9a-f]{2}/i.test(target); i += 1) {
+					try { target = decodeURIComponent(target) } catch (e) { return '' }
+				}
+				if (!target.startsWith('/pages/') || target.startsWith('/pages/login/login')) return ''
+				return target
+			},
 			maybeShowSplash(option = {}) {
 				// 仅在“干净”冷启动（无扫码 / 深链 / 跳转参数）时展示一次，避免打断扫码入场等流程
 				const hasEntryParam = option.after || option.qrId || option.scene || option.action || option.venueId
