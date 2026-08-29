@@ -196,7 +196,7 @@ import {
 } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
-const BUILD_VERSION = '1.0.16'
+const BUILD_VERSION = '1.0.17'
 const MAX_VIDEO_BYTES = 48 * 1024 * 1024
 const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
 
