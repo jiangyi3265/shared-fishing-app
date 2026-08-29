@@ -4,11 +4,9 @@ const LOGIN_KEY = 'fishpond_login'
 let authRedirecting = false
 
 function resolveBaseUrl() {
-	try {
-		const cfg = uni.getStorageSync(API_BASE_URL_STORAGE_KEY)
-		if (cfg) return cfg
-	} catch (e) {}
 	const envVersion = getMiniProgramEnv()
+	// 真机开发版、体验版和正式版都固定使用当前环境配置，防止历史调试缓存
+	// 把查询与视频上传悄悄发往旧地址。切换接口必须修改 config.js 后重编译。
 	return API_BASE_URLS[envVersion] || API_BASE_URLS.develop
 }
 
@@ -151,6 +149,20 @@ function getMiniProgramEnv() {
 	}
 }
 
+export function getMiniProgramRuntimeInfo() {
+	const envVersion = getMiniProgramEnv()
+	let platformVersion = ''
+	try {
+		const info = uni.getAccountInfoSync && uni.getAccountInfoSync()
+		platformVersion = info?.miniProgram?.version || ''
+	} catch (e) {}
+	return {
+		envVersion,
+		platformVersion,
+		apiBaseUrl: resolveBaseUrl()
+	}
+}
+
 function isValidBaseUrl(baseUrl) {
 	if (!baseUrl) return false
 	if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
@@ -160,39 +172,75 @@ function isValidBaseUrl(baseUrl) {
 	return /^https?:\/\//.test(baseUrl)
 }
 
-function uploadTo(filePath, path, formData = {}, onProgress) {
+function normalizeUploadFailure(err) {
+	const detail = String((err && (err.errMsg || err.message || err.msg)) || '').trim()
+	let msg = detail || '视频上传失败，请检查网络后重试'
+	if (/url not in domain list|domain list|合法域名|not in domain/i.test(detail)) {
+		msg = '视频未发到服务器：微信上传域名未生效，请联系管理员检查 uploadFile 合法域名'
+	} else if (/timeout|timed out|超时/i.test(detail)) {
+		msg = '视频上传超时，请切换稳定网络或选择更短的视频后重试'
+	} else if (/file.*not.*exist|no such file|文件不存在/i.test(detail)) {
+		msg = '已选视频的临时文件已失效，请重新选择视频'
+	} else if (/exceed|too large|maximum|超过.*大小/i.test(detail)) {
+		msg = '视频文件过大，请压缩到 48MB 以内后重试'
+	} else if (/network|connection|socket|fail/i.test(detail)) {
+		msg = '视频没有上传成功，请检查网络后重试'
+	}
+	return { msg, detail, stage: 'uploadFile.fail' }
+}
+
+function uploadTo(filePath, path, formData = {}, onProgress, uploadContext = {}) {
 	return new Promise((resolve, reject) => {
 		const baseUrl = resolveBaseUrl()
 		const token = getToken()
+		if (!filePath) {
+			reject({ msg: '请先选择要上传的视频', stage: 'before-upload' })
+			return
+		}
+		if (!isValidBaseUrl(baseUrl)) {
+			reject({ msg: '小程序正式上传域名未配置', stage: 'before-upload' })
+			return
+		}
+		const trackingHeaders = {
+			'X-Upload-Attempt-Id': String(uploadContext.attemptId || ''),
+			'X-MiniProgram-Version': String(uploadContext.clientVersion || ''),
+			'X-MiniProgram-Env': String(uploadContext.envVersion || '')
+		}
 		const uploadTask = uni.uploadFile({
 			url: baseUrl + path,
 			filePath,
 			name: 'file',
 			formData,
-			header: token ? { Authorization: 'Bearer ' + token } : {},
+			header: {
+				...(token ? { Authorization: 'Bearer ' + token } : {}),
+				...trackingHeaders
+			},
+			timeout: 120000,
 			success: (res) => {
 				const statusCode = Number(res.statusCode || 0)
 				try {
-					const data = JSON.parse(res.data)
+					const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
 					if (statusCode === 401 || Number(data.code) === 401) {
 						handleUnauthorized(token)
-						reject({ code: 401, statusCode: 401, msg: data.msg || '登录状态已过期' })
+						reject({ code: 401, statusCode: 401, msg: data.msg || '登录状态已过期', stage: 'server-response' })
 						return
 					}
 					if (statusCode >= 200 && statusCode < 300 && Number(data.code) === 200) {
 						resolve(data.data || data)
 					} else {
-						reject({ statusCode, code: data.code, msg: data.msg || '上传失败' })
+						reject({ statusCode, code: data.code, msg: data.msg || '上传失败', stage: 'server-response' })
 					}
 				} catch (e) {
 					const tooLarge = statusCode === 413
 					reject({
 						statusCode,
-						msg: tooLarge ? '视频超过 50MB，请压缩后重试' : `上传失败（${statusCode || '服务异常'}）`
+						msg: tooLarge ? '视频超过 48MB，请压缩后重试' : `服务器返回异常（${statusCode || '无状态码'}），视频未提交`,
+						detail: String(res.data || '').slice(0, 240),
+						stage: 'server-response'
 					})
 				}
 			},
-			fail: (err) => reject({ msg: (err && err.errMsg) || '上传失败，请检查网络后重试' })
+			fail: (err) => reject(normalizeUploadFailure(err))
 		})
 		if (uploadTask && typeof uploadTask.onProgressUpdate === 'function' && typeof onProgress === 'function') {
 			uploadTask.onProgressUpdate((event) => {
@@ -208,8 +256,18 @@ export function uploadFile(filePath) {
 }
 
 /** 上传鱼鉴视频并在同一个请求中创建审核记录，防止只上传文件却未生成审核单。 */
-export function submitFishCardVideo(filePath, speciesId, onProgress) {
-	return uploadTo(filePath, '/app/fish-card/submit-video', { speciesId: String(speciesId) }, onProgress)
+export function submitFishCardVideo(filePath, speciesId, onProgress, uploadContext = {}) {
+	return uploadTo(filePath, '/app/fish-card/submit-video', {
+		speciesId: String(speciesId),
+		attemptId: String(uploadContext.attemptId || ''),
+		clientVersion: String(uploadContext.clientVersion || ''),
+		envVersion: String(uploadContext.envVersion || '')
+	}, onProgress, uploadContext)
+}
+
+/** uploadFile 在真机本地失败时，改用普通 request 把原因回报到服务器日志。 */
+export function reportFishCardUploadDiagnostic(payload) {
+	return http.post('/app/fish-card/upload-diagnostic', payload, { showError: false })
 }
 
 export function uploadProfileAvatar(filePath) {

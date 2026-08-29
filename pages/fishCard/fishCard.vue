@@ -44,6 +44,7 @@
 			</view>
 			<view class="upload-tip"><view class="bulb-icon"></view><text>认证六种常见鱼，审核通过即可点亮</text></view>
 			<view class="atlas-upload-btn" @click="openNextCard"><view class="camera-icon"></view><text>上传认证视频</text></view>
+			<text class="upload-build">{{ runtimeLabel }}</text>
 
 			<view v-if="submittedCards.length" class="submission-panel">
 				<view class="submission-head">
@@ -123,6 +124,7 @@
 				<view class="sheet-handle"></view>
 				<text class="sheet-title">认证 {{ selectedCard.speciesName }}</text>
 				<text class="sheet-desc">请上传一段连续视频：展示钓获、说出鱼种、完整放流。建议 60 秒内并开启压缩。</text>
+				<text class="sheet-runtime">{{ runtimeLabel }} · {{ runtimeInfo.apiBaseUrl }}</text>
 				<video
 					v-if="videoTempPath"
 					class="video-preview"
@@ -148,10 +150,14 @@
 					<view class="upload-progress-copy"><text>正在上传到审核后台</text><text>{{ uploadProgress }}%</text></view>
 					<view class="upload-progress-track"><view class="upload-progress-fill" :style="{ width: uploadProgress + '%' }"></view></view>
 				</view>
+				<view v-if="lastUploadDiagnostic" class="upload-diagnostic" :class="'diag-' + lastUploadDiagnostic.status">
+					<view class="diagnostic-head"><text>{{ lastUploadStatusLabel }}</text><text>{{ lastUploadDiagnostic.attemptId || '' }}</text></view>
+					<text v-if="lastUploadDiagnostic.message" class="diagnostic-message">{{ lastUploadDiagnostic.message }}</text>
+				</view>
 				<button class="submit-btn" :disabled="!videoTempPath || submitting" @click="submitVideo">
-					{{ submitting ? `正在上传 ${uploadProgress}%` : '确认上传并提交审核' }}
+					{{ submitting ? `正在上传 ${uploadProgress}%` : '立即上传并生成审核单' }}
 				</button>
-				<text class="sheet-safe">视频仅用于鱼卡认定与争议复核</text>
+				<text class="sheet-safe">只有看到“上传成功”和审核单号，后台才算真正收到视频</text>
 			</view>
 		</view>
 
@@ -182,9 +188,17 @@
 
 <script>
 import { isLoggedIn, fetchFishCardGame, formatMoney, formatDuration } from '../../utils/fishingStore.js'
-import { submitFishCardVideo, resolveAssetUrl } from '../../utils/request.js'
+import {
+	submitFishCardVideo,
+	reportFishCardUploadDiagnostic,
+	resolveAssetUrl,
+	getMiniProgramRuntimeInfo
+} from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
+const BUILD_VERSION = '1.0.16'
+const MAX_VIDEO_BYTES = 48 * 1024 * 1024
+const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
 
 export default {
 	data() {
@@ -198,6 +212,8 @@ export default {
 			videoMeta: { duration: 0, size: 0 },
 			submitting: false,
 			uploadProgress: 0,
+			runtimeInfo: getMiniProgramRuntimeInfo(),
+			lastUploadDiagnostic: null,
 			playerOpen: false,
 			playingCard: null
 		}
@@ -218,10 +234,29 @@ export default {
 			const parts = []
 			if (this.videoMeta.duration) parts.push(`${Math.ceil(this.videoMeta.duration)} 秒`)
 			if (this.videoMeta.size) parts.push(this.formatFileSize(this.videoMeta.size))
-			return parts.length ? parts.join(' · ') : '已准备好，尚未上传'
+			return parts.length ? parts.join(' · ') + ' · 尚未上传' : '已准备好，尚未上传'
+		},
+		runtimeLabel() {
+			const envLabel = { develop: '开发版', trial: '体验版', release: '正式版' }[this.runtimeInfo.envVersion] || this.runtimeInfo.envVersion
+			const platform = this.runtimeInfo.platformVersion && this.runtimeInfo.platformVersion !== BUILD_VERSION
+				? ` · 平台 ${this.runtimeInfo.platformVersion}`
+				: ''
+			return `上传模块 v${BUILD_VERSION} · ${envLabel}${platform}`
+		},
+		lastUploadStatusLabel() {
+			if (!this.lastUploadDiagnostic) return ''
+			return {
+				selected: '视频已选择，尚未上传',
+				uploading: '正在上传',
+				verifying: '服务器已接收，正在核验',
+				success: '上传成功',
+				failed: '上次上传未成功'
+			}[this.lastUploadDiagnostic.status] || '上传状态'
 		}
 	},
 	onShow() {
+		this.runtimeInfo = getMiniProgramRuntimeInfo()
+		this.restoreUploadDiagnostic()
 		if (!isLoggedIn()) {
 			uni.redirectTo({ url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/fishCard/fishCard') })
 			return
@@ -232,6 +267,47 @@ export default {
 		return { title: '极智鱼鉴：集齐6种常见鱼，获得66元奖励', path: '/pages/fishCard/fishCard' }
 	},
 	methods: {
+		restoreUploadDiagnostic() {
+			try {
+				this.lastUploadDiagnostic = uni.getStorageSync(LAST_UPLOAD_DIAGNOSTIC_KEY) || null
+			} catch (e) {
+				this.lastUploadDiagnostic = null
+			}
+		},
+		saveUploadDiagnostic(payload) {
+			const value = {
+				...payload,
+				updatedAt: Date.now(),
+				clientVersion: BUILD_VERSION,
+				envVersion: this.runtimeInfo.envVersion,
+				apiBaseUrl: this.runtimeInfo.apiBaseUrl
+			}
+			this.lastUploadDiagnostic = value
+			try { uni.setStorageSync(LAST_UPLOAD_DIAGNOSTIC_KEY, value) } catch (e) {}
+		},
+		createUploadAttemptId() {
+			return `FC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+		},
+		getVideoFileSize(filePath) {
+			return new Promise((resolve) => {
+				if (!uni.getFileInfo) {
+					resolve(Number(this.videoMeta.size) || 0)
+					return
+				}
+				uni.getFileInfo({
+					filePath,
+					success: res => resolve(Number(res.size) || Number(this.videoMeta.size) || 0),
+					fail: () => resolve(Number(this.videoMeta.size) || 0)
+				})
+			})
+		},
+		async validateSelectedVideo() {
+			if (!this.videoTempPath) throw new Error('请重新选择认证视频')
+			const size = await this.getVideoFileSize(this.videoTempPath)
+			this.videoMeta = { ...this.videoMeta, size }
+			if (size > MAX_VIDEO_BYTES) throw new Error(`视频为 ${this.formatFileSize(size)}，请压缩到 48MB 以内再上传`)
+			if (Number(this.videoMeta.duration) > 65) throw new Error('认证视频请控制在 60 秒以内')
+		},
 		async loadGame() {
 			this.loading = true
 			this.loadError = ''
@@ -329,41 +405,103 @@ export default {
 				compressed: true,
 				maxDuration: 60,
 				camera: 'back',
-				success: (res) => {
+				success: async (res) => {
 					this.videoTempPath = res.tempFilePath
 					this.videoMeta = { duration: Number(res.duration) || 0, size: Number(res.size) || 0 }
 					this.uploadProgress = 0
+					try {
+						await this.validateSelectedVideo()
+					} catch (e) {
+						this.videoTempPath = ''
+						uni.showModal({ title: '视频无法上传', content: e.message || '请重新选择视频', showCancel: false })
+						return
+					}
+					this.saveUploadDiagnostic({
+						status: 'selected',
+						attemptId: '',
+						speciesId: this.selectedCard && this.selectedCard.speciesId,
+						message: `${this.selectedVideoInfo}。请点击“立即上传”才会进入后台。`
+					})
+					uni.showModal({
+						title: '视频已选好（尚未上传）',
+						content: `${this.selectedVideoInfo}\n可先播放检查，也可以现在立即上传。`,
+						cancelText: '先预览',
+						confirmText: '立即上传',
+						success: modal => { if (modal.confirm) this.submitVideo() }
+					})
+				},
+				fail: (err) => {
+					const detail = String((err && err.errMsg) || '')
+					if (/cancel/i.test(detail)) return
+					uni.showModal({ title: '未能选择视频', content: detail || '请检查相册权限后重试', showCancel: false })
 				}
 			})
 		},
 		async submitVideo() {
 			if (!this.videoTempPath || !this.selectedCard || this.submitting) return
+			const attemptId = this.createUploadAttemptId()
+			const speciesId = this.selectedCard.speciesId
 			this.submitting = true
-			this.uploadProgress = 0
+			this.uploadProgress = 1
+			this.saveUploadDiagnostic({
+				status: 'uploading',
+				attemptId,
+				speciesId,
+				message: '正在连接上传服务器，请不要关闭小程序'
+			})
 			try {
-				const speciesId = this.selectedCard.speciesId
+				await this.validateSelectedVideo()
 				const receipt = await submitFishCardVideo(this.videoTempPath, speciesId, (progress) => {
-					this.uploadProgress = progress
+					this.uploadProgress = Math.max(1, progress)
+				}, {
+					attemptId,
+					clientVersion: BUILD_VERSION,
+					envVersion: this.runtimeInfo.envVersion
 				})
 				if (!receipt || !receipt.catchId || !receipt.videoUrl) {
 					throw new Error('服务器未返回审核凭证，请勿重复上传并联系工作人员')
 				}
 				this.uploadProgress = 100
+				this.saveUploadDiagnostic({ status: 'verifying', attemptId, speciesId, catchId: receipt.catchId, message: '服务器已接收，正在核对审核记录' })
 				await this.loadGame()
-				const submitted = this.game && this.game.cards && this.game.cards.find(card => Number(card.speciesId) === Number(speciesId) && card.videoUrl)
+				const submitted = this.game && this.game.cards && this.game.cards.find(card =>
+					Number(card.speciesId) === Number(speciesId) &&
+					Number(card.catchId) === Number(receipt.catchId) &&
+					card.videoUrl
+				)
 				if (!submitted) {
 					throw new Error(`审核单 #${receipt.catchId} 已创建，但页面回读失败，请联系工作人员`)
 				}
+				this.saveUploadDiagnostic({ status: 'success', attemptId, speciesId, catchId: receipt.catchId, message: `审核单 #${receipt.catchId} 已进入后台` })
 				this.sheetOpen = false
 				this.videoTempPath = ''
+				this.videoMeta = { duration: 0, size: 0 }
 				uni.showModal({
 					title: '上传成功',
-					content: `审核单 #${receipt.catchId} 已提交，可在“我的认证视频”中播放查看。`,
+					content: `审核单 #${receipt.catchId} 已提交。\n上传编号：${attemptId}\n可在“我的认证视频”中播放查看。`,
 					showCancel: false,
 					success: () => this.previewSubmitted(submitted)
 				})
 			} catch (e) {
-				uni.showToast({ title: (e && (e.msg || e.message)) || '提交失败，请重试', icon: 'none' })
+				const message = (e && (e.msg || e.message)) || '提交失败，请重试'
+				const detail = String((e && e.detail) || '')
+				this.saveUploadDiagnostic({ status: 'failed', attemptId, speciesId, message })
+				reportFishCardUploadDiagnostic({
+					stage: (e && e.stage) || 'client-catch',
+					attemptId,
+					clientMessage: `${message}${detail ? ` | ${detail}` : ''}`.slice(0, 500),
+					clientVersion: BUILD_VERSION,
+					envVersion: this.runtimeInfo.envVersion,
+					speciesId,
+					fileSize: Number(this.videoMeta.size) || 0,
+					duration: Number(this.videoMeta.duration) || 0
+				}).catch(() => {})
+				uni.showModal({
+					title: '视频未上传成功',
+					content: `${message}\n\n本次未生成审核单，后台不会有记录。\n上传编号：${attemptId}\n${this.runtimeLabel}`,
+					showCancel: false,
+					confirmText: '知道了'
+				})
 			} finally {
 				this.submitting = false
 			}
@@ -535,5 +673,6 @@ export default {
 
 <style scoped>
 .atlas-page{padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb}.atlas-hero{height:132rpx;padding:20rpx 24rpx;box-sizing:border-box;display:flex;align-items:center;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff;color:#123f43}.atlas-hero::after{display:none}.summary-cell{flex:1;min-width:0}.summary-divider{width:1rpx;height:84rpx;background:#dce7e6;margin:0 24rpx}.summary-label{display:block;color:#637779;font-size:22rpx}.crown-mark{color:#eea500}.prize-value{margin-top:5rpx;color:#e99c00;font-size:49rpx;font-weight:800}.prize-value text{font-size:27rpx}.summary-progress-number{margin-top:6rpx;color:#36595b;font-size:25rpx}.summary-progress-number text{font-size:38rpx;color:#08a6a3;font-weight:800}.progress-cell .progress-track{height:9rpx;margin-top:8rpx;background:#e2ebea}.progress-cell .progress-fill{background:#08aaa6}.card-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10rpx;margin-top:16rpx}.fish-card{position:relative;border-radius:11rpx;border-color:#9ccdcc;background:#fff}.card-index{position:absolute;z-index:3;left:6rpx;top:6rpx;width:28rpx;height:28rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0a9f9c;color:#fff;font-size:18rpx;font-weight:800}.card-art{padding-top:158%;background-size:500% 200%}.card-shade{background:rgba(30,39,35,.02)}.obtained-stamp,.pending-stamp,.lock-mark{display:none}.card-copy{min-height:90rpx;padding:7rpx 4rpx 8rpx;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;gap:2rpx}.species-name{font-size:20rpx;font-weight:800}.fish-weight{font-size:17rpx;color:#526b6d}.card-status{margin-top:auto;padding:4rpx 2rpx;border-radius:5rpx;background:#e6eeee;color:#637779;font-size:15rpx;line-height:1.2}.card-obtained .card-status{background:#0ba9a5;color:#fff}.card-pending .card-status{background:#fff0cb;color:#a66b00}.rules-panel,.ranking-panel{display:none}.upload-tip{height:84rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;color:#6d8082;font-size:22rpx}.bulb-icon{width:22rpx;height:28rpx;border:3rpx solid #eca600;border-radius:50% 50% 8rpx 8rpx;position:relative}.bulb-icon::after{content:'';position:absolute;left:5rpx;right:5rpx;bottom:-8rpx;border-top:4rpx solid #eca600}.atlas-upload-btn{height:82rpx;display:flex;align-items:center;justify-content:center;gap:15rpx;border-radius:12rpx;background:#0bafab;color:#fff;font-size:28rpx;font-weight:800}.camera-icon{width:38rpx;height:29rpx;border:5rpx solid #fff;border-radius:6rpx;position:relative}.camera-icon::before{content:'';position:absolute;left:9rpx;top:4rpx;width:11rpx;height:11rpx;border:4rpx solid #fff;border-radius:50%}.camera-icon::after{content:'';position:absolute;left:6rpx;top:-12rpx;width:17rpx;height:10rpx;border-radius:4rpx 4rpx 0 0;background:#fff}
+.upload-build{display:block;margin-top:10rpx;color:#819394;font-size:18rpx;line-height:1.4;text-align:center}.sheet-runtime{display:block;margin-top:8rpx;overflow:hidden;color:#7b8f90;font-size:18rpx;line-height:1.4;text-overflow:ellipsis;white-space:nowrap}.upload-diagnostic{margin-top:14rpx;padding:14rpx 16rpx;border:1rpx solid #c8dedd;border-radius:10rpx;background:#eef7f6}.diagnostic-head{display:flex;align-items:center;justify-content:space-between;gap:12rpx;color:#22585a;font-size:19rpx;font-weight:700}.diagnostic-head text:last-child{max-width:290rpx;overflow:hidden;color:#6a8082;font-size:16rpx;font-weight:500;text-overflow:ellipsis;white-space:nowrap}.diagnostic-message{display:block;margin-top:6rpx;color:#607779;font-size:18rpx;line-height:1.45}.upload-diagnostic.diag-failed{border-color:#edc2bd;background:#fff1ef}.upload-diagnostic.diag-failed .diagnostic-head,.upload-diagnostic.diag-failed .diagnostic-message{color:#9b4036}.upload-diagnostic.diag-success{border-color:#b7dfcc;background:#eaf8f1}.upload-diagnostic.diag-success .diagnostic-head{color:#18704f}
 @media(max-width:360px){.atlas-hero{padding-left:18rpx;padding-right:18rpx}.summary-divider{margin-left:16rpx;margin-right:16rpx}.card-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8rpx}.card-copy{min-height:86rpx}.species-name{font-size:19rpx}.card-status{font-size:15rpx}.fish-weight{font-size:16rpx}.atlas-upload-btn{height:88rpx}}
 </style>
