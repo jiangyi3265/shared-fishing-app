@@ -29,7 +29,13 @@
 					@click="openCard(card)"
 				>
 					<text class="card-index">{{ index + 1 }}</text>
-					<view class="card-art" :style="spriteStyle(index)">
+					<view class="card-art">
+						<image
+							class="card-art-atlas"
+							src="/static/fish-card-atlas.jpg"
+							:style="spriteStyle(index)"
+							mode="scaleToFill"
+						/>
 						<view class="card-shade"></view>
 						<view v-if="card.cardStatus === 'obtained'" class="obtained-stamp">已获得</view>
 						<view v-else-if="card.cardStatus === 'pending'" class="pending-stamp">审核中</view>
@@ -213,7 +219,7 @@ import {
 } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
-const BUILD_VERSION = '1.0.20'
+const BUILD_VERSION = '1.0.21'
 const MAX_VIDEO_BYTES = 48 * 1024 * 1024
 const MAX_VIDEO_DURATION_SECONDS = 5 * 60
 const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
@@ -362,9 +368,8 @@ export default {
 			const col = index % 5
 			const row = Math.floor(index / 5)
 			return {
-				backgroundImage: "url('/static/fish-card-atlas.jpg')",
-				backgroundSize: '500% 200%',
-				backgroundPosition: `${col * 25}% ${row * 100}%`
+				left: `-${col * 100}%`,
+				top: `-${row * 100}%`
 			}
 		},
 		cardStatusText(card) {
@@ -622,13 +627,13 @@ export default {
 
 .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18rpx; margin-top: 22rpx; }
 .fish-card { overflow: hidden; border: 1rpx solid var(--ink-4); border-radius: var(--r); background: var(--g-50); }
-.card-art { position: relative; height: 0; padding-top: 100%; background-repeat: no-repeat; }
-.card-shade { position: absolute; inset: 0; background: rgba(30, 39, 35, .06); }
-.card-locked .card-art, .card-pending .card-art, .card-rejected .card-art, .card-unavailable .card-art { -webkit-filter: grayscale(1) saturate(.25); filter: grayscale(1) saturate(.25); }
-.card-locked .card-art { opacity: .56; }
-.card-pending .card-art { opacity: .74; }
-.card-rejected .card-art { opacity: .64; }
-.card-unavailable .card-art { opacity: .38; }
+.card-art { position: relative; height: 0; overflow: hidden; padding-top: 100%; background: #f2f7f6; }
+.card-art-atlas { position: absolute; z-index: 0; width: 500%; height: 200%; max-width: none; }
+.card-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(30, 39, 35, .06); }
+.card-locked .card-art-atlas { opacity: .56; }
+.card-pending .card-art-atlas { opacity: .78; }
+.card-rejected .card-art-atlas { opacity: .64; }
+.card-unavailable .card-art-atlas { opacity: .38; }
 .obtained-stamp, .pending-stamp, .lock-mark { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: 600; }
 .obtained-stamp { right: 14rpx; top: 14rpx; padding: 8rpx 13rpx; border-radius: 99rpx; color: #ffd486; background: var(--g-700); font-size: 20rpx; }
 .pending-stamp { right: 14rpx; top: 14rpx; padding: 8rpx 13rpx; border-radius: 99rpx; color: #12383a; background: var(--gold); font-size: 20rpx; }
@@ -723,7 +728,7 @@ export default {
 </style>
 
 <style scoped>
-.atlas-page{padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb}.atlas-hero{height:132rpx;padding:20rpx 24rpx;box-sizing:border-box;display:flex;align-items:center;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff;color:#123f43}.atlas-hero::after{display:none}.summary-cell{flex:1;min-width:0}.summary-divider{width:1rpx;height:84rpx;background:#dce7e6;margin:0 24rpx}.summary-label{display:block;color:#637779;font-size:22rpx}.crown-mark{color:#eea500}.prize-value{margin-top:5rpx;color:#e99c00;font-size:49rpx;font-weight:800}.prize-value text{font-size:27rpx}.summary-progress-number{margin-top:6rpx;color:#36595b;font-size:25rpx}.summary-progress-number text{font-size:38rpx;color:#08a6a3;font-weight:800}.progress-cell .progress-track{height:9rpx;margin-top:8rpx;background:#e2ebea}.progress-cell .progress-fill{background:#08aaa6}.card-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14rpx;margin-top:18rpx}.fish-card{position:relative;border-radius:14rpx;border-color:#9ccdcc;background:#fff}.card-index{position:absolute;z-index:3;left:8rpx;top:8rpx;width:38rpx;height:38rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0a9f9c;color:#fff;font-size:21rpx;font-weight:800}.card-art{padding-top:128%;background-size:500% 200%}.card-shade{background:rgba(30,39,35,.02)}.obtained-stamp,.pending-stamp,.lock-mark{display:none}.card-copy{min-height:114rpx;padding:12rpx 9rpx 11rpx;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;gap:3rpx}.species-name{font-size:25rpx;line-height:1.3;font-weight:800}.fish-weight{font-size:20rpx;color:#526b6d}.card-status{max-width:100%;margin-top:auto;padding:7rpx 5rpx;border-radius:7rpx;background:#e6eeee;color:#526b6d;font-size:19rpx;line-height:1.2;white-space:normal}.card-obtained .card-status{background:#0ba9a5;color:#fff}.card-pending .card-status{background:#fff0cb;color:#8b5900}.rules-panel,.ranking-panel{display:none}.upload-tip{height:94rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;color:#536c6e;font-size:24rpx}.bulb-icon{width:22rpx;height:28rpx;border:3rpx solid #eca600;border-radius:50% 50% 8rpx 8rpx;position:relative}.bulb-icon::after{content:'';position:absolute;left:5rpx;right:5rpx;bottom:-8rpx;border-top:4rpx solid #eca600}.atlas-upload-btn{height:92rpx;display:flex;align-items:center;justify-content:center;gap:15rpx;border-radius:14rpx;background:#0bafab;color:#fff;font-size:29rpx;font-weight:800}.camera-icon{width:38rpx;height:29rpx;border:5rpx solid #fff;border-radius:6rpx;position:relative}.camera-icon::before{content:'';position:absolute;left:9rpx;top:4rpx;width:11rpx;height:11rpx;border:4rpx solid #fff;border-radius:50%}.camera-icon::after{content:'';position:absolute;left:6rpx;top:-12rpx;width:17rpx;height:10rpx;border-radius:4rpx 4rpx 0 0;background:#fff}
+.atlas-page{padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb}.atlas-hero{height:132rpx;padding:20rpx 24rpx;box-sizing:border-box;display:flex;align-items:center;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff;color:#123f43}.atlas-hero::after{display:none}.summary-cell{flex:1;min-width:0}.summary-divider{width:1rpx;height:84rpx;background:#dce7e6;margin:0 24rpx}.summary-label{display:block;color:#637779;font-size:22rpx}.crown-mark{color:#eea500}.prize-value{margin-top:5rpx;color:#e99c00;font-size:49rpx;font-weight:800}.prize-value text{font-size:27rpx}.summary-progress-number{margin-top:6rpx;color:#36595b;font-size:25rpx}.summary-progress-number text{font-size:38rpx;color:#08a6a3;font-weight:800}.progress-cell .progress-track{height:9rpx;margin-top:8rpx;background:#e2ebea}.progress-cell .progress-fill{background:#08aaa6}.card-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14rpx;margin-top:18rpx}.fish-card{position:relative;border-radius:14rpx;border-color:#9ccdcc;background:#fff}.card-index{position:absolute;z-index:3;left:8rpx;top:8rpx;width:38rpx;height:38rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0a9f9c;color:#fff;font-size:21rpx;font-weight:800}.card-art{padding-top:100%}.card-shade{background:rgba(30,39,35,.02)}.obtained-stamp,.pending-stamp,.lock-mark{display:none}.card-copy{min-height:114rpx;padding:12rpx 9rpx 11rpx;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;gap:3rpx}.species-name{font-size:25rpx;line-height:1.3;font-weight:800}.fish-weight{font-size:20rpx;color:#526b6d}.card-status{max-width:100%;margin-top:auto;padding:7rpx 5rpx;border-radius:7rpx;background:#e6eeee;color:#526b6d;font-size:19rpx;line-height:1.2;white-space:normal}.card-obtained .card-status{background:#0ba9a5;color:#fff}.card-pending .card-status{background:#fff0cb;color:#8b5900}.rules-panel,.ranking-panel{display:none}.upload-tip{height:94rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;color:#536c6e;font-size:24rpx}.bulb-icon{width:22rpx;height:28rpx;border:3rpx solid #eca600;border-radius:50% 50% 8rpx 8rpx;position:relative}.bulb-icon::after{content:'';position:absolute;left:5rpx;right:5rpx;bottom:-8rpx;border-top:4rpx solid #eca600}.atlas-upload-btn{height:92rpx;display:flex;align-items:center;justify-content:center;gap:15rpx;border-radius:14rpx;background:#0bafab;color:#fff;font-size:29rpx;font-weight:800}.camera-icon{width:38rpx;height:29rpx;border:5rpx solid #fff;border-radius:6rpx;position:relative}.camera-icon::before{content:'';position:absolute;left:9rpx;top:4rpx;width:11rpx;height:11rpx;border:4rpx solid #fff;border-radius:50%}.camera-icon::after{content:'';position:absolute;left:6rpx;top:-12rpx;width:17rpx;height:10rpx;border-radius:4rpx 4rpx 0 0;background:#fff}
 .upload-build{display:block;margin-top:10rpx;color:#718789;font-size:19rpx;line-height:1.4;text-align:center}.upload-diagnostic{margin-top:16rpx;padding:17rpx 18rpx;border:1rpx solid #c8dedd;border-radius:12rpx;background:#eef7f6}.diagnostic-head{display:flex;align-items:center;justify-content:space-between;gap:12rpx;color:#22585a;font-size:22rpx;font-weight:800}.diagnostic-head text:last-child{max-width:330rpx;overflow:hidden;color:#5d7476;font-size:18rpx;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.diagnostic-message{display:block;margin-top:8rpx;color:#526b6d;font-size:21rpx;line-height:1.5}.upload-diagnostic.diag-failed{border-color:#d99e96;background:#fff0ee}.upload-diagnostic.diag-failed .diagnostic-head,.upload-diagnostic.diag-failed .diagnostic-message{color:#943a30}.upload-diagnostic.diag-success{border-color:#b7dfcc;background:#eaf8f1}.upload-diagnostic.diag-success .diagnostic-head{color:#18704f}
-@media(max-width:360px){.atlas-hero{padding-left:18rpx;padding-right:18rpx}.summary-divider{margin-left:16rpx;margin-right:16rpx}.card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx}.card-art{padding-top:118%}.card-copy{min-height:112rpx}.species-name{font-size:27rpx}.card-status{font-size:20rpx}.fish-weight{font-size:20rpx}.atlas-upload-btn{height:94rpx}.sheet-desc{font-size:26rpx}.video-placeholder,.video-preview{height:290rpx}}
+@media(max-width:360px){.atlas-hero{padding-left:18rpx;padding-right:18rpx}.summary-divider{margin-left:16rpx;margin-right:16rpx}.card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx}.card-copy{min-height:112rpx}.species-name{font-size:27rpx}.card-status{font-size:20rpx}.fish-weight{font-size:20rpx}.atlas-upload-btn{height:94rpx}.sheet-desc{font-size:26rpx}.video-placeholder,.video-preview{height:290rpx}}
 </style>
