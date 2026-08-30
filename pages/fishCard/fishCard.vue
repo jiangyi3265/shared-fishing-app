@@ -37,7 +37,7 @@
 					</view>
 					<view class="card-copy">
 						<text class="species-name">{{ card.speciesName }}</text>
-						<text class="fish-weight">{{ cardWeight(card, index) }}</text>
+						<text v-if="card.cardStatus === 'obtained'" class="fish-weight">{{ cardWeight(card, index) }}</text>
 						<text class="card-status">{{ cardStatusLabel(card) }}</text>
 					</view>
 				</view>
@@ -120,44 +120,61 @@
 		</view>
 
 		<view v-if="sheetOpen" class="sheet-mask" @click.self="closeSheet">
-			<view class="submit-sheet">
+			<view class="submit-sheet" @click.stop>
 				<view class="sheet-handle"></view>
-				<text class="sheet-title">认证 {{ selectedCard.speciesName }}</text>
-				<text class="sheet-desc">请上传一段连续视频：展示钓获、说出鱼种、完整放流。相册视频最长 5 分钟，文件需小于 48MB。</text>
-				<text class="sheet-runtime">{{ runtimeLabel }} · {{ runtimeInfo.apiBaseUrl }}</text>
-				<video
-					v-if="videoTempPath"
-					class="video-preview"
-					:src="videoTempPath"
-					controls
-					show-center-play-btn
-					show-play-btn
-					object-fit="contain"
-				/>
-				<view v-else class="video-placeholder" @click="chooseVideo">
-					<view class="play-mark">▶</view>
-					<text>选择认证视频</text>
-				</view>
-				<view v-if="videoTempPath" class="selected-video-state">
-					<view class="selected-check">✓</view>
-					<view class="selected-copy">
-						<text>视频已选择，可先播放检查</text>
-						<text>{{ selectedVideoInfo }}</text>
+				<view class="sheet-head">
+					<view class="sheet-heading">
+						<text class="sheet-kicker">视频认证</text>
+						<text class="sheet-title">认证 {{ selectedCard.speciesName }}</text>
 					</view>
-					<button class="replace-btn" :disabled="submitting" @click="chooseVideo">重选</button>
+					<view class="sheet-close" @click="closeSheet">×</view>
 				</view>
-				<view v-if="submitting" class="upload-progress-block">
-					<view class="upload-progress-copy"><text>正在上传到审核后台</text><text>{{ uploadProgress }}%</text></view>
-					<view class="upload-progress-track"><view class="upload-progress-fill" :style="{ width: uploadProgress + '%' }"></view></view>
+				<scroll-view class="sheet-body" scroll-y :show-scrollbar="false">
+					<view class="sheet-body-inner">
+						<text class="sheet-desc">连续拍摄钓获、说出鱼种，并完整记录放流过程。</text>
+						<view class="sheet-requirements">
+							<text>相册或拍摄</text>
+							<text>5 分钟内</text>
+							<text>小于 48MB</text>
+						</view>
+						<video
+							v-if="videoTempPath"
+							class="video-preview"
+							:src="videoTempPath"
+							controls
+							show-center-play-btn
+							show-play-btn
+							object-fit="contain"
+						/>
+						<view v-else class="video-placeholder" @click="chooseVideo">
+							<view class="video-add-mark">＋</view>
+							<text class="video-placeholder-title">选择认证视频</text>
+							<text class="video-placeholder-note">可从相册选择，也可现场拍摄</text>
+						</view>
+						<view v-if="videoTempPath" class="selected-video-state">
+							<view class="selected-check">✓</view>
+							<view class="selected-copy">
+								<text>视频已选择，可先播放检查</text>
+								<text>{{ selectedVideoInfo }}</text>
+							</view>
+							<button class="replace-btn" :disabled="submitting" @click="chooseVideo">重新选择</button>
+						</view>
+						<view v-if="submitting" class="upload-progress-block">
+							<view class="upload-progress-copy"><text>正在上传到审核后台</text><text>{{ uploadProgress }}%</text></view>
+							<view class="upload-progress-track"><view class="upload-progress-fill" :style="{ width: uploadProgress + '%' }"></view></view>
+						</view>
+						<view v-if="currentUploadDiagnostic" class="upload-diagnostic" :class="'diag-' + currentUploadDiagnostic.status">
+							<view class="diagnostic-head"><text>{{ lastUploadStatusLabel }}</text><text>{{ currentUploadDiagnostic.attemptId || '' }}</text></view>
+							<text v-if="currentUploadDiagnostic.message" class="diagnostic-message">{{ currentUploadDiagnostic.message }}</text>
+						</view>
+					</view>
+				</scroll-view>
+				<view class="sheet-footer">
+					<button class="submit-btn" :disabled="!videoTempPath || submitting" @click="submitVideo">
+						{{ submitting ? `正在上传 ${uploadProgress}%` : videoTempPath ? '上传并生成审核单' : '请先选择认证视频' }}
+					</button>
+					<text class="sheet-safe">看到“上传成功”和审核单号，才代表后台已收到视频</text>
 				</view>
-				<view v-if="lastUploadDiagnostic" class="upload-diagnostic" :class="'diag-' + lastUploadDiagnostic.status">
-					<view class="diagnostic-head"><text>{{ lastUploadStatusLabel }}</text><text>{{ lastUploadDiagnostic.attemptId || '' }}</text></view>
-					<text v-if="lastUploadDiagnostic.message" class="diagnostic-message">{{ lastUploadDiagnostic.message }}</text>
-				</view>
-				<button class="submit-btn" :disabled="!videoTempPath || submitting" @click="submitVideo">
-					{{ submitting ? `正在上传 ${uploadProgress}%` : '立即上传并生成审核单' }}
-				</button>
-				<text class="sheet-safe">只有看到“上传成功”和审核单号，后台才算真正收到视频</text>
 			</view>
 		</view>
 
@@ -196,7 +213,7 @@ import {
 } from '../../utils/request.js'
 
 const RANK_PRIZES = [688, 588, 488, 388, 288, 188]
-const BUILD_VERSION = '1.0.19'
+const BUILD_VERSION = '1.0.20'
 const MAX_VIDEO_BYTES = 48 * 1024 * 1024
 const MAX_VIDEO_DURATION_SECONDS = 5 * 60
 const LAST_UPLOAD_DIAGNOSTIC_KEY = 'fishcard_last_upload_diagnostic'
@@ -245,14 +262,21 @@ export default {
 			return `上传模块 v${BUILD_VERSION} · ${envLabel}${platform}`
 		},
 		lastUploadStatusLabel() {
-			if (!this.lastUploadDiagnostic) return ''
+			if (!this.currentUploadDiagnostic) return ''
 			return {
 				selected: '视频已选择，尚未上传',
 				uploading: '正在上传',
 				verifying: '服务器已接收，正在核验',
 				success: '上传成功',
 				failed: '上次上传未成功'
-			}[this.lastUploadDiagnostic.status] || '上传状态'
+			}[this.currentUploadDiagnostic.status] || '上传状态'
+		},
+		currentUploadDiagnostic() {
+			if (!this.lastUploadDiagnostic || !this.selectedCard) return null
+			if (this.lastUploadDiagnostic.status !== 'failed') return null
+			return Number(this.lastUploadDiagnostic.speciesId) === Number(this.selectedCard.speciesId)
+				? this.lastUploadDiagnostic
+				: null
 		}
 	},
 	onShow() {
@@ -420,13 +444,6 @@ export default {
 					attemptId: '',
 					speciesId: this.selectedCard && this.selectedCard.speciesId,
 					message: `${this.selectedVideoInfo}。请点击“立即上传”才会进入后台。`
-				})
-				uni.showModal({
-					title: '视频已选好（尚未上传）',
-					content: `${this.selectedVideoInfo}\n可先播放检查，也可以现在立即上传。`,
-					cancelText: '先预览',
-					confirmText: '立即上传',
-					success: modal => { if (modal.confirm) this.submitVideo() }
 				})
 			}
 			const onFail = (err) => {
@@ -658,30 +675,41 @@ export default {
 .submission-status.status-obtained { background: #def3ea; color: #197655; }
 .submission-status.status-rejected { background: #fde8e5; color: #a74438; }
 
-.sheet-mask { position: fixed; inset: 0; z-index: 999; display: flex; align-items: flex-end; background: rgba(9, 21, 16, .58); }
-.submit-sheet { width: 100%; padding: 18rpx 28rpx calc(28rpx + env(safe-area-inset-bottom)); border-radius: 30rpx 30rpx 0 0; background: var(--g-50); }
-.sheet-handle { width: 70rpx; height: 8rpx; margin: 0 auto 24rpx; border-radius: 99rpx; background: var(--ink-3); }
-.sheet-title { display: block; color: var(--ink); font-size: 36rpx; font-weight: 600; }
-.sheet-desc { display: block; margin-top: 12rpx; color: var(--ink-2); font-size: 24rpx; line-height: 1.55; }
-.video-placeholder, .video-preview { width: 100%; height: 360rpx; margin-top: 24rpx; border-radius: var(--r); background: var(--ink-4); }
-.video-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12rpx; color: var(--jade); font-size: 25rpx; font-weight: 600; }
-.play-mark { width: 76rpx; height: 76rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--g-700); font-size: 28rpx; }
-.selected-video-state { min-height: 78rpx; margin-top: 14rpx; padding: 12rpx 12rpx 12rpx 16rpx; display: flex; align-items: center; gap: 12rpx; box-sizing: border-box; border: 1rpx solid #c5e1df; border-radius: 12rpx; background: #edf8f7; }
-.selected-check { flex: 0 0 auto; width: 40rpx; height: 40rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #0a9f9c; color: #f8fbfb; font-size: 24rpx; font-weight: 800; }
+.sheet-mask { position: fixed; inset: 0; z-index: 999; display: flex; align-items: flex-end; background: rgba(7, 25, 27, .72); }
+.submit-sheet { width: 100%; height: 88vh; max-height: 1120rpx; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; border-radius: 34rpx 34rpx 0 0; background: #fbfdfd; box-shadow: 0 -18rpx 48rpx rgba(4, 31, 33, .22); }
+.sheet-handle { flex: 0 0 auto; width: 74rpx; height: 8rpx; margin: 14rpx auto 10rpx; border-radius: 99rpx; background: #bdd0cf; }
+.sheet-head { flex: 0 0 auto; min-height: 94rpx; padding: 0 28rpx 18rpx; display: flex; align-items: center; justify-content: space-between; gap: 20rpx; box-sizing: border-box; border-bottom: 1rpx solid #deebea; }
+.sheet-heading { flex: 1; min-width: 0; }
+.sheet-kicker { display: block; margin-bottom: 4rpx; color: #0a8f8c; font-size: 21rpx; font-weight: 700; letter-spacing: 1rpx; }
+.sheet-title { display: block; overflow: hidden; color: #123f43; font-size: 36rpx; line-height: 1.25; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-close { flex: 0 0 auto; width: 72rpx; height: 72rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #e8f1f0; color: #31595b; font-size: 44rpx; line-height: 1; }
+.sheet-body { flex: 1; width: 100%; height: 1px; min-height: 0; background: #fbfdfd; }
+.sheet-body-inner { padding: 22rpx 28rpx 28rpx; box-sizing: border-box; }
+.sheet-desc { display: block; color: #36585a; font-size: 27rpx; line-height: 1.55; font-weight: 600; }
+.sheet-requirements { margin-top: 14rpx; display: flex; align-items: center; flex-wrap: wrap; gap: 10rpx; }
+.sheet-requirements text { padding: 8rpx 14rpx; border-radius: 99rpx; background: #e9f4f3; color: #527072; font-size: 21rpx; line-height: 1.2; }
+.video-placeholder, .video-preview { width: 100%; height: 320rpx; margin-top: 22rpx; overflow: hidden; box-sizing: border-box; border-radius: 18rpx; background: #101d1e; }
+.video-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2rpx dashed #7dc6c3; background: #f1f8f7; color: #087f7c; }
+.video-add-mark { width: 80rpx; height: 80rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #0a9f9c; color: #fff; font-size: 48rpx; font-weight: 400; line-height: 1; }
+.video-placeholder-title { margin-top: 16rpx; color: #123f43; font-size: 28rpx; font-weight: 800; }
+.video-placeholder-note { margin-top: 7rpx; color: #617b7d; font-size: 22rpx; }
+.selected-video-state { min-height: 92rpx; margin-top: 16rpx; padding: 14rpx 14rpx 14rpx 18rpx; display: flex; align-items: center; gap: 14rpx; box-sizing: border-box; border: 1rpx solid #b9dcda; border-radius: 14rpx; background: #edf8f7; }
+.selected-check { flex: 0 0 auto; width: 46rpx; height: 46rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #0a9f9c; color: #fff; font-size: 26rpx; font-weight: 800; }
 .selected-copy { flex: 1; min-width: 0; }
-.selected-copy text { display: block; color: #123f43; font-size: 21rpx; line-height: 1.4; }
-.selected-copy text + text { margin-top: 2rpx; color: #6b8284; font-size: 18rpx; }
-.replace-btn { flex: 0 0 auto; min-width: 96rpx; height: 56rpx; margin: 0; padding: 0 16rpx; border: 1rpx solid #0a9f9c; border-radius: 8rpx; background: #f8fbfb; color: #087f7c; font-size: 21rpx; line-height: 54rpx; }
+.selected-copy text { display: block; color: #123f43; font-size: 23rpx; line-height: 1.4; font-weight: 700; }
+.selected-copy text + text { margin-top: 3rpx; color: #5e7779; font-size: 20rpx; font-weight: 400; }
+.replace-btn { flex: 0 0 auto; min-width: 128rpx; height: 68rpx; margin: 0; padding: 0 18rpx; border: 2rpx solid #0a9f9c; border-radius: 10rpx; background: #fff; color: #087f7c; font-size: 22rpx; line-height: 64rpx; font-weight: 700; }
 .replace-btn[disabled] { border-color: #b8c8c7; color: #8ca09f; background: #edf2f2; }
 .replace-btn::after, .submit-btn::after { border: 0; }
 .upload-progress-block { margin-top: 16rpx; }
-.upload-progress-copy { display: flex; justify-content: space-between; color: #4f696b; font-size: 20rpx; }
+.upload-progress-copy { display: flex; justify-content: space-between; color: #36585a; font-size: 22rpx; }
 .upload-progress-copy text:last-child { color: #087f7c; font-weight: 800; }
 .upload-progress-track { height: 12rpx; margin-top: 10rpx; overflow: hidden; border-radius: 6rpx; background: #dce8e7; }
 .upload-progress-fill { height: 100%; border-radius: 6rpx; background: #0a9f9c; transition: width 180ms cubic-bezier(.22, 1, .36, 1); }
-.submit-btn { height: 96rpx; margin-top: 18rpx; border: 0; border-radius: var(--r-sm); color: #fff; background: var(--g-700); font-size: 30rpx; line-height: 96rpx; font-weight: 600; }
-.submit-btn[disabled] { color: #fff; background: var(--ink-3); }
-.sheet-safe { display: block; margin-top: 14rpx; color: var(--ink-2); font-size: 20rpx; text-align: center; }
+.sheet-footer { flex: 0 0 auto; padding: 18rpx 28rpx calc(20rpx + env(safe-area-inset-bottom)); box-sizing: border-box; border-top: 1rpx solid #deebea; background: #fff; }
+.submit-btn { height: 96rpx; margin: 0; border: 0; border-radius: 14rpx; color: #fff; background: #079f9b; font-size: 29rpx; line-height: 96rpx; font-weight: 800; }
+.submit-btn[disabled] { color: #f7fbfb; background: #9fb3b3; }
+.sheet-safe { display: block; margin-top: 12rpx; color: #5d7476; font-size: 21rpx; line-height: 1.4; text-align: center; }
 
 .viewer-mask { position: fixed; inset: 0; z-index: 1001; display: flex; align-items: center; justify-content: center; padding: 34rpx; box-sizing: border-box; background: rgba(9, 21, 16, .76); }
 .viewer-panel { width: 100%; max-width: 690rpx; overflow: hidden; border-radius: 22rpx; background: #f8fbfb; }
@@ -695,7 +723,7 @@ export default {
 </style>
 
 <style scoped>
-.atlas-page{padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb}.atlas-hero{height:132rpx;padding:20rpx 24rpx;box-sizing:border-box;display:flex;align-items:center;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff;color:#123f43}.atlas-hero::after{display:none}.summary-cell{flex:1;min-width:0}.summary-divider{width:1rpx;height:84rpx;background:#dce7e6;margin:0 24rpx}.summary-label{display:block;color:#637779;font-size:22rpx}.crown-mark{color:#eea500}.prize-value{margin-top:5rpx;color:#e99c00;font-size:49rpx;font-weight:800}.prize-value text{font-size:27rpx}.summary-progress-number{margin-top:6rpx;color:#36595b;font-size:25rpx}.summary-progress-number text{font-size:38rpx;color:#08a6a3;font-weight:800}.progress-cell .progress-track{height:9rpx;margin-top:8rpx;background:#e2ebea}.progress-cell .progress-fill{background:#08aaa6}.card-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10rpx;margin-top:16rpx}.fish-card{position:relative;border-radius:11rpx;border-color:#9ccdcc;background:#fff}.card-index{position:absolute;z-index:3;left:6rpx;top:6rpx;width:28rpx;height:28rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0a9f9c;color:#fff;font-size:18rpx;font-weight:800}.card-art{padding-top:158%;background-size:500% 200%}.card-shade{background:rgba(30,39,35,.02)}.obtained-stamp,.pending-stamp,.lock-mark{display:none}.card-copy{min-height:90rpx;padding:7rpx 4rpx 8rpx;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;gap:2rpx}.species-name{font-size:20rpx;font-weight:800}.fish-weight{font-size:17rpx;color:#526b6d}.card-status{margin-top:auto;padding:4rpx 2rpx;border-radius:5rpx;background:#e6eeee;color:#637779;font-size:15rpx;line-height:1.2}.card-obtained .card-status{background:#0ba9a5;color:#fff}.card-pending .card-status{background:#fff0cb;color:#a66b00}.rules-panel,.ranking-panel{display:none}.upload-tip{height:84rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;color:#6d8082;font-size:22rpx}.bulb-icon{width:22rpx;height:28rpx;border:3rpx solid #eca600;border-radius:50% 50% 8rpx 8rpx;position:relative}.bulb-icon::after{content:'';position:absolute;left:5rpx;right:5rpx;bottom:-8rpx;border-top:4rpx solid #eca600}.atlas-upload-btn{height:82rpx;display:flex;align-items:center;justify-content:center;gap:15rpx;border-radius:12rpx;background:#0bafab;color:#fff;font-size:28rpx;font-weight:800}.camera-icon{width:38rpx;height:29rpx;border:5rpx solid #fff;border-radius:6rpx;position:relative}.camera-icon::before{content:'';position:absolute;left:9rpx;top:4rpx;width:11rpx;height:11rpx;border:4rpx solid #fff;border-radius:50%}.camera-icon::after{content:'';position:absolute;left:6rpx;top:-12rpx;width:17rpx;height:10rpx;border-radius:4rpx 4rpx 0 0;background:#fff}
-.upload-build{display:block;margin-top:10rpx;color:#819394;font-size:18rpx;line-height:1.4;text-align:center}.sheet-runtime{display:block;margin-top:8rpx;overflow:hidden;color:#7b8f90;font-size:18rpx;line-height:1.4;text-overflow:ellipsis;white-space:nowrap}.upload-diagnostic{margin-top:14rpx;padding:14rpx 16rpx;border:1rpx solid #c8dedd;border-radius:10rpx;background:#eef7f6}.diagnostic-head{display:flex;align-items:center;justify-content:space-between;gap:12rpx;color:#22585a;font-size:19rpx;font-weight:700}.diagnostic-head text:last-child{max-width:290rpx;overflow:hidden;color:#6a8082;font-size:16rpx;font-weight:500;text-overflow:ellipsis;white-space:nowrap}.diagnostic-message{display:block;margin-top:6rpx;color:#607779;font-size:18rpx;line-height:1.45}.upload-diagnostic.diag-failed{border-color:#edc2bd;background:#fff1ef}.upload-diagnostic.diag-failed .diagnostic-head,.upload-diagnostic.diag-failed .diagnostic-message{color:#9b4036}.upload-diagnostic.diag-success{border-color:#b7dfcc;background:#eaf8f1}.upload-diagnostic.diag-success .diagnostic-head{color:#18704f}
-@media(max-width:360px){.atlas-hero{padding-left:18rpx;padding-right:18rpx}.summary-divider{margin-left:16rpx;margin-right:16rpx}.card-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8rpx}.card-copy{min-height:86rpx}.species-name{font-size:19rpx}.card-status{font-size:15rpx}.fish-weight{font-size:16rpx}.atlas-upload-btn{height:88rpx}}
+.atlas-page{padding:14rpx 20rpx calc(126rpx + env(safe-area-inset-bottom));background:#f8fbfb}.atlas-hero{height:132rpx;padding:20rpx 24rpx;box-sizing:border-box;display:flex;align-items:center;border:1rpx solid #d7e5e4;border-radius:13rpx;background:#fff;color:#123f43}.atlas-hero::after{display:none}.summary-cell{flex:1;min-width:0}.summary-divider{width:1rpx;height:84rpx;background:#dce7e6;margin:0 24rpx}.summary-label{display:block;color:#637779;font-size:22rpx}.crown-mark{color:#eea500}.prize-value{margin-top:5rpx;color:#e99c00;font-size:49rpx;font-weight:800}.prize-value text{font-size:27rpx}.summary-progress-number{margin-top:6rpx;color:#36595b;font-size:25rpx}.summary-progress-number text{font-size:38rpx;color:#08a6a3;font-weight:800}.progress-cell .progress-track{height:9rpx;margin-top:8rpx;background:#e2ebea}.progress-cell .progress-fill{background:#08aaa6}.card-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14rpx;margin-top:18rpx}.fish-card{position:relative;border-radius:14rpx;border-color:#9ccdcc;background:#fff}.card-index{position:absolute;z-index:3;left:8rpx;top:8rpx;width:38rpx;height:38rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0a9f9c;color:#fff;font-size:21rpx;font-weight:800}.card-art{padding-top:128%;background-size:500% 200%}.card-shade{background:rgba(30,39,35,.02)}.obtained-stamp,.pending-stamp,.lock-mark{display:none}.card-copy{min-height:114rpx;padding:12rpx 9rpx 11rpx;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;text-align:center;gap:3rpx}.species-name{font-size:25rpx;line-height:1.3;font-weight:800}.fish-weight{font-size:20rpx;color:#526b6d}.card-status{max-width:100%;margin-top:auto;padding:7rpx 5rpx;border-radius:7rpx;background:#e6eeee;color:#526b6d;font-size:19rpx;line-height:1.2;white-space:normal}.card-obtained .card-status{background:#0ba9a5;color:#fff}.card-pending .card-status{background:#fff0cb;color:#8b5900}.rules-panel,.ranking-panel{display:none}.upload-tip{height:94rpx;display:flex;align-items:center;justify-content:center;gap:12rpx;color:#536c6e;font-size:24rpx}.bulb-icon{width:22rpx;height:28rpx;border:3rpx solid #eca600;border-radius:50% 50% 8rpx 8rpx;position:relative}.bulb-icon::after{content:'';position:absolute;left:5rpx;right:5rpx;bottom:-8rpx;border-top:4rpx solid #eca600}.atlas-upload-btn{height:92rpx;display:flex;align-items:center;justify-content:center;gap:15rpx;border-radius:14rpx;background:#0bafab;color:#fff;font-size:29rpx;font-weight:800}.camera-icon{width:38rpx;height:29rpx;border:5rpx solid #fff;border-radius:6rpx;position:relative}.camera-icon::before{content:'';position:absolute;left:9rpx;top:4rpx;width:11rpx;height:11rpx;border:4rpx solid #fff;border-radius:50%}.camera-icon::after{content:'';position:absolute;left:6rpx;top:-12rpx;width:17rpx;height:10rpx;border-radius:4rpx 4rpx 0 0;background:#fff}
+.upload-build{display:block;margin-top:10rpx;color:#718789;font-size:19rpx;line-height:1.4;text-align:center}.upload-diagnostic{margin-top:16rpx;padding:17rpx 18rpx;border:1rpx solid #c8dedd;border-radius:12rpx;background:#eef7f6}.diagnostic-head{display:flex;align-items:center;justify-content:space-between;gap:12rpx;color:#22585a;font-size:22rpx;font-weight:800}.diagnostic-head text:last-child{max-width:330rpx;overflow:hidden;color:#5d7476;font-size:18rpx;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.diagnostic-message{display:block;margin-top:8rpx;color:#526b6d;font-size:21rpx;line-height:1.5}.upload-diagnostic.diag-failed{border-color:#d99e96;background:#fff0ee}.upload-diagnostic.diag-failed .diagnostic-head,.upload-diagnostic.diag-failed .diagnostic-message{color:#943a30}.upload-diagnostic.diag-success{border-color:#b7dfcc;background:#eaf8f1}.upload-diagnostic.diag-success .diagnostic-head{color:#18704f}
+@media(max-width:360px){.atlas-hero{padding-left:18rpx;padding-right:18rpx}.summary-divider{margin-left:16rpx;margin-right:16rpx}.card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx}.card-art{padding-top:118%}.card-copy{min-height:112rpx}.species-name{font-size:27rpx}.card-status{font-size:20rpx}.fish-weight{font-size:20rpx}.atlas-upload-btn{height:94rpx}.sheet-desc{font-size:26rpx}.video-placeholder,.video-preview{height:290rpx}}
 </style>
